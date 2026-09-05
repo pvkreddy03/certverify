@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
 export default function CertificatesPage() {
-  const [certificateId, setCertificateId] = useState("");
+
+const [certificateId, setCertificateId] = useState("");
   const [client, setClient] = useState("");
   const [valuationDate, setValuationDate] = useState("");
   const [purpose, setPurpose] = useState("");
@@ -18,7 +19,28 @@ export default function CertificatesPage() {
 
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
+  async function loadCertificateId() {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
+  if (!user) {
+    setMessage("You must be logged in.");
+    return;
+  }
+
+  const { data, error } = await supabase.rpc("generate_certificate_id");
+
+  if (error) {
+    setMessage("Could not generate Certificate ID: " + error.message);
+    return;
+  }
+
+  setCertificateId(data);
+}
+useEffect(() => {
+  loadCertificateId();
+}, []);
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
@@ -99,13 +121,13 @@ location,
               </label>
 
               <input
-                type="text"
-                value={certificateId}
-                onChange={(e) => setCertificateId(e.target.value)}
-                placeholder="CV-2026-000001"
-                required
-                className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none focus:border-slate-500"
-              />
+  type="text"
+  value={certificateId}
+  readOnly
+  placeholder="Generating..."
+  required
+  className="w-full rounded-lg border border-slate-300 bg-slate-100 px-4 py-3 text-slate-700 outline-none"
+/>
             </div>
 
             <div>

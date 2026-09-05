@@ -46,7 +46,7 @@ export default function LoginPage() {
             </h1>
 
             <p className="mt-2 text-sm text-slate-600">
-              Sign in to your CertVerify account
+              Sign in to manage your professional certificates
             </p>
           </div>
 
@@ -74,28 +74,19 @@ export default function LoginPage() {
               </div>
 
               <div>
-                <div className="flex items-center justify-between">
-                  <label
-                    htmlFor="password"
-                    className="block text-sm font-medium text-slate-700"
-                  >
-                    Password
-                  </label>
-
-                  <button
-                    type="button"
-                    className="text-sm font-medium text-blue-600 hover:text-blue-700"
-                  >
-                    Forgot password?
-                  </button>
-                </div>
+                <label
+                  htmlFor="password"
+                  className="block text-sm font-medium text-slate-700"
+                >
+                  Password
+                </label>
 
                 <input
                   id="password"
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter your password"
+                  placeholder="Your password"
                   required
                   className="mt-2 w-full rounded-lg border border-slate-300 px-4 py-3 text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                 />
@@ -129,7 +120,7 @@ export default function LoginPage() {
                 href="/signup"
                 className="font-semibold text-blue-600 hover:text-blue-700"
               >
-                Create one
+                Create an account
               </a>
             </p>
 

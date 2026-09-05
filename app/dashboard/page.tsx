@@ -80,7 +80,7 @@ export default function DashboardPage() {
             </a>
 
             <a
-              href="#"
+               href="/dashboard/certificates/list" 
               className="block rounded-lg px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-50"
             >
               Certificates
@@ -125,11 +125,12 @@ export default function DashboardPage() {
                 </p>
               </div>
 
-              <button
-                className="rounded-lg bg-blue-600 px-5 py-3 font-semibold text-white shadow-sm hover:bg-blue-700"
-              >
-                + Create Certificate
-              </button>
+              <a
+  href="/dashboard/certificates"
+  className="rounded-lg bg-blue-600 px-5 py-3 font-semibold text-white shadow-sm hover:bg-blue-700"
+>
+  + Create Certificate
+</a>
 
             </div>
 
