@@ -87,7 +87,7 @@ export default function DashboardPage() {
             </a>
 
             <a
-              href="#"
+              href="/dashboard/templates"
               className="block rounded-lg px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-50"
             >
               Templates

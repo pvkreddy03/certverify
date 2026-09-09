@@ -2,10 +2,26 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import {
+  generateCertificateId,
+  createCertificate,
+} from "@/lib/repositories/certificates";
+import {
+  getCertificateTemplates,
+  type CertificateTemplate,
+} from "@/lib/repositories/templates";
 
+import {
+  getCertificateFields,
+  createCertificateFieldValues,
+  type CertificateField,
+} from "@/lib/repositories/certificate-fields";
 export default function CertificatesPage() {
 
 const [certificateId, setCertificateId] = useState("");
+const [templates, setTemplates] = useState<CertificateTemplate[]>([]);
+const [selectedTemplateId, setSelectedTemplateId] = useState("");
+const [loadingTemplates, setLoadingTemplates] = useState(true);
   const [client, setClient] = useState("");
   const [valuationDate, setValuationDate] = useState("");
   const [purpose, setPurpose] = useState("");
@@ -19,6 +35,24 @@ const [certificateId, setCertificateId] = useState("");
 
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
+  const [customFields, setCustomFields] = useState<CertificateField[]>([]);
+  const [customFieldValues, setCustomFieldValues] = useState<
+  Record<string, string>
+>({});
+  async function loadTemplates() {
+  try {
+    const data = await getCertificateTemplates();
+    setTemplates(data);
+  } catch (error) {
+    setMessage(
+      error instanceof Error
+        ? error.message
+        : "Could not load templates."
+    );
+  } finally {
+    setLoadingTemplates(false);
+  }
+}
   async function loadCertificateId() {
   const {
     data: { user },
@@ -40,7 +74,29 @@ const [certificateId, setCertificateId] = useState("");
 }
 useEffect(() => {
   loadCertificateId();
+  loadTemplates();
 }, []);
+useEffect(() => {
+  async function loadCustomFields() {
+    if (!selectedTemplateId) {
+      setCustomFields([]);
+      return;
+    }
+
+    try {
+      const fields = await getCertificateFields(selectedTemplateId);
+      setCustomFields(fields);
+    } catch (error) {
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "Could not load certificate fields."
+      );
+    }
+  }
+
+  loadCustomFields();
+}, [selectedTemplateId]);
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
@@ -57,42 +113,32 @@ useEffect(() => {
       return;
     }
 
-    const { error } = await supabase.from("certificates").insert({
-      user_id: user.id,
-      certificate_id: certificateId,
-      client,
-      valuation_date: valuationDate,
-      purpose,
-      owner_name: ownerName,
-property_type: propertyType,
-property_area: propertyArea ? Number(propertyArea) : null,
-location,
-      price_per_sq_meter: pricePerSqMeter
-        ? Number(pricePerSqMeter)
-        : null,
-      total_property_value: totalPropertyValue
-        ? Number(totalPropertyValue)
-        : null,
-      status,
-    });
+    try {
+ const certificate = await createCertificate({
+  user_id: user.id,
+  certificate_id: certificateId,
+  template_id: selectedTemplateId,
+  status,
+});
+const fieldValues = customFields.map((field) => ({
+  certificate_id: certificate.id,
+  field_name: field.field_name,
+  field_type: field.field_type,
+  field_value: customFieldValues[field.id] ?? null,
+  is_public: field.is_public,
+  display_order: field.display_order,
+}));
 
-    if (error) {
-      setMessage(error.message);
-    } else {
-      setMessage("Certificate saved successfully!");
-
-      setCertificateId("");
-      setClient("");
-      setValuationDate("");
-      setPurpose("");
-      setOwnerName("");
-      setPropertyType("");
-      setPropertyArea("");
-      setLocation("");
-      setPricePerSqMeter("");
-      setTotalPropertyValue("");
-      setStatus("Active");
-    }
+await createCertificateFieldValues(fieldValues);
+} catch (error) {
+  setMessage(
+    error instanceof Error
+      ? error.message
+      : "Could not save certificate."
+  );
+  setSaving(false);
+  return;
+}
 
     setSaving(false);
   }
@@ -114,151 +160,84 @@ location,
           onSubmit={handleSubmit}
           className="space-y-6 rounded-2xl bg-white p-8 shadow-sm"
         >
-          <div className="grid gap-6 md:grid-cols-2">
-            <div>
-              <label className="mb-2 block text-sm font-medium text-slate-700">
-                Certificate ID
-              </label>
+          <div>
+  <label className="mb-2 block text-sm font-medium text-slate-700">
+    Certificate Template
+  </label>
 
-              <input
-  type="text"
-  value={certificateId}
-  readOnly
-  placeholder="Generating..."
-  required
-  className="w-full rounded-lg border border-slate-300 bg-slate-100 px-4 py-3 text-slate-700 outline-none"
-/>
-            </div>
+  <select
+    value={selectedTemplateId}
+    onChange={(e) => setSelectedTemplateId(e.target.value)}
+    disabled={loadingTemplates}
+    required
+    className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none focus:border-slate-500"
+  >
+    <option value="">
+      {loadingTemplates ? "Loading templates..." : "Select a template"}
+    </option>
 
-            <div>
-              <label className="mb-2 block text-sm font-medium text-slate-700">
-                Client
-              </label>
+    {templates.map((template) => (
+      <option key={template.id} value={template.id}>
+        {template.name}
+      </option>
+    ))}
+  </select>
+</div>
+               <div>
+            <label className="mb-2 block text-sm font-medium text-slate-700">
+              Certificate ID
+            </label>
 
-              <input
-                type="text"
-                value={client}
-                onChange={(e) => setClient(e.target.value)}
-                placeholder="Client name"
-                required
-                className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none focus:border-slate-500"
-              />
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm font-medium text-slate-700">
-                Date of Valuation
-              </label>
-
-              <input
-                type="date"
-                value={valuationDate}
-                onChange={(e) => setValuationDate(e.target.value)}
-                required
-                className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none focus:border-slate-500"
-              />
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm font-medium text-slate-700">
-                Purpose of Valuation
-              </label>
-
-              <input
-                type="text"
-                value={purpose}
-                onChange={(e) => setPurpose(e.target.value)}
-                placeholder="e.g. Bank loan"
-                className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none focus:border-slate-500"
-              />
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm font-medium text-slate-700">
-                Owner Name
-              </label>
-
-              <input
-                type="text"
-                value={ownerName}
-                onChange={(e) => setOwnerName(e.target.value)}
-                placeholder="Property owner"
-                className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none focus:border-slate-500"
-              />
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm font-medium text-slate-700">
-                Property Type
-              </label>
-
-              <input
-                type="text"
-                value={propertyType}
-                onChange={(e) => setPropertyType(e.target.value)}
-                placeholder="Land / Building / Flat / Commercial"
-                className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none focus:border-slate-500"
-              />
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm font-medium text-slate-700">
-                Property Area
-              </label>
-
-              <input
-                type="number"
-                value={propertyArea}
-                onChange={(e) => setPropertyArea(e.target.value)}
-                placeholder="Area in sq. m."
-                className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none focus:border-slate-500"
-              />
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm font-medium text-slate-700">
-                Location
-              </label>
-
-              <input
-                type="text"
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                placeholder="Property location"
-                required
-                className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none focus:border-slate-500"
-              />
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm font-medium text-slate-700">
-                Price per Sq. Meter
-              </label>
-
-              <input
-                type="number"
-                value={pricePerSqMeter}
-                onChange={(e) => setPricePerSqMeter(e.target.value)}
-                placeholder="0.00"
-                className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none focus:border-slate-500"
-              />
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm font-medium text-slate-700">
-                Total Property Value
-              </label>
-
-              <input
-                type="number"
-                value={totalPropertyValue}
-                onChange={(e) => setTotalPropertyValue(e.target.value)}
-                placeholder="0.00"
-                className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none focus:border-slate-500"
-              />
-            </div>
+            <input
+              type="text"
+              value={certificateId}
+              readOnly
+              placeholder="Generating..."
+              required
+              className="w-full rounded-lg border border-slate-300 bg-slate-100 px-4 py-3 text-slate-700 outline-none"
+            />
           </div>
 
+          {customFields.length > 0 && (
+            <div className="border-t border-slate-200 pt-6">
+              <h2 className="mb-4 text-lg font-semibold text-slate-900">
+                Certificate Details
+              </h2>
+
+              <div className="grid gap-6 md:grid-cols-2">
+                {customFields.map((field) => (
+                  <div key={field.id}>
+                    <label className="mb-2 block text-sm font-medium text-slate-700">
+                      {field.field_name}
+                      {field.is_required && (
+                        <span className="text-red-500"> *</span>
+                      )}
+                    </label>
+
+                    <input
+  type={
+  field.field_type === "number"
+    ? "number"
+    : field.field_type === "date"
+      ? "date"
+      : "text"
+}
+  value={customFieldValues[field.id] ?? ""}
+  onChange={(e) =>
+    setCustomFieldValues((previous) => ({
+      ...previous,
+      [field.id]: e.target.value,
+    }))
+  }
+  placeholder={`Enter ${field.field_name}`}
+  required={field.is_required}
+  className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none focus:border-slate-500"
+/>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
           <div>
             <label className="mb-2 block text-sm font-medium text-slate-700">
               Status
