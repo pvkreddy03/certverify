@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
 type Template = {
@@ -22,6 +22,8 @@ type CertificateField = {
 
 export default function TemplatePage() {
   const params = useParams();
+  const router = useRouter();
+
   const templateId = params.id as string;
 
   const [template, setTemplate] = useState<Template | null>(null);
@@ -40,7 +42,8 @@ export default function TemplatePage() {
   const [message, setMessage] = useState("");
 
   const [editingFieldId, setEditingFieldId] = useState<string | null>(null);
-const [savingEdit, setSavingEdit] = useState(false);
+
+  const [deletingTemplate, setDeletingTemplate] = useState(false);
 
   async function loadTemplate() {
     const {
@@ -97,153 +100,195 @@ const [savingEdit, setSavingEdit] = useState(false);
   }, [templateId]);
 
   async function handleAddField(e: React.FormEvent) {
-  e.preventDefault();
+    e.preventDefault();
 
-  if (!fieldName.trim()) {
-    setMessage("Field name is required.");
-    return;
-  }
+    if (!fieldName.trim()) {
+      setMessage("Field name is required.");
+      return;
+    }
 
-  setSavingField(true);
-  setMessage("");
+    setSavingField(true);
+    setMessage("");
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-  if (!user) {
-    setMessage("You must be logged in.");
-    setSavingField(false);
-    return;
-  }
+    if (!user) {
+      setMessage("You must be logged in.");
+      setSavingField(false);
+      return;
+    }
 
-  // EDIT existing field
-  if (editingFieldId) {
-    setSavingEdit(true);
+    // EDIT EXISTING FIELD
+    if (editingFieldId) {
+      const { error } = await supabase
+        .from("certificate_fields")
+        .update({
+          field_name: fieldName.trim(),
+          field_type: fieldType,
+          is_required: isRequired,
+          is_public: isPublic,
+        })
+        .eq("id", editingFieldId);
+
+      if (error) {
+        setMessage("Could not update field: " + error.message);
+      } else {
+        setFieldName("");
+        setFieldType("text");
+        setIsRequired(false);
+        setIsPublic(true);
+        setEditingFieldId(null);
+        setShowAddField(false);
+        setMessage("Field updated successfully.");
+        await loadFields();
+      }
+
+      setSavingField(false);
+      return;
+    }
+
+    // ADD NEW FIELD
+    const nextDisplayOrder =
+      fields.length > 0
+        ? Math.max(...fields.map((field) => field.display_order)) + 1
+        : 1;
 
     const { error } = await supabase
       .from("certificate_fields")
-      .update({
+      .insert({
+        user_id: user.id,
+        template_id: templateId,
         field_name: fieldName.trim(),
         field_type: fieldType,
         is_required: isRequired,
         is_public: isPublic,
-      })
-      .eq("id", editingFieldId);
+        display_order: nextDisplayOrder,
+      });
 
     if (error) {
-      setMessage("Could not update field: " + error.message);
+      setMessage("Could not add field: " + error.message);
     } else {
       setFieldName("");
       setFieldType("text");
       setIsRequired(false);
       setIsPublic(true);
-      setEditingFieldId(null);
-      setMessage("Field updated successfully.");
+      setShowAddField(false);
+      setMessage("Field added successfully.");
       await loadFields();
     }
 
-    setSavingEdit(false);
     setSavingField(false);
-    return;
   }
 
-  // ADD new field
-  const nextDisplayOrder =
-    fields.length > 0
-      ? Math.max(...fields.map((field) => field.display_order)) + 1
-      : 1;
-
-  const { error } = await supabase
-    .from("certificate_fields")
-    .insert({
-      user_id: user.id,
-      template_id: templateId,
-      field_name: fieldName.trim(),
-      field_type: fieldType,
-      is_required: isRequired,
-      is_public: isPublic,
-      display_order: nextDisplayOrder,
-    });
-
-  if (error) {
-    setMessage("Could not add field: " + error.message);
-  } else {
+  function resetFieldForm() {
     setFieldName("");
     setFieldType("text");
     setIsRequired(false);
     setIsPublic(true);
+    setEditingFieldId(null);
     setShowAddField(false);
-    setMessage("Field added successfully.");
+  }
+
+  async function handleDeleteField(fieldId: string) {
+    const confirmed = window.confirm(
+      "Are you sure you want to delete this field?"
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setMessage("");
+
+    const { error } = await supabase
+      .from("certificate_fields")
+      .delete()
+      .eq("id", fieldId);
+
+    if (error) {
+      setMessage("Could not delete field: " + error.message);
+    } else {
+      setMessage("Field deleted successfully.");
+      await loadFields();
+    }
+  }
+
+  async function moveField(fieldId: string, direction: "up" | "down") {
+    const currentIndex = fields.findIndex((field) => field.id === fieldId);
+
+    if (currentIndex === -1) {
+      return;
+    }
+
+    const targetIndex =
+      direction === "up" ? currentIndex - 1 : currentIndex + 1;
+
+    if (targetIndex < 0 || targetIndex >= fields.length) {
+      return;
+    }
+
+    const currentField = fields[currentIndex];
+    const targetField = fields[targetIndex];
+
+    const { error: currentError } = await supabase
+      .from("certificate_fields")
+      .update({ display_order: targetField.display_order })
+      .eq("id", currentField.id);
+
+    if (currentError) {
+      setMessage("Could not move field: " + currentError.message);
+      return;
+    }
+
+    const { error: targetError } = await supabase
+      .from("certificate_fields")
+      .update({ display_order: currentField.display_order })
+      .eq("id", targetField.id);
+
+    if (targetError) {
+      setMessage("Could not move field: " + targetError.message);
+      await loadFields();
+      return;
+    }
+
+    setMessage("Field order updated.");
     await loadFields();
   }
 
-  setSavingField(false);
-}
-async function handleDeleteField(fieldId: string) {
-  const confirmed = window.confirm(
-    "Are you sure you want to delete this field?"
-  );
+  async function handleDeleteTemplate() {
+    if (!template) {
+      return;
+    }
 
-  if (!confirmed) {
-    return;
+    const confirmed = window.confirm(
+      `Delete the template "${template.name}"?\n\n` +
+        "This will permanently delete the template and all fields inside it.\n\n" +
+        "Existing certificates created from this template will NOT be deleted."
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setDeletingTemplate(true);
+    setMessage("");
+
+    const { error } = await supabase
+      .from("certificate_templates")
+      .delete()
+      .eq("id", templateId);
+
+    if (error) {
+      setMessage("Could not delete template: " + error.message);
+      setDeletingTemplate(false);
+      return;
+    }
+
+    router.push("/dashboard/templates");
   }
 
-  setMessage("");
-
-  const { error } = await supabase
-    .from("certificate_fields")
-    .delete()
-    .eq("id", fieldId);
-
-  if (error) {
-    setMessage("Could not delete field: " + error.message);
-  } else {
-    setMessage("Field deleted successfully.");
-    await loadFields();
-  }
-}
-async function moveField(fieldId: string, direction: "up" | "down") {
-  const currentIndex = fields.findIndex((field) => field.id === fieldId);
-
-  if (currentIndex === -1) {
-    return;
-  }
-
-  const targetIndex =
-    direction === "up" ? currentIndex - 1 : currentIndex + 1;
-
-  if (targetIndex < 0 || targetIndex >= fields.length) {
-    return;
-  }
-
-  const currentField = fields[currentIndex];
-  const targetField = fields[targetIndex];
-
-  const { error: currentError } = await supabase
-    .from("certificate_fields")
-    .update({ display_order: targetField.display_order })
-    .eq("id", currentField.id);
-
-  if (currentError) {
-    setMessage("Could not move field: " + currentError.message);
-    return;
-  }
-
-  const { error: targetError } = await supabase
-    .from("certificate_fields")
-    .update({ display_order: currentField.display_order })
-    .eq("id", targetField.id);
-
-  if (targetError) {
-    setMessage("Could not move field: " + targetError.message);
-    await loadFields();
-    return;
-  }
-
-  setMessage("Field order updated.");
-  await loadFields();
-}
   if (loading) {
     return (
       <main className="min-h-screen bg-slate-50 px-6 py-10">
@@ -265,6 +310,14 @@ async function moveField(fieldId: string, direction: "up" | "down") {
           {message && (
             <p className="mt-3 text-sm text-red-600">{message}</p>
           )}
+
+          <button
+            type="button"
+            onClick={() => router.push("/dashboard/templates")}
+            className="mt-6 rounded-lg border border-slate-300 bg-white px-5 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50"
+          >
+            ← Back to Templates
+          </button>
         </div>
       </main>
     );
@@ -273,14 +326,39 @@ async function moveField(fieldId: string, direction: "up" | "down") {
   return (
     <main className="min-h-screen bg-slate-50 px-6 py-10">
       <div className="mx-auto max-w-6xl">
-        <h1 className="text-3xl font-bold text-slate-900">
-          {template.name}
-        </h1>
 
-        <p className="mt-2 text-slate-600">
-          {template.description || "No description"}
-        </p>
+        {/* Header */}
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <button
+              type="button"
+              onClick={() => router.push("/dashboard/templates")}
+              className="mb-4 text-sm font-medium text-slate-600 hover:text-slate-900"
+            >
+              ← Back to Templates
+            </button>
 
+            <h1 className="text-3xl font-bold text-slate-900">
+              {template.name}
+            </h1>
+
+            <p className="mt-2 text-slate-600">
+              {template.description || "No description"}
+            </p>
+          </div>
+
+          {/* Delete Template */}
+          <button
+            type="button"
+            onClick={handleDeleteTemplate}
+            disabled={deletingTemplate}
+            className="rounded-lg border border-red-300 bg-white px-5 py-3 text-sm font-semibold text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {deletingTemplate ? "Deleting..." : "Delete Template"}
+          </button>
+        </div>
+
+        {/* Template Information */}
         <div className="mt-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
           <p className="text-sm text-slate-500">Template ID</p>
 
@@ -295,8 +373,10 @@ async function moveField(fieldId: string, direction: "up" | "down") {
           </div>
         )}
 
+        {/* Certificate Fields */}
         <div className="mt-8 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="flex items-center justify-between">
+
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h2 className="text-xl font-semibold text-slate-900">
                 Certificate Fields
@@ -312,6 +392,7 @@ async function moveField(fieldId: string, direction: "up" | "down") {
               type="button"
               onClick={() => {
                 setShowAddField(!showAddField);
+                setEditingFieldId(null);
                 setMessage("");
               }}
               className="rounded-lg bg-slate-900 px-5 py-3 font-medium text-white hover:bg-slate-800"
@@ -320,13 +401,14 @@ async function moveField(fieldId: string, direction: "up" | "down") {
             </button>
           </div>
 
+          {/* Add / Edit Field Form */}
           {(showAddField || editingFieldId) && (
             <form
               onSubmit={handleAddField}
               className="mt-6 rounded-lg border border-slate-200 bg-slate-50 p-5"
             >
               <h3 className="text-lg font-semibold text-slate-900">
-                Add Field
+                {editingFieldId ? "Edit Field" : "Add Field"}
               </h3>
 
               <div className="mt-5">
@@ -387,12 +469,16 @@ async function moveField(fieldId: string, direction: "up" | "down") {
                   disabled={savingField}
                   className="rounded-lg bg-slate-900 px-5 py-3 font-medium text-white hover:bg-slate-800 disabled:opacity-50"
                 >
-                  {savingField ? "Saving..." : "Save Field"}
+                  {savingField
+                    ? "Saving..."
+                    : editingFieldId
+                    ? "Update Field"
+                    : "Save Field"}
                 </button>
 
                 <button
                   type="button"
-                  onClick={() => setShowAddField(false)}
+                  onClick={resetFieldForm}
                   className="rounded-lg border border-slate-300 px-5 py-3 font-medium text-slate-700 hover:bg-white"
                 >
                   Cancel
@@ -401,6 +487,7 @@ async function moveField(fieldId: string, direction: "up" | "down") {
             </form>
           )}
 
+          {/* Field List */}
           <div className="mt-6">
             {loadingFields ? (
               <p className="text-sm text-slate-500">Loading fields...</p>
@@ -419,7 +506,7 @@ async function moveField(fieldId: string, direction: "up" | "down") {
                 {fields.map((field, index) => (
                   <div
                     key={field.id}
-                    className="flex items-center justify-between rounded-lg border border-slate-200 p-4"
+                    className="flex flex-col gap-4 rounded-lg border border-slate-200 p-4 sm:flex-row sm:items-center sm:justify-between"
                   >
                     <div>
                       <p className="font-medium text-slate-900">
@@ -432,50 +519,77 @@ async function moveField(fieldId: string, direction: "up" | "down") {
                         {field.is_public ? "Public" : "Private"}
                       </p>
                     </div>
-                    <button
-  type="button"
-  onClick={() => {
-    setEditingFieldId(field.id);
-    setFieldName(field.field_name);
-    setFieldType(field.field_type);
-    setIsRequired(field.is_required);
-    setIsPublic(field.is_public);
-    setShowAddField(false);
-    setMessage("");
-  }}
-  className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
->
-  Edit
-</button>
-<button
-  type="button"
-  onClick={() => handleDeleteField(field.id)}
-  className="rounded-lg border border-red-300 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50"
->
-  Delete
-</button>
-<button
-  type="button"
-  onClick={() => moveField(field.id, "up")}
-  disabled={index === 0}
-  className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
->
-  ↑
-</button>
 
-<button
-  type="button"
-  onClick={() => moveField(field.id, "down")}
-  disabled={index === fields.length - 1}
-  className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
->
-  ↓
-</button>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingFieldId(field.id);
+                          setFieldName(field.field_name);
+                          setFieldType(field.field_type);
+                          setIsRequired(field.is_required);
+                          setIsPublic(field.is_public);
+                          setShowAddField(false);
+                          setMessage("");
+                        }}
+                        className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                      >
+                        Edit
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteField(field.id)}
+                        className="rounded-lg border border-red-300 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50"
+                      >
+                        Delete
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => moveField(field.id, "up")}
+                        disabled={index === 0}
+                        className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        ↑
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => moveField(field.id, "down")}
+                        disabled={index === fields.length - 1}
+                        className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        ↓
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
             )}
           </div>
+        </div>
+
+        {/* Danger Zone */}
+        <div className="mt-8 rounded-xl border border-red-200 bg-red-50 p-6">
+          <h2 className="text-lg font-semibold text-red-900">
+            Danger Zone
+          </h2>
+
+          <p className="mt-2 text-sm leading-6 text-red-800">
+            Deleting this template permanently removes the template and its
+            custom fields. Existing certificates created using this template
+            will remain safe.
+          </p>
+
+          <button
+            type="button"
+            onClick={handleDeleteTemplate}
+            disabled={deletingTemplate}
+            className="mt-5 rounded-lg bg-red-600 px-5 py-3 text-sm font-semibold text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {deletingTemplate ? "Deleting..." : "Delete This Template"}
+          </button>
         </div>
       </div>
     </main>

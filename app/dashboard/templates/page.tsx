@@ -1,6 +1,8 @@
+
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
 type Template = {
@@ -11,6 +13,8 @@ type Template = {
 };
 
 export default function TemplatesPage() {
+  const router = useRouter();
+
   const [templates, setTemplates] = useState<Template[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -79,22 +83,27 @@ export default function TemplatesPage() {
 
     if (error) {
       setMessage("Could not create template: " + error.message);
-    } else {
-      setName("");
-      setDescription("");
-      setShowCreateForm(false);
-      setMessage("Template created successfully.");
-      await loadTemplates();
+      setSaving(false);
+      return;
     }
 
-    setSaving(false);
+    router.push("/dashboard");
   }
 
   return (
     <main className="min-h-screen bg-slate-50 px-6 py-10">
       <div className="mx-auto max-w-6xl">
+
         <div className="flex items-center justify-between">
           <div>
+            <button
+              type="button"
+              onClick={() => router.push("/dashboard")}
+              className="mb-4 text-sm font-medium text-slate-600 hover:text-slate-900"
+            >
+              ← Back to Dashboard
+            </button>
+
             <h1 className="text-3xl font-bold text-slate-900">
               Templates
             </h1>
@@ -170,7 +179,12 @@ export default function TemplatesPage() {
 
               <button
                 type="button"
-                onClick={() => setShowCreateForm(false)}
+                onClick={() => {
+                  setShowCreateForm(false);
+                  setName("");
+                  setDescription("");
+                  setMessage("");
+                }}
                 className="rounded-lg border border-slate-300 px-5 py-3 font-medium text-slate-700 hover:bg-slate-50"
               >
                 Cancel
@@ -198,10 +212,10 @@ export default function TemplatesPage() {
             <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
               {templates.map((template) => (
                 <a
-  key={template.id}
-  href={`/dashboard/templates/${template.id}`}
-  className="block rounded-xl border border-slate-200 bg-white p-6 shadow-sm hover:border-slate-400 hover:shadow-md"
->
+                  key={template.id}
+                  href={`/dashboard/templates/${template.id}`}
+                  className="block rounded-xl border border-slate-200 bg-white p-6 shadow-sm hover:border-slate-400 hover:shadow-md"
+                >
                   <h2 className="text-lg font-semibold text-slate-900">
                     {template.name}
                   </h2>
@@ -219,6 +233,7 @@ export default function TemplatesPage() {
             </div>
           )}
         </div>
+
       </div>
     </main>
   );

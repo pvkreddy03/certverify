@@ -1,252 +1,293 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 
 export default function DashboardPage() {
   const [email, setEmail] = useState("");
 
-  useEffect(() => {
-    async function getUser() {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+  const [certificateCount, setCertificateCount] =
+    useState<number | null>(null);
 
-      if (user) {
-        setEmail(user.email ?? "");
-      }
+  const [templateCount, setTemplateCount] =
+    useState<number | null>(null);
+
+  const [verificationCount, setVerificationCount] =
+    useState<number | null>(null);
+
+  const [loadingStats, setLoadingStats] = useState(true);
+
+  useEffect(() => {
+    loadDashboard();
+  }, []);
+
+  async function loadDashboard() {
+    setLoadingStats(true);
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      setLoadingStats(false);
+      return;
     }
 
-    getUser();
-  }, []);
+    setEmail(user.email ?? "");
+
+    /*
+     * Certificates:
+     *
+     * We intentionally do not add a user_id filter here.
+     *
+     * RLS determines what the current user is allowed to see:
+     * - Individual / Sub-user -> own certificates
+     * - Organization Admin -> organization certificates
+     */
+    const {
+      count: certificates,
+      error: certificateError,
+    } = await supabase
+      .from("certificates")
+      .select("id", {
+        count: "exact",
+        head: true,
+      });
+
+    if (certificateError) {
+      console.error(
+        "Could not load certificate count:",
+        certificateError.message
+      );
+    } else {
+      setCertificateCount(certificates ?? 0);
+    }
+
+    /*
+     * Templates:
+     *
+     * RLS determines which templates belong to the current
+     * account/user.
+     */
+    const {
+      count: templates,
+      error: templateError,
+    } = await supabase
+      .from("certificate_templates")
+      .select("id", {
+        count: "exact",
+        head: true,
+      });
+
+    if (templateError) {
+      console.error(
+        "Could not load template count:",
+        templateError.message
+      );
+    } else {
+      setTemplateCount(templates ?? 0);
+    }
+
+    /*
+     * Verification records:
+     *
+     * RLS allows the user to see verification records only
+     * for certificates they are permitted to access.
+     */
+    const {
+      count: verifications,
+      error: verificationError,
+    } = await supabase
+      .from("certificate_verifications")
+      .select("id", {
+        count: "exact",
+        head: true,
+      });
+
+    if (verificationError) {
+      console.error(
+        "Could not load verification count:",
+        verificationError.message
+      );
+    } else {
+      setVerificationCount(verifications ?? 0);
+    }
+
+    setLoadingStats(false);
+  }
 
   async function handleLogout() {
     await supabase.auth.signOut();
     window.location.href = "/login";
   }
 
+  function displayCount(value: number | null) {
+    if (loadingStats || value === null) {
+      return "—";
+    }
+
+    return value.toLocaleString("en-IN");
+  }
+
   return (
     <main className="min-h-screen bg-slate-50">
 
-      {/* Top Navigation */}
+      {/* Header */}
       <header className="border-b border-slate-200 bg-white">
-        <div className="flex h-16 items-center justify-between px-6">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
 
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-600 font-bold text-white">
-              C
-            </div>
-
-            <span className="text-xl font-bold text-slate-900">
+          <div>
+            <h1 className="text-xl font-bold text-slate-900">
               CertVerify
-            </span>
+            </h1>
+
+            <p className="text-xs text-slate-500">
+              Certificate Verification Platform
+            </p>
           </div>
 
           <div className="flex items-center gap-4">
-
-            <div className="hidden text-right sm:block">
-              <p className="text-xs text-slate-500">
-                Signed in as
-              </p>
-
-              <p className="text-sm font-medium text-slate-700">
-                {email || "Professional"}
-              </p>
-            </div>
+            <span className="hidden text-sm text-slate-600 md:block">
+              {email}
+            </span>
 
             <button
+              type="button"
               onClick={handleLogout}
-              className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
             >
               Logout
             </button>
-
           </div>
+
         </div>
       </header>
 
-      <div className="flex">
+      <div className="mx-auto flex max-w-7xl">
 
         {/* Sidebar */}
-        <aside className="hidden min-h-[calc(100vh-4rem)] w-64 border-r border-slate-200 bg-white p-5 md:block">
+        <aside className="hidden min-h-[calc(100vh-73px)] w-64 border-r border-slate-200 bg-white p-5 md:block">
 
           <nav className="space-y-2">
 
-            <a
+            <Link
               href="/dashboard"
-              className="block rounded-lg bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-700"
+              className="block rounded-lg bg-slate-100 px-4 py-3 text-sm font-medium text-slate-900"
             >
               Dashboard
-            </a>
+            </Link>
 
-            <a
-               href="/dashboard/certificates/list" 
-              className="block rounded-lg px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-50"
+            <Link
+              href="/dashboard/certificates/list"
+              className="block rounded-lg px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900"
             >
-              Certificates
-            </a>
+              My Certificates
+            </Link>
 
-            <a
+            <Link
+              href="/dashboard/certificates"
+              className="block rounded-lg px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+            >
+              Create Certificate
+            </Link>
+
+            <Link
               href="/dashboard/templates"
-              className="block rounded-lg px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-50"
+              className="block rounded-lg px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900"
             >
               Templates
-            </a>
+            </Link>
 
-            <a
-              href="#"
-              className="block rounded-lg px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-50"
+            <Link
+              href="/dashboard/team"
+              className="block rounded-lg px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+            >
+              Team
+            </Link>
+
+            <Link
+              href="/dashboard/settings"
+              className="block rounded-lg px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900"
             >
               Settings
-            </a>
+            </Link>
 
           </nav>
 
         </aside>
 
-        {/* Main Content */}
-        <section className="flex-1 p-6 lg:p-10">
+        {/* Main */}
+        <section className="flex-1 p-6 md:p-10">
 
-          <div className="mx-auto max-w-6xl">
+          <div className="mb-8">
+            <h2 className="text-3xl font-bold text-slate-900">
+              Welcome to CertVerify
+            </h2>
 
-            <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-center">
+            <p className="mt-2 text-slate-600">
+              Manage your certificates and verification activity.
+            </p>
+          </div>
 
-              <div>
-                <p className="text-sm font-medium text-blue-600">
-                  Dashboard
-                </p>
+          <div className="mb-8">
+            <Link
+              href="/dashboard/certificates"
+              className="inline-flex rounded-lg bg-slate-900 px-6 py-3 font-medium text-white hover:bg-slate-800"
+            >
+              + Create Certificate
+            </Link>
+          </div>
 
-                <h1 className="mt-1 text-3xl font-bold tracking-tight text-slate-900">
-                  Welcome to CertVerify
-                </h1>
+          {/* Statistics */}
+          <div className="grid gap-5 md:grid-cols-3">
 
-                <p className="mt-2 text-slate-600">
-                  Manage your certificates, templates and verification records.
-                </p>
-              </div>
-
-              <a
-  href="/dashboard/certificates"
-  className="rounded-lg bg-blue-600 px-5 py-3 font-semibold text-white shadow-sm hover:bg-blue-700"
->
-  + Create Certificate
-</a>
-
-            </div>
-
-            {/* Statistics */}
-            <div className="mt-10 grid gap-5 sm:grid-cols-3">
-
-              <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-                <p className="text-sm font-medium text-slate-500">
-                  Certificates
-                </p>
-
-                <p className="mt-3 text-3xl font-bold text-slate-900">
-                  0
-                </p>
-
-                <p className="mt-2 text-sm text-slate-500">
-                  Certificates issued
-                </p>
-              </div>
-
-              <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-                <p className="text-sm font-medium text-slate-500">
-                  Templates
-                </p>
-
-                <p className="mt-3 text-3xl font-bold text-slate-900">
-                  0
-                </p>
-
-                <p className="mt-2 text-sm text-slate-500">
-                  Saved templates
-                </p>
-              </div>
-
-              <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-                <p className="text-sm font-medium text-slate-500">
-                  Verifications
-                </p>
-
-                <p className="mt-3 text-3xl font-bold text-slate-900">
-                  0
-                </p>
-
-                <p className="mt-2 text-sm text-slate-500">
-                  Certificate scans
-                </p>
-              </div>
-
-            </div>
-
-            {/* Getting Started */}
-            <div className="mt-8 rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
-
-              <h2 className="text-xl font-bold text-slate-900">
-                Get started with CertVerify
-              </h2>
-
-              <p className="mt-2 max-w-2xl text-slate-600">
-                Create your first certificate template and start generating
-                secure QR verification records.
+            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+              <p className="text-sm font-medium text-slate-500">
+                Certificates
               </p>
 
-              <div className="mt-6 grid gap-4 sm:grid-cols-3">
+              <p className="mt-3 text-3xl font-bold text-slate-900">
+                {displayCount(certificateCount)}
+              </p>
 
-                <div className="rounded-lg border border-slate-200 p-5">
-                  <div className="text-sm font-semibold text-blue-600">
-                    STEP 1
-                  </div>
+              <p className="mt-2 text-sm text-slate-500">
+                Certificates issued
+              </p>
+            </div>
 
-                  <h3 className="mt-2 font-semibold text-slate-900">
-                    Create a template
-                  </h3>
+            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+              <p className="text-sm font-medium text-slate-500">
+                Templates
+              </p>
 
-                  <p className="mt-2 text-sm leading-6 text-slate-600">
-                    Define the fields you want to use for your certificates.
-                  </p>
-                </div>
+              <p className="mt-3 text-3xl font-bold text-slate-900">
+                {displayCount(templateCount)}
+              </p>
 
-                <div className="rounded-lg border border-slate-200 p-5">
-                  <div className="text-sm font-semibold text-blue-600">
-                    STEP 2
-                  </div>
+              <p className="mt-2 text-sm text-slate-500">
+                Saved templates
+              </p>
+            </div>
 
-                  <h3 className="mt-2 font-semibold text-slate-900">
-                    Create a certificate
-                  </h3>
+            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+              <p className="text-sm font-medium text-slate-500">
+                Verifications
+              </p>
 
-                  <p className="mt-2 text-sm leading-6 text-slate-600">
-                    Enter the information for your client or assignment.
-                  </p>
-                </div>
+              <p className="mt-3 text-3xl font-bold text-slate-900">
+                {displayCount(verificationCount)}
+              </p>
 
-                <div className="rounded-lg border border-slate-200 p-5">
-                  <div className="text-sm font-semibold text-blue-600">
-                    STEP 3
-                  </div>
-
-                  <h3 className="mt-2 font-semibold text-slate-900">
-                    Generate QR
-                  </h3>
-
-                  <p className="mt-2 text-sm leading-6 text-slate-600">
-                    Generate a unique verification QR code for your document.
-                  </p>
-                </div>
-
-              </div>
-
+              <p className="mt-2 text-sm text-slate-500">
+                Certificate scans
+              </p>
             </div>
 
           </div>
 
         </section>
-
       </div>
-
     </main>
   );
 }
