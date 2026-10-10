@@ -55,7 +55,9 @@ async function getAdminContext(request: Request) {
 
 export async function GET(request: Request) {
   const context = await getAdminContext(request);
-  if ("error" in context) return errorJson(context.error, context.status);
+  if ("error" in context && typeof context.error === "string") {
+    return errorJson(context.error, context.status);
+  }
 
   const { data, error } = await supabaseAdmin
     .from("account_invitations")
