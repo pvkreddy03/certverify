@@ -4,8 +4,9 @@
 
 - Work on a feature or automation branch, not directly on `main`.
 - GitHub Actions runs ESLint, TypeScript checking, and the Next.js production build.
+- Existing ESLint errors are currently reported but non-blocking so type-check/build results can still be evaluated. This is temporary technical debt; restore blocking lint after the existing errors are resolved in a separately reviewed change.
 - Review the checks and code changes before merging a pull request to `main`.
-- Vercel can create preview deployments for pull requests and deploy `main` to production when its Git integration is configured to do so.
+- Vercel creates preview deployments for branch pushes and can deploy `main` to production when its Git integration is configured to do so.
 - Database changes must be reviewed separately. The CI workflow does not connect to or modify Supabase.
 
 ## Supabase migration safety
