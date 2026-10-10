@@ -49,7 +49,9 @@ async function getAdminContext(request: Request) {
 
 export async function PATCH(request: Request, context: RouteContext) {
   const auth = await getAdminContext(request);
-  if ("error" in auth) return errorJson(auth.error, auth.status);
+  if ("error" in auth && typeof auth.error === "string") {
+    return errorJson(auth.error, auth.status);
+  }
 
   const { invitationId } = await context.params;
   const body = await request.json().catch(() => ({}));
