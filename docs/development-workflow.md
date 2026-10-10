@@ -5,6 +5,8 @@
 - Work on a feature or automation branch, not directly on `main`.
 - GitHub Actions runs ESLint, TypeScript checking, and the Next.js production build.
 - Existing ESLint errors are currently reported but non-blocking so type-check/build results can still be evaluated. This is temporary technical debt; restore blocking lint after the existing errors are resolved in a separately reviewed change.
+- Dependabot checks npm dependencies and GitHub Actions weekly and opens update pull requests. Updates are not automatically merged; review their changes and CI results.
+- The pull request template includes validation, database-safety, and deployment checklists.
 - Review the checks and code changes before merging a pull request to `main`.
 - Vercel creates preview deployments for branch pushes and can deploy `main` to production when its Git integration is configured to do so.
 - Database changes must be reviewed separately. The CI workflow does not connect to or modify Supabase.
