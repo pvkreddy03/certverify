@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type User } from "@supabase/supabase-js";
 import { supabaseAdmin } from "@/lib/supabase/server";
 
 const INVITATION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -97,7 +97,7 @@ export async function POST(request: Request) {
       return jsonError("Upgrade to an organization account before inviting team members.", 400);
     }
 
-    let existingAuthUser: { id: string; email?: string; email_confirmed_at?: string | null } | null = null;
+    let existingAuthUser: User | null = null;
     let page = 1;
     const perPage = 1000;
 
@@ -108,9 +108,10 @@ export async function POST(request: Request) {
         return jsonError("Unable to check the invited email address.", 500);
       }
 
-      existingAuthUser = data.users.find(
+      const foundUser = data.users.find(
         (candidate) => candidate.email?.trim().toLowerCase() === invitedEmail
-      ) as typeof existingAuthUser;
+      );
+      if (foundUser) existingAuthUser = foundUser;
 
       if (existingAuthUser || data.users.length < perPage) break;
       page += 1;
