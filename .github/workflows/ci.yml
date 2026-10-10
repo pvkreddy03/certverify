@@ -26,6 +26,7 @@ jobs:
       # Never use these values for a deployed environment.
       NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
       NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-public-key
+      SUPABASE_SECRET_KEY: ci-placeholder-secret-key
 
     steps:
       - name: Check out repository
