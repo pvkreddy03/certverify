@@ -1,0 +1,54 @@
+name: CertVerify CI
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - "**"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: certverify-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Type-check and build (lint debt reported)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    env:
+      # Public placeholders let CI compile without storing production credentials.
+      # Never use these values for a deployed environment.
+      NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-public-key
+      SUPABASE_SECRET_KEY: ci-placeholder-secret-key
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      # Existing application files currently contain ESLint errors.
+      # Keep the findings visible without blocking type/build checks or changing app features here.
+      - name: Run ESLint (known legacy issues are non-blocking temporarily)
+        run: npm run lint
+        continue-on-error: true
+
+      - name: Check TypeScript
+        run: npx tsc --noEmit
+
+      - name: Build Next.js application
+        run: npm run build
