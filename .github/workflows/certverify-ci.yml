@@ -3,7 +3,7 @@ name: CertVerify CI
 on:
   push:
     branches:
-      - fix/team-invitations-and-auth
+      - 'fix/**'
   pull_request:
     branches:
       - main
