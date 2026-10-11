@@ -1,0 +1,42 @@
+name: CertVerify CI
+
+on:
+  push:
+    branches:
+      - fix/team-invitations-and-auth
+  pull_request:
+    branches:
+      - main
+      - fix/team-invitations-and-auth
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: certverify-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality-checks:
+    name: Lint and production build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      # Build-time placeholders only. Real credentials are never exposed to CI.
+      NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-anon-key
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Run ESLint
+        run: npm run lint
+      - name: Build Next.js application
+        run: npm run build

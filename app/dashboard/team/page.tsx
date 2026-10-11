@@ -23,8 +23,22 @@ type Membership = {
   status: string;
 };
 
+type Invitation = {
+  id: string;
+  invited_email: string;
+  invited_role: string;
+  status: string;
+  display_status: string;
+  expires_at: string;
+  created_at: string;
+  accepted_at: string | null;
+};
+
 export default function TeamPage() {
   const [members, setMembers] = useState<TeamMember[]>([]);
+  const [invitations, setInvitations] = useState<Invitation[]>([]);
+  const [invitationActionId, setInvitationActionId] = useState<string | null>(null);
+  const [invitationListError, setInvitationListError] = useState("");
   const [account, setAccount] = useState<Account | null>(null);
   const [membership, setMembership] =
     useState<Membership | null>(null);
@@ -138,8 +152,69 @@ export default function TeamPage() {
     });
 
     setMembers(memberData ?? []);
-
     setLoading(false);
+    await loadInvitations();
+  }
+
+  async function loadInvitations() {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) {
+      setInvitations([]);
+      return;
+    }
+
+    const response = await fetch("/api/team/invitations", {
+      method: "GET",
+      headers: { Authorization: `Bearer ${session.access_token}` },
+      cache: "no-store",
+    });
+    const result = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      setInvitationListError(result?.error || "Could not load invitations.");
+      return;
+    }
+
+    setInvitationListError("");
+    setInvitations(result.invitations ?? []);
+  }
+
+  async function handleInvitationAction(invitationId: string, action: "resend" | "revoke") {
+    setInvitationActionId(invitationId);
+    setInvitationListError("");
+    setInviteError("");
+    setInviteMessage("");
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        setInvitationListError("Your session expired. Please sign in again.");
+        return;
+      }
+
+      const response = await fetch(`/api/team/invitations/${invitationId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ action }),
+      });
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        setInvitationListError(result?.error || "The invitation action failed.");
+        return;
+      }
+
+      setInviteMessage(result?.message || (action === "resend" ? "Invitation resent." : "Invitation revoked."));
+      await loadInvitations();
+    } catch (error) {
+      console.error("Invitation action error:", error);
+      setInvitationListError("An unexpected error occurred while updating the invitation.");
+    } finally {
+      setInvitationActionId(null);
+    }
   }
 
   function isMainAdmin() {
@@ -439,6 +514,75 @@ export default function TeamPage() {
         )}
 
       </div>
+
+      {/* Invitations */}
+      {!loading && !errorMessage && account?.account_type === "organization" && isMainAdmin() && (
+        <section className="mt-8 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+          <div className="border-b border-slate-200 px-6 py-4">
+            <h2 className="font-semibold text-slate-900">Invitations</h2>
+            <p className="mt-1 text-sm text-slate-500">
+              Resend links for people who have not joined yet, or revoke invitations that should no longer work.
+            </p>
+          </div>
+
+          {invitationListError && (
+            <div className="m-5 rounded-lg bg-red-50 p-4 text-sm text-red-700">{invitationListError}</div>
+          )}
+          {inviteMessage && (
+            <div className="m-5 rounded-lg bg-green-50 p-4 text-sm text-green-700">{inviteMessage}</div>
+          )}
+
+          {invitations.length === 0 ? (
+            <p className="p-6 text-sm text-slate-500">No invitations found.</p>
+          ) : (
+            <div className="divide-y divide-slate-200">
+              {invitations.map((invitation) => {
+                const canResend = invitation.display_status !== "accepted";
+                const canRevoke = invitation.display_status === "pending";
+                return (
+                  <div key={invitation.id} className="flex flex-col gap-3 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="min-w-0">
+                      <p className="break-all font-medium text-slate-900">{invitation.invited_email}</p>
+                      <p className="mt-1 text-xs text-slate-500">
+                        Expires: {new Date(invitation.expires_at).toLocaleString()}
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className={invitation.display_status === "accepted"
+                        ? "rounded-full bg-green-50 px-3 py-1 text-xs font-medium text-green-700"
+                        : invitation.display_status === "pending"
+                          ? "rounded-full bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700"
+                          : "rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600"}>
+                        {invitation.display_status.charAt(0).toUpperCase() + invitation.display_status.slice(1)}
+                      </span>
+                      {canResend && (
+                        <button
+                          type="button"
+                          onClick={() => handleInvitationAction(invitation.id, "resend")}
+                          disabled={invitationActionId !== null}
+                          className="rounded-lg border border-blue-200 px-3 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-50 disabled:opacity-50"
+                        >
+                          {invitationActionId === invitation.id ? "Working..." : "Resend"}
+                        </button>
+                      )}
+                      {canRevoke && (
+                        <button
+                          type="button"
+                          onClick={() => handleInvitationAction(invitation.id, "revoke")}
+                          disabled={invitationActionId !== null}
+                          className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                        >
+                          Cancel
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </section>
+      )}
 
       {/* Upgrade Modal */}
       {showUpgradeModal && (
