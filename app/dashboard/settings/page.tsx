@@ -24,10 +24,6 @@ export default function SettingsPage() {
   const [errorMessage, setErrorMessage] = useState("");
   const [upgrading, setUpgrading] = useState(false);
 
-  useEffect(() => {
-    loadAccount();
-  }, []);
-
   async function loadAccount() {
     setLoading(true);
     setErrorMessage("");
@@ -103,6 +99,10 @@ export default function SettingsPage() {
 
     setLoading(false);
   }
+
+  useEffect(() => {
+    void Promise.resolve().then(() => loadAccount());
+  }, []);
 
   async function handleUpgrade() {
     const confirmed = window.confirm(
