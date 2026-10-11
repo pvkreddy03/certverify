@@ -93,10 +93,12 @@ export default function TemplatePage() {
   }
 
   useEffect(() => {
-    if (templateId) {
-      loadTemplate();
-      loadFields();
-    }
+    void Promise.resolve().then(() => {
+      if (templateId) {
+        void loadTemplate();
+        void loadFields();
+      }
+    });
   }, [templateId]);
 
   async function handleAddField(e: React.FormEvent) {
