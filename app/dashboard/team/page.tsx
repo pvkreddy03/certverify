@@ -59,10 +59,6 @@ export default function TeamPage() {
   const [inviteMessage, setInviteMessage] = useState("");
   const [inviteError, setInviteError] = useState("");
 
-  useEffect(() => {
-    loadTeam();
-  }, []);
-
   async function loadTeam() {
     setLoading(true);
     setErrorMessage("");
@@ -155,6 +151,10 @@ export default function TeamPage() {
     setLoading(false);
     await loadInvitations();
   }
+
+  useEffect(() => {
+    void Promise.resolve().then(() => loadTeam());
+  }, []);
 
   async function loadInvitations() {
     const { data: { session } } = await supabase.auth.getSession();
