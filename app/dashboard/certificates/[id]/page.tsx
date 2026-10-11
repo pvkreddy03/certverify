@@ -77,6 +77,8 @@ export default function ViewCertificatePage() {
     setCertificate(data);
     setLoading(false);
 
+    // This function declaration is hoisted; the call intentionally follows the certificate fetch.
+    // eslint-disable-next-line react-hooks/immutability
     await loadFieldValues(data.id);
   }
 
