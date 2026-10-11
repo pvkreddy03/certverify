@@ -149,6 +149,8 @@ export default function TeamPage() {
 
     setMembers(memberData ?? []);
     setLoading(false);
+    // This function declaration is hoisted; load invitations after the team fetch.
+    // eslint-disable-next-line react-hooks/immutability
     await loadInvitations();
   }
 
