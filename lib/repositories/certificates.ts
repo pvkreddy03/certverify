@@ -26,6 +26,7 @@ export async function createCertificate(certificate: {
   certificate_id: string;
   template_id: string;
   status: string;
+  replaces_certificate_id?: string | null;
 }) {
   /*
    * Get the template name at the exact moment the certificate

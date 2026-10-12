@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import QRCode from "qrcode";
+import { CertificateStatusActions } from "@/components/certificate-status-actions";
 
 type Certificate = {
   id: string;
@@ -13,6 +14,12 @@ type Certificate = {
   created_at: string;
   template_id: string | null;
   template_name: string | null;
+  public_verification_id: string;
+  revoked_at: string | null;
+  revoked_by: string | null;
+  revocation_reason: string | null;
+  public_revocation_reason: string | null;
+  revocation_previous_status: string | null;
 };
 
 type CertificateFieldValue = {
@@ -59,7 +66,7 @@ export default function ViewCertificatePage() {
     const { data, error } = await supabase
       .from("certificates")
       .select(
-        "id, certificate_id, status, created_at, template_id, template_name"
+        "id, certificate_id, status, created_at, template_id, template_name, public_verification_id, revoked_at, revoked_by, revocation_reason, public_revocation_reason, revocation_previous_status"
       )
       .eq("id", id)
       .single();
@@ -121,7 +128,7 @@ export default function ViewCertificatePage() {
     try {
       const verificationUrl =
         `${window.location.origin}/verify/` +
-        encodeURIComponent(certificate.certificate_id);
+        encodeURIComponent(certificate.public_verification_id);
 
       const qrDataUrl = await QRCode.toDataURL(
         verificationUrl,
@@ -141,17 +148,20 @@ export default function ViewCertificatePage() {
     }
   }
 
-  function downloadQRCode() {
+  async function downloadQRCode(format: "png" | "jpeg") {
     if (!qrCode || !certificate) {
       return;
     }
 
     const link = document.createElement("a");
 
-    link.href = qrCode;
+    link.href = await QRCode.toDataURL(`${window.location.origin}/verify/${encodeURIComponent(certificate.public_verification_id)}`, {
+      width: 600, margin: 2, type: format === "jpeg" ? "image/jpeg" : "image/png",
+      color: { dark: "#000000", light: "#ffffff" },
+    });
 
     link.download =
-      `CertVerify-${certificate.certificate_id}.png`;
+      `CertVerify-${certificate.certificate_id}.${format === "jpeg" ? "jpg" : "png"}`;
 
     document.body.appendChild(link);
     link.click();
@@ -243,7 +253,7 @@ export default function ViewCertificatePage() {
   const verificationUrl =
     typeof window !== "undefined"
       ? `${window.location.origin}/verify/${encodeURIComponent(
-          certificate.certificate_id
+          certificate.public_verification_id
         )}`
       : "";
 
@@ -327,6 +337,17 @@ export default function ViewCertificatePage() {
             </div>
           </section>
 
+          {certificate.status === "Revoked" && <section className="rounded-2xl border border-red-200 bg-red-50 p-8">
+            <h2 className="text-xl font-semibold">Revocation record</h2>
+            <p className="mt-3">Internal reason: {certificate.revocation_reason || "Historical reason not recorded"}</p>
+            <p className="mt-2">Public explanation: {certificate.public_revocation_reason || "No additional public explanation"}</p>
+            <p className="mt-2">Revoked on: {certificate.revoked_at ? new Date(certificate.revoked_at).toLocaleString("en-IN") : "Historical timestamp not recorded"}</p>
+            <p className="mt-2">Previous status: {certificate.revocation_previous_status || "Not recorded"}</p>
+            <p className="mt-2 text-sm">Responsible user: {certificate.revoked_by || "Historical actor not recorded"}</p>
+            <Link href={`/dashboard/certificates?replaces=${certificate.id}`} className="mt-4 inline-block font-medium text-blue-700">Issue linked replacement</Link>
+          </section>}
+          <CertificateStatusActions certificateId={certificate.id} status={certificate.status} onChanged={loadCertificate} />
+
           {/* Certificate Details */}
           <section className="rounded-2xl bg-white p-8 shadow-sm">
             <h2 className="text-xl font-semibold text-slate-900">
@@ -390,11 +411,12 @@ export default function ViewCertificatePage() {
               <div className="mt-6 flex flex-wrap justify-center gap-3">
                 <button
                   type="button"
-                  onClick={downloadQRCode}
+                  onClick={() => { void downloadQRCode("png"); }}
                   className="rounded-lg bg-slate-900 px-5 py-3 font-medium text-white hover:bg-slate-800"
                 >
-                  Download QR Code
+                  Download PNG
                 </button>
+                <button type="button" onClick={() => { void downloadQRCode("jpeg"); }} className="rounded-lg border border-slate-300 px-5 py-3">Download JPEG</button>
               </div>
 
               {verificationUrl && (

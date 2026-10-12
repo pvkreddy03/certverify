@@ -22,6 +22,11 @@ import {
 
 export default function CertificatesPage() {
   const [certificateId, setCertificateId] = useState("");
+  const [replacementId, setReplacementId] = useState<string | null>(null);
+  useEffect(() => {
+    const replaces = new URLSearchParams(window.location.search).get("replaces");
+    if (replaces) void Promise.resolve().then(() => setReplacementId(replaces));
+  }, []);
 
   const [templates, setTemplates] = useState<CertificateTemplate[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState("");
@@ -121,6 +126,7 @@ export default function CertificatesPage() {
         certificate_id: newCertificateId,
         template_id: selectedTemplateId,
         status,
+        replaces_certificate_id: replacementId,
       });
 
       /*
@@ -174,6 +180,7 @@ export default function CertificatesPage() {
           </p>
         </div>
 
+        {replacementId && <p className="mb-6 rounded border border-blue-200 bg-blue-50 p-4">This new certificate will be linked to the revoked original. The original remains revoked and its history is preserved.</p>}
         <form
           onSubmit={handleSubmit}
           className="space-y-6 rounded-2xl bg-white p-8 shadow-sm"
@@ -283,7 +290,6 @@ export default function CertificatesPage() {
             >
               <option value="Active">Active</option>
               <option value="Inactive">Inactive</option>
-              <option value="Revoked">Revoked</option>
             </select>
           </div>
 

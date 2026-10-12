@@ -43,3 +43,6 @@ next-env.d.ts
 # browser test outputs
 /playwright-report/
 /test-results/
+
+# private schema inspection reports (never commit raw function bodies)
+/.certverify-private/
