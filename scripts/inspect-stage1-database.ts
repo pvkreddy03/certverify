@@ -5,8 +5,8 @@ import { resolve } from "node:path";
 
 async function inspect() {
   const stageArgument=process.argv.slice(2);
-  if (stageArgument.length>1 || (stageArgument[0] && !["--stage=1","--stage=3","--stage=4","--stage=5"].includes(stageArgument[0]))) {
-    console.error("Use --stage=1, --stage=3, --stage=4 or --stage=5 for the prepared read-only inspections.");process.exitCode=2;return;
+  if (stageArgument.length>1 || (stageArgument[0] && !["--stage=1","--stage=3","--stage=4","--stage=5","--stage=7"].includes(stageArgument[0]))) {
+    console.error("Use --stage=1, --stage=3, --stage=4, --stage=5 or --stage=7 for the prepared read-only inspections.");process.exitCode=2;return;
   }
   const stage=stageArgument[0]?.split("=")[1] ?? "1";
   const connection = process.env.CERTVERIFY_READONLY_DATABASE_URL;

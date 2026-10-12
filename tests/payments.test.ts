@@ -194,3 +194,24 @@ test("unbounded/chunked notification bodies are rejected and fingerprints preser
     fingerprint(Buffer.concat([raw, Buffer.from(" ")])),
   );
 });
+
+test("provider order reconciliation rejects payment lists containing another order or oversized histories", async () => {
+  for (const items of [
+    [{ id: "pay_fixture", order_id: "order_other" }],
+    Array.from({ length: 21 }, () => ({
+      id: "pay_fixture",
+      order_id: "order_fixture",
+    })),
+  ]) {
+    const provider = razorpay(config, (async () =>
+      Response.json({ items })) as typeof fetch);
+    await assert.rejects(provider.fetchOrderPayments("order_fixture"));
+  }
+  const provider = razorpay(config, (async () =>
+    Response.json({
+      items: [{ id: "pay_fixture", order_id: "order_fixture" }],
+    })) as typeof fetch);
+  assert.deepEqual(await provider.fetchOrderPayments("order_fixture"), [
+    "pay_fixture",
+  ]);
+});

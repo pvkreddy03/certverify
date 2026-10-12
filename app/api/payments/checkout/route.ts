@@ -9,15 +9,17 @@ import {
   checkedRpc,
   paymentError,
   boundedBody,
+  paymentBudget,
 } from "@/lib/payments/server";
 import { uuid, object } from "@/lib/payments/validation";
 import { privateJson } from "@/lib/platform/server";
 export const runtime = "nodejs";
 export async function POST(request: Request) {
   try {
-    const { client } = await authenticatedRequest(request);
+    const { client, user } = await authenticatedRequest(request);
     const gateway = configuredGateway();
-    const service = paymentService(); // Disabled configuration performs no reservation or external request.
+    const service = paymentService();
+    await paymentBudget(service, user.id, "checkout"); // Disabled configuration performs no reservation or external request.
     const body = object(
       JSON.parse(
         Buffer.from(await boundedBody(request, 4096)).toString("utf8"),

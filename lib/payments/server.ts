@@ -1,10 +1,22 @@
 import { createClient } from "@supabase/supabase-js";
 import { createHash } from "node:crypto";
+import { RequestError, requestErrorResponse } from "../auth/request";
 import { PaymentError, type PaymentGateway } from "./types";
 export function paymentService() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL,
     key = process.env.SUPABASE_SECRET_KEY;
   if (!url || !key) throw new PaymentError();
+  if (process.env.CERTVERIFY_PAYMENT_MODE === "razorpay_test") {
+    const ref = process.env.CERTVERIFY_SANDBOX_PROJECT_REF;
+    if (
+      !ref ||
+      !/^[a-z0-9]{8,40}$/.test(ref) ||
+      new URL(url).origin !== `https://${ref}.supabase.co`
+    )
+      throw new PaymentError(
+        "Payment database must match the explicitly configured sandbox project.",
+      );
+  }
   // This client uses only narrowly granted payment RPCs; never raw financial table writes.
   return createClient(url, key, {
     auth: {
@@ -92,6 +104,7 @@ export async function boundedBody(request: Request, limit = 65536) {
   return Buffer.concat(chunks);
 }
 export function paymentError(error: unknown) {
+  if (error instanceof RequestError) return requestErrorResponse(error);
   // Gateway/SQL payloads and raw request bodies are never returned or logged.
   return Response.json(
     {
@@ -106,3 +119,5 @@ export function paymentError(error: unknown) {
     },
   );
 }
+
+export { consumeRequestBudget as paymentBudget } from "../security/request-budget";

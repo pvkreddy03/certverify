@@ -31,6 +31,7 @@ export type PaymentGateway = {
     currency: string;
   }): Promise<OrderSnapshot>;
   fetchOrder(id: string): Promise<OrderSnapshot>;
+  fetchOrderPayments(id: string): Promise<string[]>;
   fetchPayment(id: string): Promise<PaymentSnapshot>;
   refund(input: {
     paymentId: string;

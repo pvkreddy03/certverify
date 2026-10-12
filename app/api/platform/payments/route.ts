@@ -10,6 +10,7 @@ import {
   reconcilePayment,
   boundedBody,
   paymentError,
+  paymentBudget,
 } from "@/lib/payments/server";
 import { uuid, object } from "@/lib/payments/validation";
 import { RequestError } from "@/lib/auth/request";
@@ -34,7 +35,7 @@ export async function GET(request: Request) {
 }
 export async function POST(request: Request) {
   try {
-    const { client } = await platformContext(request);
+    const { client, user } = await platformContext(request);
     const gateway = configuredGateway();
     const body = object(
       JSON.parse(
@@ -42,14 +43,31 @@ export async function POST(request: Request) {
       ),
     );
     const service = paymentService();
-    if (body.action === "reconcile" && typeof body.paymentId === "string")
+    await paymentBudget(service, user.id, "platform_financial", 20);
+    if (body.action === "reconcile" && typeof body.paymentId === "string") {
+      const audit = await client.rpc("cv_record_payment_admin_action", {
+        p_action: "reconcile",
+        p_attempt: null,
+        p_reference: body.paymentId,
+      });
+      if (audit.error)
+        throw new RequestError("Financial action could not be audited.", 503);
       return privateJson(
         await reconcilePayment(gateway, service, body.paymentId),
       );
+    }
     if (body.action === "bind_order" && typeof body.orderId === "string") {
+      const attempt = uuid(body.attemptId);
+      const audit = await client.rpc("cv_record_payment_admin_action", {
+        p_action: "bind_order",
+        p_attempt: attempt,
+        p_reference: body.orderId,
+      });
+      if (audit.error)
+        throw new RequestError("Financial action could not be audited.", 503);
       const order = await gateway.fetchOrder(body.orderId);
       await checkedRpc(service, "cv_bind_gateway_order", {
-        p_attempt: uuid(body.attemptId),
+        p_attempt: attempt,
         p_order: order.id,
         p_receipt: order.receipt,
         p_amount: order.amount,
