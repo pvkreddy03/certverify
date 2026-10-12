@@ -9,15 +9,17 @@ import {
   checkedRpc,
   paymentError,
   boundedBody,
+  paymentBudget,
 } from "@/lib/payments/server";
 import { uuid, object } from "@/lib/payments/validation";
 import { privateJson } from "@/lib/platform/server";
 export const runtime = "nodejs";
 export async function POST(request: Request) {
   try {
-    const { client } = await authenticatedRequest(request);
+    const { client, user } = await authenticatedRequest(request);
     const gateway = configuredGateway();
-    const service = paymentService(); // Disabled configuration performs no reservation or external request.
+    const service = paymentService();
+    await paymentBudget(service, user.id, "checkout"); // Disabled configuration performs no reservation or external request.
     const body = object(
       JSON.parse(
         Buffer.from(await boundedBody(request, 4096)).toString("utf8"),
@@ -31,12 +33,18 @@ export async function POST(request: Request) {
         "Checkout cannot start. Refresh the quote and check account eligibility.",
         409,
       );
+    gateway.validateMoney({
+      amount: data.amount_minor,
+      currency: data.currency,
+      currencyExponent: data.currency_exponent,
+    });
     let orderId = data.order_id;
     if (data.create_order) {
       const order = await gateway.createOrder({
         receipt: data.receipt,
         amount: data.amount_minor,
         currency: data.currency,
+        currencyExponent: data.currency_exponent,
       });
       await checkedRpc(service, "cv_bind_gateway_order", {
         p_attempt: data.id,

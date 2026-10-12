@@ -5,6 +5,8 @@ import {
   paymentService,
   reconcilePayment,
   paymentError,
+  checkedRpc,
+  paymentBudget,
 } from "@/lib/payments/server";
 export const runtime = "nodejs";
 export async function POST(request: Request) {
@@ -16,12 +18,26 @@ export async function POST(request: Request) {
       request.headers.get("x-razorpay-signature") ?? "",
       request.headers.get("x-razorpay-event-id") ?? "",
     );
+    const service = paymentService();
+    const digest = fingerprint(raw);
+    if (
+      (await checkedRpc(service, "cv_gateway_event_seen", {
+        p_event: `webhook:${notice.id}`,
+        p_fingerprint: digest,
+        p_payment: notice.paymentId,
+      })) === true
+    )
+      return Response.json(
+        { received: true, duplicate: true },
+        { headers: { "Cache-Control": "no-store" } },
+      );
+    await paymentBudget(service, notice.paymentId, "webhook", 30);
     await reconcilePayment(
       gateway,
-      paymentService(),
+      service,
       notice.paymentId,
       `webhook:${notice.id}`,
-      fingerprint(raw),
+      digest,
       notice.type === "dispute",
     );
     return Response.json(

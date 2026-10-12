@@ -73,6 +73,27 @@ export function razorpay(
       status: value.status,
     };
   }
+  function validateMoney(input: {
+    amount: number;
+    currency: string;
+    currencyExponent: number;
+  }) {
+    if (
+      !Number.isSafeInteger(input.amount) ||
+      input.amount <= 0 ||
+      !/^[A-Z]{3}$/.test(input.currency) ||
+      !Number.isInteger(input.currencyExponent)
+    )
+      throw new PaymentError("Invalid checkout money.");
+    const canonical = new Intl.NumberFormat("en", {
+      style: "currency",
+      currency: input.currency,
+    }).resolvedOptions().maximumFractionDigits;
+    if (input.currencyExponent !== canonical)
+      throw new PaymentError(
+        "Plan currency precision is incompatible with this gateway. Request corrected terms; no charge was initiated.",
+      );
+  }
   return {
     name: "razorpay",
     capabilities: {
@@ -80,7 +101,9 @@ export function razorpay(
       partialRefunds: true,
       cancelOrder: false,
     },
+    validateMoney,
     async createOrder(input) {
+      validateMoney(input);
       if (
         !/^[a-f0-9]{32}$/.test(input.receipt) ||
         !Number.isSafeInteger(input.amount) ||
@@ -99,6 +122,23 @@ export function razorpay(
     },
     async fetchOrder(id) {
       return order(await api(`orders/${identifier(id, "order")}`));
+    },
+    async fetchOrderPayments(id) {
+      const value = await api(`orders/${identifier(id, "order")}/payments`);
+      if (!Array.isArray(value.items) || value.items.length > 20)
+        throw new PaymentError("Order payment history needs manual review.");
+      return value.items.map((item: unknown) => {
+        if (
+          !item ||
+          typeof item !== "object" ||
+          !("id" in item) ||
+          typeof item.id !== "string" ||
+          !("order_id" in item) ||
+          item.order_id !== id
+        )
+          throw new PaymentError();
+        return identifier(item.id, "pay");
+      });
     },
     async fetchPayment(id) {
       const value = await api(`payments/${identifier(id, "pay")}`);

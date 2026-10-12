@@ -19,18 +19,25 @@ export type PaymentNotice = {
   type: "payment" | "dispute";
 };
 export type PaymentGateway = {
-  readonly name: "razorpay";
+  readonly name: string;
   readonly capabilities: {
-    recurringMandates: false;
-    partialRefunds: true;
-    cancelOrder: false;
+    recurringMandates: boolean;
+    partialRefunds: boolean;
+    cancelOrder: boolean;
   };
+  validateMoney(input: {
+    amount: number;
+    currency: string;
+    currencyExponent: number;
+  }): void;
   createOrder(input: {
     receipt: string;
     amount: number;
     currency: string;
+    currencyExponent: number;
   }): Promise<OrderSnapshot>;
   fetchOrder(id: string): Promise<OrderSnapshot>;
+  fetchOrderPayments(id: string): Promise<string[]>;
   fetchPayment(id: string): Promise<PaymentSnapshot>;
   refund(input: {
     paymentId: string;

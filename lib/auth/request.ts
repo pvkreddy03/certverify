@@ -27,7 +27,7 @@ export async function authenticatedRequest(request: Request, requireAccount = tr
 }
 
 export function requestErrorResponse(error: unknown) {
-  if (error instanceof RequestError) return Response.json({ error: error.message }, { status: error.status });
+  if (error instanceof RequestError) return Response.json({ error: error.message }, { status: error.status, headers:{"Cache-Control":"private, no-store","X-Content-Type-Options":"nosniff"} });
   // Never expose provider errors, SQL details, tokens or request bodies.
-  return Response.json({ error: "The operation could not be completed. Please try again." }, { status: 500 });
+  return Response.json({ error: "The operation could not be completed. Please try again." }, { status: 500, headers:{"Cache-Control":"private, no-store","X-Content-Type-Options":"nosniff"} });
 }

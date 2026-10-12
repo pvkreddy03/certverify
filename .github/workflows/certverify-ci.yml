@@ -39,6 +39,10 @@ jobs:
           cache: npm
       - name: Install locked dependencies
         run: npm ci
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
+      - name: Print review-only migration manifest
+        run: npm run migration:manifest
       - name: Run ESLint
         run: npm run lint
       - name: Run unit tests

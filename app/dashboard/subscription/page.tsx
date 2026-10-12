@@ -79,6 +79,7 @@ export default function SubscriptionPage() {
   return (
     <main className="mx-auto max-w-5xl space-y-6 px-6 py-8">
       <h1 className="text-3xl font-bold">Subscription and renewal</h1>
+      <p className="text-sm text-slate-600">Cancellation stops further renewal. Already-paid periods stay scheduled; cancelling paid access requires reviewed refund handling.</p>
       {message && (
         <p role="status" className="rounded border p-4">
           {message}

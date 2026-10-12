@@ -9,6 +9,7 @@ import {
   reconcilePayment,
   paymentError,
   boundedBody,
+  paymentBudget,
 } from "@/lib/payments/server";
 import { uuid, object } from "@/lib/payments/validation";
 import { PaymentError } from "@/lib/payments/types";
@@ -31,8 +32,10 @@ export async function GET(request: Request) {
 }
 export async function POST(request: Request) {
   try {
-    const { client } = await authenticatedRequest(request);
+    const { client, user } = await authenticatedRequest(request);
     const gateway = configuredGateway();
+    const service = paymentService();
+    await paymentBudget(service, user.id, "verification", 30);
     const body = object(
       JSON.parse(
         Buffer.from(await boundedBody(request, 4096)).toString("utf8"),
@@ -52,7 +55,7 @@ export async function POST(request: Request) {
     const payment = await gateway.fetchPayment(body.paymentId);
     if (payment.orderId !== data.order_id)
       throw new PaymentError("Payment belongs to a different order.");
-    await reconcilePayment(gateway, paymentService(), body.paymentId);
+    await reconcilePayment(gateway, service, body.paymentId);
     const result = await client.rpc("cv_payment_attempt", {
       p_attempt: data.id,
     });

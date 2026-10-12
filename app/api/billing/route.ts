@@ -36,6 +36,11 @@ export async function POST(request: Request) {
           ? "cv_accept_subscription"
           : "cv_subscription_action";
     const { data, error } = await client.rpc(rpc, command.params);
+    if (error?.message === "Paid requests require reviewed refund handling")
+      throw new RequestError(
+        "This request has a verified payment. Contact support for a reviewed refund; its paid period is preserved.",
+        409,
+      );
     if (error)
       throw new RequestError(
         "This subscription action could not be applied. Check eligibility, seats, coupon terms and any existing request; refresh before retrying.",

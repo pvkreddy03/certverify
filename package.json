@@ -11,12 +11,14 @@
     "test:db": "tsx --test tests/database/*.test.ts",
     "typecheck": "tsc --noEmit",
     "test:browser": "playwright test",
-    "inspect:db": "tsx scripts/inspect-stage1-database.ts"
+    "inspect:db": "tsx scripts/inspect-stage1-database.ts",
+    "migration:manifest": "tsx scripts/migration-manifest.ts",
+    "payments:reconcile": "tsx scripts/reconcile-payments.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.5",
     "@supabase/supabase-js": "^2.112.4",
-    "next": "16.3.2",
+    "next": "16.3.8",
     "qrcode": "^1.5.4",
     "react": "19.2.8",
     "react-dom": "19.2.8",
@@ -31,7 +33,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "16.3.2",
+    "eslint-config-next": "16.3.8",
     "pg": "^8.23.1",
     "tailwindcss": "^4",
     "tsx": "^4.23.15",
