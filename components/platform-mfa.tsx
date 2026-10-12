@@ -16,7 +16,7 @@ export function PlatformMfa({ children }: { children:ReactNode }) {
       if (data.currentLevel==="aal2") { if (!cancelled) setReady(true);return; }
       const factors=await supabase.auth.mfa.listFactors();
       if (factors.error) throw factors.error;
-      if (!cancelled) { setFactor(factors.data.totp.find((item)=>item.status==="verified")?.id ?? null);setMessage("MFA verification is required for platform branding review."); }
+      if (!cancelled) { setFactor(factors.data.totp.find((item)=>item.status==="verified")?.id ?? null);setMessage("MFA verification is required for platform administration."); }
     }
     void load().catch(()=>{ if (!cancelled) setMessage("MFA session could not be checked. Sign in again."); });
     return()=>{ cancelled=true; };

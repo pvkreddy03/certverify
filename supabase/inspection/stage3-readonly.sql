@@ -1,6 +1,7 @@
 -- READ ONLY. Run before Stage 3 installation in the isolated Supabase project.
 -- Complements stage1-readonly.sql; never apply the proposal as an inspection.
 begin transaction read only;
+select current_setting('transaction_read_only') as readonly_transaction;
 select n.nspname,p.proname,p.oid::regprocedure as signature,p.prosecdef,p.proconfig,
   p.proacl,pg_get_functiondef(p.oid) as definition
 from pg_proc p join pg_namespace n on n.oid=p.pronamespace

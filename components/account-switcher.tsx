@@ -8,6 +8,7 @@ import { chooseAccount, selectAccount, selectedAccountId, type AccountMembership
 export function AccountWorkspace({ children }: { children: ReactNode }) {
   const [accounts, setAccounts] = useState<AccountMembership[]>([]);
   const [selected, setSelected] = useState<AccountMembership | null>(null);
+  const [accessStates,setAccessStates]=useState<Record<string,string>>({});
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
 
@@ -15,12 +16,14 @@ export function AccountWorkspace({ children }: { children: ReactNode }) {
     let cancelled = false;
     async function load() {
       try {
-        const { data, error: rpcError } = await supabase.rpc("cv_list_accounts");
+        const [{ data,error:rpcError },states]=await Promise.all([supabase.rpc("cv_list_accounts"),supabase.rpc("cv_customer_account_states")]);
+        if (states.error) throw new Error("Account access could not be checked. Please retry later.");
         if (rpcError) throw new Error("Account access could not be loaded. Please sign in again or contact support.");
         if (cancelled) return;
         const memberships = (data ?? []) as AccountMembership[];
         const current = chooseAccount(memberships, selectedAccountId());
         if (current) selectAccount(current.id);
+        setAccessStates(Object.fromEntries((states.data ?? []).map((state:{ account_id:string;status:string })=>[state.account_id,state.status])));
         setAccounts(memberships);
         setSelected(current);
       } catch (reason) {
@@ -51,6 +54,6 @@ export function AccountWorkspace({ children }: { children: ReactNode }) {
       <span className="text-sm capitalize text-slate-500">{selected.role}</span>
       <Link href="/dashboard/branding" className="text-sm text-blue-700">Branding</Link>
     </div>
-    {children}
+    {accessStates[selected.id]==="active" ? children : <main className="p-8"><h1 className="text-2xl font-semibold">Account access {accessStates[selected.id] ?? "unavailable"}</h1><p className="mt-3">Customer operations are unavailable for this account. Contact CertVerify support, or switch to another active account above. Issued certificates remain publicly verifiable.</p></main>}
   </>;
 }

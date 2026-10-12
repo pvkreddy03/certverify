@@ -4,6 +4,11 @@ import { randomUUID } from "node:crypto";
 import { resolve } from "node:path";
 
 async function inspect() {
+  const stageArgument=process.argv.slice(2);
+  if (stageArgument.length>1 || (stageArgument[0] && !["--stage=1","--stage=3","--stage=4"].includes(stageArgument[0]))) {
+    console.error("Use --stage=1, --stage=3 or --stage=4 for the prepared read-only inspections.");process.exitCode=2;return;
+  }
+  const stage=stageArgument[0]?.split("=")[1] ?? "1";
   const connection = process.env.CERTVERIFY_READONLY_DATABASE_URL;
   if (!connection) {
     console.error("Read-only inspection is pending: set CERTVERIFY_READONLY_DATABASE_URL securely in environment settings. Do not send it in chat.");
@@ -22,12 +27,12 @@ async function inspect() {
   });
   try {
     await client.connect();
-    const source = await readFile("supabase/inspection/stage1-readonly.sql","utf8");
+    const source = await readFile(`supabase/inspection/stage${stage}-readonly.sql`,"utf8");
     const results = await client.query(source) as unknown as QueryResult[];
     if (!results.some((result) => result.rows.some((row) => row.readonly_transaction === "on"))) throw new Error("Read-only transaction not established");
     const directory = resolve(".certverify-private");
     await mkdir(directory,{ recursive:true, mode:0o700 });
-    const file = resolve(directory,`stage1-inspection-${randomUUID()}.json`);
+    const file = resolve(directory,`stage${stage}-inspection-${randomUUID()}.json`);
     await writeFile(file,JSON.stringify({ captured_at:new Date().toISOString(), groups:results.filter((result) => result.command === "SELECT").map((result) => result.rows) },null,2),{ mode:0o600, flag:"wx" });
     console.log(`Read-only inspection saved privately: ${file}`);
     console.log("Do not commit or share this raw report: SQL function bodies may contain sensitive literals. Review and sanitize before producing a schema baseline.");
