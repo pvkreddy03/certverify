@@ -62,7 +62,6 @@ export default function ViewCertificatePage() {
         "id, certificate_id, status, created_at, template_id, template_name"
       )
       .eq("id", id)
-      .eq("user_id", user.id)
       .single();
 
     if (error) {

@@ -1,45 +1,9 @@
-import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
+import { createClient } from "@supabase/supabase-js";
 
-type Certificate = {
-  id: string;
-  certificate_id: string;
-  status: string;
-};
-
-type CertificateFieldValue = {
-  id: string;
-  field_name: string;
-  field_type: string;
-  field_value: string;
-  is_public: boolean;
-  display_order: number;
-};
-
-async function createSupabaseServerClient() {
-  const cookieStore = await cookies();
-
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-
-        setAll(cookiesToSet) {
-          try {
-            cookiesToSet.forEach(
-              ({ name, value, options }) => {
-                cookieStore.set(name, value, options);
-              }
-            );
-          } catch {}
-        },
-      },
-    }
-  );
+function createSupabaseServerClient() {
+  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
+    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+  });
 }
 
 function formatFieldValue(

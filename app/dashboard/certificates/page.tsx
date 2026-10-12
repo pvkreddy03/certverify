@@ -101,7 +101,7 @@ export default function CertificatesPage() {
       /*
        * Find the active account for the logged-in user.
        */
-      const accountId = await getCurrentAccountId(user.id);
+      const accountId = await getCurrentAccountId();
 
       /*
        * Generate the Certificate ID only when the user

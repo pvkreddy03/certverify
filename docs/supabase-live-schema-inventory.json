@@ -1,0 +1,1448 @@
+{
+  "tables": [
+    {
+      "name": "account_invitations",
+      "schema": "public",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "default": "gen_random_uuid()",
+          "nullable": "NO"
+        },
+        {
+          "name": "account_id",
+          "type": "uuid",
+          "default": null,
+          "nullable": "NO"
+        },
+        {
+          "name": "invited_email",
+          "type": "text",
+          "default": null,
+          "nullable": "NO"
+        },
+        {
+          "name": "invited_role",
+          "type": "text",
+          "default": "'member'::text",
+          "nullable": "NO"
+        },
+        {
+          "name": "invited_by",
+          "type": "uuid",
+          "default": null,
+          "nullable": "NO"
+        },
+        {
+          "name": "token_hash",
+          "type": "text",
+          "default": null,
+          "nullable": "NO"
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "default": "'pending'::text",
+          "nullable": "NO"
+        },
+        {
+          "name": "expires_at",
+          "type": "timestamp with time zone",
+          "default": null,
+          "nullable": "NO"
+        },
+        {
+          "name": "accepted_at",
+          "type": "timestamp with time zone",
+          "default": null,
+          "nullable": "YES"
+        },
+        {
+          "name": "accepted_by",
+          "type": "uuid",
+          "default": null,
+          "nullable": "YES"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "nullable": "NO"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "nullable": "NO"
+        },
+        {
+          "name": "invited_user_id",
+          "type": "uuid",
+          "default": null,
+          "nullable": "YES"
+        }
+      ],
+      "rls_enabled": true
+    },
+    {
+      "name": "account_members",
+      "schema": "public",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "default": "gen_random_uuid()",
+          "nullable": "NO"
+        },
+        {
+          "name": "account_id",
+          "type": "uuid",
+          "default": null,
+          "nullable": "NO"
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "default": null,
+          "nullable": "NO"
+        },
+        {
+          "name": "role",
+          "type": "text",
+          "default": "'member'::text",
+          "nullable": "NO"
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "default": "'active'::text",
+          "nullable": "NO"
+        },
+        {
+          "name": "joined_at",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "nullable": "NO"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "nullable": "NO"
+        }
+      ],
+      "rls_enabled": true
+    },
+    {
+      "name": "accounts",
+      "schema": "public",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "default": "gen_random_uuid()",
+          "nullable": "NO"
+        },
+        {
+          "name": "account_type",
+          "type": "text",
+          "default": null,
+          "nullable": "NO"
+        },
+        {
+          "name": "account_name",
+          "type": "text",
+          "default": null,
+          "nullable": "NO"
+        },
+        {
+          "name": "account_code",
+          "type": "text",
+          "default": null,
+          "nullable": "YES"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "nullable": "NO"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "nullable": "NO"
+        }
+      ],
+      "rls_enabled": true
+    },
+    {
+      "name": "certificate_field_values",
+      "schema": "public",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "default": "gen_random_uuid()",
+          "nullable": "NO"
+        },
+        {
+          "name": "certificate_id",
+          "type": "uuid",
+          "default": null,
+          "nullable": "NO"
+        },
+        {
+          "name": "field_name",
+          "type": "text",
+          "default": null,
+          "nullable": "NO"
+        },
+        {
+          "name": "field_type",
+          "type": "text",
+          "default": "'text'::text",
+          "nullable": "NO"
+        },
+        {
+          "name": "field_value",
+          "type": "text",
+          "default": null,
+          "nullable": "YES"
+        },
+        {
+          "name": "is_public",
+          "type": "boolean",
+          "default": "true",
+          "nullable": "NO"
+        },
+        {
+          "name": "display_order",
+          "type": "integer",
+          "default": "0",
+          "nullable": "NO"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "nullable": "NO"
+        }
+      ],
+      "rls_enabled": true
+    },
+    {
+      "name": "certificate_fields",
+      "schema": "public",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "default": "gen_random_uuid()",
+          "nullable": "NO"
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "default": null,
+          "nullable": "NO"
+        },
+        {
+          "name": "field_name",
+          "type": "text",
+          "default": null,
+          "nullable": "NO"
+        },
+        {
+          "name": "field_type",
+          "type": "text",
+          "default": "'text'::text",
+          "nullable": "NO"
+        },
+        {
+          "name": "is_required",
+          "type": "boolean",
+          "default": "false",
+          "nullable": "NO"
+        },
+        {
+          "name": "is_public",
+          "type": "boolean",
+          "default": "true",
+          "nullable": "NO"
+        },
+        {
+          "name": "display_order",
+          "type": "integer",
+          "default": "0",
+          "nullable": "NO"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "nullable": "NO"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "nullable": "NO"
+        },
+        {
+          "name": "template_id",
+          "type": "uuid",
+          "default": null,
+          "nullable": "YES"
+        }
+      ],
+      "rls_enabled": true
+    },
+    {
+      "name": "certificate_sequences",
+      "schema": "public",
+      "columns": [
+        {
+          "name": "account_id",
+          "type": "uuid",
+          "default": null,
+          "nullable": "NO"
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "default": null,
+          "nullable": "NO"
+        },
+        {
+          "name": "certificate_year",
+          "type": "integer",
+          "default": null,
+          "nullable": "NO"
+        },
+        {
+          "name": "next_number",
+          "type": "integer",
+          "default": "1",
+          "nullable": "NO"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "nullable": "NO"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "nullable": "NO"
+        }
+      ],
+      "rls_enabled": true
+    },
+    {
+      "name": "certificate_templates",
+      "schema": "public",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "default": "gen_random_uuid()",
+          "nullable": "NO"
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "default": null,
+          "nullable": "NO"
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "default": null,
+          "nullable": "NO"
+        },
+        {
+          "name": "description",
+          "type": "text",
+          "default": null,
+          "nullable": "YES"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "nullable": "NO"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "nullable": "NO"
+        }
+      ],
+      "rls_enabled": true
+    },
+    {
+      "name": "certificate_verifications",
+      "schema": "public",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "default": "gen_random_uuid()",
+          "nullable": "NO"
+        },
+        {
+          "name": "certificate_id",
+          "type": "uuid",
+          "default": null,
+          "nullable": "NO"
+        },
+        {
+          "name": "verified_at",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "nullable": "NO"
+        }
+      ],
+      "rls_enabled": true
+    },
+    {
+      "name": "certificates",
+      "schema": "public",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "default": "gen_random_uuid()",
+          "nullable": "NO"
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "default": null,
+          "nullable": "NO"
+        },
+        {
+          "name": "certificate_id",
+          "type": "text",
+          "default": null,
+          "nullable": "NO"
+        },
+        {
+          "name": "client",
+          "type": "text",
+          "default": null,
+          "nullable": "YES"
+        },
+        {
+          "name": "valuation_date",
+          "type": "date",
+          "default": null,
+          "nullable": "YES"
+        },
+        {
+          "name": "purpose",
+          "type": "text",
+          "default": null,
+          "nullable": "YES"
+        },
+        {
+          "name": "owner_name",
+          "type": "text",
+          "default": null,
+          "nullable": "YES"
+        },
+        {
+          "name": "location",
+          "type": "text",
+          "default": null,
+          "nullable": "YES"
+        },
+        {
+          "name": "price_per_sq_meter",
+          "type": "numeric",
+          "default": null,
+          "nullable": "YES"
+        },
+        {
+          "name": "total_property_value",
+          "type": "numeric",
+          "default": null,
+          "nullable": "YES"
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "default": "'Active'::text",
+          "nullable": "NO"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "nullable": "NO"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "nullable": "NO"
+        },
+        {
+          "name": "property_type",
+          "type": "text",
+          "default": null,
+          "nullable": "YES"
+        },
+        {
+          "name": "property_area",
+          "type": "numeric",
+          "default": null,
+          "nullable": "YES"
+        },
+        {
+          "name": "template_id",
+          "type": "uuid",
+          "default": null,
+          "nullable": "YES"
+        },
+        {
+          "name": "account_id",
+          "type": "uuid",
+          "default": null,
+          "nullable": "YES"
+        },
+        {
+          "name": "template_name",
+          "type": "text",
+          "default": null,
+          "nullable": "YES"
+        }
+      ],
+      "rls_enabled": true
+    },
+    {
+      "name": "profiles",
+      "schema": "public",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "default": "gen_random_uuid()",
+          "nullable": "NO"
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "default": null,
+          "nullable": "NO"
+        },
+        {
+          "name": "professional_name",
+          "type": "text",
+          "default": null,
+          "nullable": "NO"
+        },
+        {
+          "name": "email",
+          "type": "text",
+          "default": null,
+          "nullable": "YES"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "nullable": "NO"
+        },
+        {
+          "name": "user_code",
+          "type": "text",
+          "default": null,
+          "nullable": "YES"
+        }
+      ],
+      "rls_enabled": true
+    }
+  ],
+  "indexes": [
+    {
+      "name": "account_invitations_account_id_idx",
+      "table": "account_invitations",
+      "definition": "CREATE INDEX account_invitations_account_id_idx ON public.account_invitations USING btree (account_id)"
+    },
+    {
+      "name": "account_invitations_expires_at_idx",
+      "table": "account_invitations",
+      "definition": "CREATE INDEX account_invitations_expires_at_idx ON public.account_invitations USING btree (expires_at)"
+    },
+    {
+      "name": "account_invitations_invited_email_idx",
+      "table": "account_invitations",
+      "definition": "CREATE INDEX account_invitations_invited_email_idx ON public.account_invitations USING btree (lower(invited_email))"
+    },
+    {
+      "name": "account_invitations_invited_user_id_idx",
+      "table": "account_invitations",
+      "definition": "CREATE INDEX account_invitations_invited_user_id_idx ON public.account_invitations USING btree (invited_user_id)"
+    },
+    {
+      "name": "account_invitations_pending_email_unique",
+      "table": "account_invitations",
+      "definition": "CREATE UNIQUE INDEX account_invitations_pending_email_unique ON public.account_invitations USING btree (account_id, lower(invited_email)) WHERE (status = 'pending'::text)"
+    },
+    {
+      "name": "account_invitations_pkey",
+      "table": "account_invitations",
+      "definition": "CREATE UNIQUE INDEX account_invitations_pkey ON public.account_invitations USING btree (id)"
+    },
+    {
+      "name": "account_invitations_status_idx",
+      "table": "account_invitations",
+      "definition": "CREATE INDEX account_invitations_status_idx ON public.account_invitations USING btree (status)"
+    },
+    {
+      "name": "account_invitations_token_hash_key",
+      "table": "account_invitations",
+      "definition": "CREATE UNIQUE INDEX account_invitations_token_hash_key ON public.account_invitations USING btree (token_hash)"
+    },
+    {
+      "name": "account_members_account_id_user_id_key",
+      "table": "account_members",
+      "definition": "CREATE UNIQUE INDEX account_members_account_id_user_id_key ON public.account_members USING btree (account_id, user_id)"
+    },
+    {
+      "name": "account_members_pkey",
+      "table": "account_members",
+      "definition": "CREATE UNIQUE INDEX account_members_pkey ON public.account_members USING btree (id)"
+    },
+    {
+      "name": "idx_account_members_account_id",
+      "table": "account_members",
+      "definition": "CREATE INDEX idx_account_members_account_id ON public.account_members USING btree (account_id)"
+    },
+    {
+      "name": "idx_account_members_status",
+      "table": "account_members",
+      "definition": "CREATE INDEX idx_account_members_status ON public.account_members USING btree (status)"
+    },
+    {
+      "name": "idx_account_members_user_id",
+      "table": "account_members",
+      "definition": "CREATE INDEX idx_account_members_user_id ON public.account_members USING btree (user_id)"
+    },
+    {
+      "name": "accounts_account_code_key",
+      "table": "accounts",
+      "definition": "CREATE UNIQUE INDEX accounts_account_code_key ON public.accounts USING btree (account_code)"
+    },
+    {
+      "name": "accounts_pkey",
+      "table": "accounts",
+      "definition": "CREATE UNIQUE INDEX accounts_pkey ON public.accounts USING btree (id)"
+    },
+    {
+      "name": "certificate_field_values_pkey",
+      "table": "certificate_field_values",
+      "definition": "CREATE UNIQUE INDEX certificate_field_values_pkey ON public.certificate_field_values USING btree (id)"
+    },
+    {
+      "name": "certificate_fields_pkey",
+      "table": "certificate_fields",
+      "definition": "CREATE UNIQUE INDEX certificate_fields_pkey ON public.certificate_fields USING btree (id)"
+    },
+    {
+      "name": "certificate_sequences_pkey",
+      "table": "certificate_sequences",
+      "definition": "CREATE UNIQUE INDEX certificate_sequences_pkey ON public.certificate_sequences USING btree (account_id, user_id, certificate_year)"
+    },
+    {
+      "name": "certificate_templates_pkey",
+      "table": "certificate_templates",
+      "definition": "CREATE UNIQUE INDEX certificate_templates_pkey ON public.certificate_templates USING btree (id)"
+    },
+    {
+      "name": "certificate_verifications_certificate_id_idx",
+      "table": "certificate_verifications",
+      "definition": "CREATE INDEX certificate_verifications_certificate_id_idx ON public.certificate_verifications USING btree (certificate_id)"
+    },
+    {
+      "name": "certificate_verifications_pkey",
+      "table": "certificate_verifications",
+      "definition": "CREATE UNIQUE INDEX certificate_verifications_pkey ON public.certificate_verifications USING btree (id)"
+    },
+    {
+      "name": "certificate_verifications_verified_at_idx",
+      "table": "certificate_verifications",
+      "definition": "CREATE INDEX certificate_verifications_verified_at_idx ON public.certificate_verifications USING btree (verified_at)"
+    },
+    {
+      "name": "certificates_certificate_id_unique",
+      "table": "certificates",
+      "definition": "CREATE UNIQUE INDEX certificates_certificate_id_unique ON public.certificates USING btree (certificate_id)"
+    },
+    {
+      "name": "certificates_pkey",
+      "table": "certificates",
+      "definition": "CREATE UNIQUE INDEX certificates_pkey ON public.certificates USING btree (id)"
+    },
+    {
+      "name": "certificates_user_certificate_id_unique",
+      "table": "certificates",
+      "definition": "CREATE UNIQUE INDEX certificates_user_certificate_id_unique ON public.certificates USING btree (user_id, certificate_id)"
+    },
+    {
+      "name": "profiles_pkey",
+      "table": "profiles",
+      "definition": "CREATE UNIQUE INDEX profiles_pkey ON public.profiles USING btree (id)"
+    },
+    {
+      "name": "profiles_user_code_unique",
+      "table": "profiles",
+      "definition": "CREATE UNIQUE INDEX profiles_user_code_unique ON public.profiles USING btree (user_code) WHERE (user_code IS NOT NULL)"
+    },
+    {
+      "name": "profiles_user_id_key",
+      "table": "profiles",
+      "definition": "CREATE UNIQUE INDEX profiles_user_id_key ON public.profiles USING btree (user_id)"
+    }
+  ],
+  "policies": [
+    {
+      "name": "Main admins can create account invitations",
+      "check": "(is_account_admin(account_id) AND (invited_by = auth.uid()) AND (invited_role = 'member'::text) AND (status = 'pending'::text))",
+      "roles": [
+        "authenticated"
+      ],
+      "table": "account_invitations",
+      "using": null,
+      "command": "INSERT"
+    },
+    {
+      "name": "Main admins can update account invitations",
+      "check": "is_account_admin(account_id)",
+      "roles": [
+        "authenticated"
+      ],
+      "table": "account_invitations",
+      "using": "is_account_admin(account_id)",
+      "command": "UPDATE"
+    },
+    {
+      "name": "Main admins can view account invitations",
+      "check": null,
+      "roles": [
+        "authenticated"
+      ],
+      "table": "account_invitations",
+      "using": "is_account_admin(account_id)",
+      "command": "SELECT"
+    },
+    {
+      "name": "Owners admins can add memberships",
+      "check": "is_account_admin(account_id)",
+      "roles": [
+        "authenticated"
+      ],
+      "table": "account_members",
+      "using": null,
+      "command": "INSERT"
+    },
+    {
+      "name": "Owners admins can delete memberships",
+      "check": null,
+      "roles": [
+        "authenticated"
+      ],
+      "table": "account_members",
+      "using": "is_account_admin(account_id)",
+      "command": "DELETE"
+    },
+    {
+      "name": "Owners admins can update memberships",
+      "check": "is_account_admin(account_id)",
+      "roles": [
+        "authenticated"
+      ],
+      "table": "account_members",
+      "using": "is_account_admin(account_id)",
+      "command": "UPDATE"
+    },
+    {
+      "name": "Users can view own memberships",
+      "check": null,
+      "roles": [
+        "authenticated"
+      ],
+      "table": "account_members",
+      "using": "(user_id = auth.uid())",
+      "command": "SELECT"
+    },
+    {
+      "name": "Members can view their account",
+      "check": null,
+      "roles": [
+        "authenticated"
+      ],
+      "table": "accounts",
+      "using": "is_active_account_member(id)",
+      "command": "SELECT"
+    },
+    {
+      "name": "Public can view public certificate field values",
+      "check": null,
+      "roles": [
+        "anon"
+      ],
+      "table": "certificate_field_values",
+      "using": "(is_public = true)",
+      "command": "SELECT"
+    },
+    {
+      "name": "Users can create their own certificate field values",
+      "check": "(EXISTS ( SELECT 1\n   FROM certificates\n  WHERE ((certificates.id = certificate_field_values.certificate_id) AND (certificates.user_id = auth.uid()))))",
+      "roles": [
+        "authenticated"
+      ],
+      "table": "certificate_field_values",
+      "using": null,
+      "command": "INSERT"
+    },
+    {
+      "name": "Users can delete their own certificate field values",
+      "check": null,
+      "roles": [
+        "authenticated"
+      ],
+      "table": "certificate_field_values",
+      "using": "(EXISTS ( SELECT 1\n   FROM certificates\n  WHERE ((certificates.id = certificate_field_values.certificate_id) AND (certificates.user_id = auth.uid()))))",
+      "command": "DELETE"
+    },
+    {
+      "name": "Users can update their own certificate field values",
+      "check": "(EXISTS ( SELECT 1\n   FROM certificates\n  WHERE ((certificates.id = certificate_field_values.certificate_id) AND (certificates.user_id = auth.uid()))))",
+      "roles": [
+        "authenticated"
+      ],
+      "table": "certificate_field_values",
+      "using": "(EXISTS ( SELECT 1\n   FROM certificates\n  WHERE ((certificates.id = certificate_field_values.certificate_id) AND (certificates.user_id = auth.uid()))))",
+      "command": "UPDATE"
+    },
+    {
+      "name": "Users can view their own certificate field values",
+      "check": null,
+      "roles": [
+        "authenticated"
+      ],
+      "table": "certificate_field_values",
+      "using": "(EXISTS ( SELECT 1\n   FROM certificates\n  WHERE ((certificates.id = certificate_field_values.certificate_id) AND (certificates.user_id = auth.uid()))))",
+      "command": "SELECT"
+    },
+    {
+      "name": "Users can create their own certificate fields",
+      "check": "((user_id = auth.uid()) AND (EXISTS ( SELECT 1\n   FROM certificate_templates\n  WHERE ((certificate_templates.id = certificate_fields.template_id) AND (certificate_templates.user_id = auth.uid())))))",
+      "roles": [
+        "authenticated"
+      ],
+      "table": "certificate_fields",
+      "using": null,
+      "command": "INSERT"
+    },
+    {
+      "name": "Users can delete their own certificate fields",
+      "check": null,
+      "roles": [
+        "authenticated"
+      ],
+      "table": "certificate_fields",
+      "using": "(user_id = auth.uid())",
+      "command": "DELETE"
+    },
+    {
+      "name": "Users can update their own certificate fields",
+      "check": "((user_id = auth.uid()) AND (EXISTS ( SELECT 1\n   FROM certificate_templates\n  WHERE ((certificate_templates.id = certificate_fields.template_id) AND (certificate_templates.user_id = auth.uid())))))",
+      "roles": [
+        "authenticated"
+      ],
+      "table": "certificate_fields",
+      "using": "(user_id = auth.uid())",
+      "command": "UPDATE"
+    },
+    {
+      "name": "Users can view their own certificate fields",
+      "check": null,
+      "roles": [
+        "authenticated"
+      ],
+      "table": "certificate_fields",
+      "using": "(user_id = auth.uid())",
+      "command": "SELECT"
+    },
+    {
+      "name": "Users can create their own certificate templates",
+      "check": "(user_id = auth.uid())",
+      "roles": [
+        "authenticated"
+      ],
+      "table": "certificate_templates",
+      "using": null,
+      "command": "INSERT"
+    },
+    {
+      "name": "Users can delete their own certificate templates",
+      "check": null,
+      "roles": [
+        "authenticated"
+      ],
+      "table": "certificate_templates",
+      "using": "(user_id = auth.uid())",
+      "command": "DELETE"
+    },
+    {
+      "name": "Users can update their own certificate templates",
+      "check": "(user_id = auth.uid())",
+      "roles": [
+        "authenticated"
+      ],
+      "table": "certificate_templates",
+      "using": "(user_id = auth.uid())",
+      "command": "UPDATE"
+    },
+    {
+      "name": "Users can view their own certificate templates",
+      "check": null,
+      "roles": [
+        "authenticated"
+      ],
+      "table": "certificate_templates",
+      "using": "(user_id = auth.uid())",
+      "command": "SELECT"
+    },
+    {
+      "name": "Users can view verification records for accessible certificates",
+      "check": null,
+      "roles": [
+        "authenticated"
+      ],
+      "table": "certificate_verifications",
+      "using": "(EXISTS ( SELECT 1\n   FROM certificates c\n  WHERE ((c.id = certificate_verifications.certificate_id) AND ((c.user_id = auth.uid()) OR ((c.account_id IS NOT NULL) AND is_account_admin(c.account_id))))))",
+      "command": "SELECT"
+    },
+    {
+      "name": "Active account members can create certificates",
+      "check": "((auth.uid() = user_id) AND is_active_account_member(account_id))",
+      "roles": [
+        "authenticated"
+      ],
+      "table": "certificates",
+      "using": null,
+      "command": "INSERT"
+    },
+    {
+      "name": "Public can verify active certificates",
+      "check": null,
+      "roles": [
+        "anon"
+      ],
+      "table": "certificates",
+      "using": "(status = 'Active'::text)",
+      "command": "SELECT"
+    },
+    {
+      "name": "Users can view permitted certificates",
+      "check": null,
+      "roles": [
+        "authenticated"
+      ],
+      "table": "certificates",
+      "using": "((auth.uid() = user_id) OR is_account_admin(account_id))",
+      "command": "SELECT"
+    },
+    {
+      "name": "Users can insert their own profile",
+      "check": "(auth.uid() = user_id)",
+      "roles": [
+        "authenticated"
+      ],
+      "table": "profiles",
+      "using": null,
+      "command": "INSERT"
+    },
+    {
+      "name": "Users can update their own profile",
+      "check": "(auth.uid() = user_id)",
+      "roles": [
+        "authenticated"
+      ],
+      "table": "profiles",
+      "using": "(auth.uid() = user_id)",
+      "command": "UPDATE"
+    },
+    {
+      "name": "Users can view own profile",
+      "check": null,
+      "roles": [
+        "authenticated"
+      ],
+      "table": "profiles",
+      "using": "(user_id = auth.uid())",
+      "command": "SELECT"
+    },
+    {
+      "name": "Users can view their own profile",
+      "check": null,
+      "roles": [
+        "authenticated"
+      ],
+      "table": "profiles",
+      "using": "(auth.uid() = user_id)",
+      "command": "SELECT"
+    }
+  ],
+  "triggers": [
+    {
+      "name": "update_account_members_updated_at",
+      "event": "UPDATE",
+      "table": "account_members",
+      "timing": "BEFORE",
+      "statement": "EXECUTE FUNCTION update_updated_at_column()"
+    },
+    {
+      "name": "accounts_set_account_code",
+      "event": "INSERT",
+      "table": "accounts",
+      "timing": "BEFORE",
+      "statement": "EXECUTE FUNCTION set_account_code()"
+    },
+    {
+      "name": "update_accounts_updated_at",
+      "event": "UPDATE",
+      "table": "accounts",
+      "timing": "BEFORE",
+      "statement": "EXECUTE FUNCTION update_updated_at_column()"
+    },
+    {
+      "name": "certificate_sequences_updated_at",
+      "event": "UPDATE",
+      "table": "certificate_sequences",
+      "timing": "BEFORE",
+      "statement": "EXECUTE FUNCTION update_updated_at_column()"
+    },
+    {
+      "name": "profiles_set_user_code",
+      "event": "INSERT",
+      "table": "profiles",
+      "timing": "BEFORE",
+      "statement": "EXECUTE FUNCTION set_user_code()"
+    }
+  ],
+  "functions": [
+    {
+      "name": "accept_account_invitation",
+      "language": "plpgsql",
+      "arguments": "",
+      "return_type": "boolean",
+      "security_definer": true
+    },
+    {
+      "name": "accept_account_invitation",
+      "language": "plpgsql",
+      "arguments": "p_token_hash text",
+      "return_type": "boolean",
+      "security_definer": true
+    },
+    {
+      "name": "create_account_invitation",
+      "language": "plpgsql",
+      "arguments": "invited_email_input text, invited_role_input text",
+      "return_type": "uuid",
+      "security_definer": true
+    },
+    {
+      "name": "generate_account_code",
+      "language": "plpgsql",
+      "arguments": "",
+      "return_type": "text",
+      "security_definer": true
+    },
+    {
+      "name": "generate_certificate_id",
+      "language": "plpgsql",
+      "arguments": "",
+      "return_type": "text",
+      "security_definer": true
+    },
+    {
+      "name": "generate_certificate_id",
+      "language": "plpgsql",
+      "arguments": "p_account_id uuid",
+      "return_type": "text",
+      "security_definer": true
+    },
+    {
+      "name": "generate_user_code",
+      "language": "plpgsql",
+      "arguments": "",
+      "return_type": "text",
+      "security_definer": true
+    },
+    {
+      "name": "get_current_account_id",
+      "language": "sql",
+      "arguments": "",
+      "return_type": "uuid",
+      "security_definer": true
+    },
+    {
+      "name": "handle_new_user",
+      "language": "plpgsql",
+      "arguments": "",
+      "return_type": "trigger",
+      "security_definer": true
+    },
+    {
+      "name": "is_account_admin",
+      "language": "sql",
+      "arguments": "requested_account_id uuid",
+      "return_type": "boolean",
+      "security_definer": true
+    },
+    {
+      "name": "is_active_account_member",
+      "language": "sql",
+      "arguments": "requested_account_id uuid",
+      "return_type": "boolean",
+      "security_definer": true
+    },
+    {
+      "name": "record_certificate_verification",
+      "language": "plpgsql",
+      "arguments": "requested_certificate_id uuid",
+      "return_type": "boolean",
+      "security_definer": true
+    },
+    {
+      "name": "revoke_account_invitation",
+      "language": "plpgsql",
+      "arguments": "requested_invitation_id uuid",
+      "return_type": "boolean",
+      "security_definer": true
+    },
+    {
+      "name": "revoke_certificate",
+      "language": "plpgsql",
+      "arguments": "requested_certificate_id uuid",
+      "return_type": "boolean",
+      "security_definer": true
+    },
+    {
+      "name": "rls_auto_enable",
+      "language": "plpgsql",
+      "arguments": "",
+      "return_type": "event_trigger",
+      "security_definer": true
+    },
+    {
+      "name": "set_account_code",
+      "language": "plpgsql",
+      "arguments": "",
+      "return_type": "trigger",
+      "security_definer": true
+    },
+    {
+      "name": "set_user_code",
+      "language": "plpgsql",
+      "arguments": "",
+      "return_type": "trigger",
+      "security_definer": true
+    },
+    {
+      "name": "update_updated_at_column",
+      "language": "plpgsql",
+      "arguments": "",
+      "return_type": "trigger",
+      "security_definer": false
+    },
+    {
+      "name": "upgrade_account_to_organization",
+      "language": "plpgsql",
+      "arguments": "",
+      "return_type": "boolean",
+      "security_definer": true
+    }
+  ],
+  "constraints": [
+    {
+      "name": "account_invitations_accepted_by_fkey",
+      "type": "f",
+      "table": "account_invitations",
+      "schema": "public",
+      "definition": "FOREIGN KEY (accepted_by) REFERENCES auth.users(id) ON DELETE SET NULL"
+    },
+    {
+      "name": "account_invitations_account_id_fkey",
+      "type": "f",
+      "table": "account_invitations",
+      "schema": "public",
+      "definition": "FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE"
+    },
+    {
+      "name": "account_invitations_invited_by_fkey",
+      "type": "f",
+      "table": "account_invitations",
+      "schema": "public",
+      "definition": "FOREIGN KEY (invited_by) REFERENCES auth.users(id) ON DELETE RESTRICT"
+    },
+    {
+      "name": "account_invitations_invited_role_check",
+      "type": "c",
+      "table": "account_invitations",
+      "schema": "public",
+      "definition": "CHECK ((invited_role = 'member'::text))"
+    },
+    {
+      "name": "account_invitations_invited_user_id_fkey",
+      "type": "f",
+      "table": "account_invitations",
+      "schema": "public",
+      "definition": "FOREIGN KEY (invited_user_id) REFERENCES auth.users(id) ON DELETE CASCADE"
+    },
+    {
+      "name": "account_invitations_pkey",
+      "type": "p",
+      "table": "account_invitations",
+      "schema": "public",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "account_invitations_status_check",
+      "type": "c",
+      "table": "account_invitations",
+      "schema": "public",
+      "definition": "CHECK ((status = ANY (ARRAY['pending'::text, 'accepted'::text, 'expired'::text, 'revoked'::text])))"
+    },
+    {
+      "name": "account_invitations_token_hash_key",
+      "type": "u",
+      "table": "account_invitations",
+      "schema": "public",
+      "definition": "UNIQUE (token_hash)"
+    },
+    {
+      "name": "account_members_account_id_fkey",
+      "type": "f",
+      "table": "account_members",
+      "schema": "public",
+      "definition": "FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE"
+    },
+    {
+      "name": "account_members_account_id_user_id_key",
+      "type": "u",
+      "table": "account_members",
+      "schema": "public",
+      "definition": "UNIQUE (account_id, user_id)"
+    },
+    {
+      "name": "account_members_pkey",
+      "type": "p",
+      "table": "account_members",
+      "schema": "public",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "account_members_role_check",
+      "type": "c",
+      "table": "account_members",
+      "schema": "public",
+      "definition": "CHECK ((role = ANY (ARRAY['owner'::text, 'admin'::text, 'member'::text, 'viewer'::text])))"
+    },
+    {
+      "name": "account_members_status_check",
+      "type": "c",
+      "table": "account_members",
+      "schema": "public",
+      "definition": "CHECK ((status = ANY (ARRAY['active'::text, 'suspended'::text, 'removed'::text])))"
+    },
+    {
+      "name": "account_members_user_id_fkey",
+      "type": "f",
+      "table": "account_members",
+      "schema": "public",
+      "definition": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE"
+    },
+    {
+      "name": "accounts_account_code_key",
+      "type": "u",
+      "table": "accounts",
+      "schema": "public",
+      "definition": "UNIQUE (account_code)"
+    },
+    {
+      "name": "accounts_account_type_check",
+      "type": "c",
+      "table": "accounts",
+      "schema": "public",
+      "definition": "CHECK ((account_type = ANY (ARRAY['individual'::text, 'organization'::text])))"
+    },
+    {
+      "name": "accounts_pkey",
+      "type": "p",
+      "table": "accounts",
+      "schema": "public",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "certificate_field_values_certificate_id_fkey",
+      "type": "f",
+      "table": "certificate_field_values",
+      "schema": "public",
+      "definition": "FOREIGN KEY (certificate_id) REFERENCES certificates(id) ON DELETE CASCADE"
+    },
+    {
+      "name": "certificate_field_values_pkey",
+      "type": "p",
+      "table": "certificate_field_values",
+      "schema": "public",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "certificate_fields_pkey",
+      "type": "p",
+      "table": "certificate_fields",
+      "schema": "public",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "certificate_fields_template_id_fkey",
+      "type": "f",
+      "table": "certificate_fields",
+      "schema": "public",
+      "definition": "FOREIGN KEY (template_id) REFERENCES certificate_templates(id) ON DELETE CASCADE"
+    },
+    {
+      "name": "certificate_fields_user_id_fkey",
+      "type": "f",
+      "table": "certificate_fields",
+      "schema": "public",
+      "definition": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE"
+    },
+    {
+      "name": "certificate_sequences_account_fkey",
+      "type": "f",
+      "table": "certificate_sequences",
+      "schema": "public",
+      "definition": "FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE"
+    },
+    {
+      "name": "certificate_sequences_next_number_check",
+      "type": "c",
+      "table": "certificate_sequences",
+      "schema": "public",
+      "definition": "CHECK ((next_number >= 1))"
+    },
+    {
+      "name": "certificate_sequences_pkey",
+      "type": "p",
+      "table": "certificate_sequences",
+      "schema": "public",
+      "definition": "PRIMARY KEY (account_id, user_id, certificate_year)"
+    },
+    {
+      "name": "certificate_sequences_user_fkey",
+      "type": "f",
+      "table": "certificate_sequences",
+      "schema": "public",
+      "definition": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE"
+    },
+    {
+      "name": "certificate_templates_pkey",
+      "type": "p",
+      "table": "certificate_templates",
+      "schema": "public",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "certificate_templates_user_id_fkey",
+      "type": "f",
+      "table": "certificate_templates",
+      "schema": "public",
+      "definition": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE"
+    },
+    {
+      "name": "certificate_verifications_certificate_id_fkey",
+      "type": "f",
+      "table": "certificate_verifications",
+      "schema": "public",
+      "definition": "FOREIGN KEY (certificate_id) REFERENCES certificates(id) ON DELETE CASCADE"
+    },
+    {
+      "name": "certificate_verifications_pkey",
+      "type": "p",
+      "table": "certificate_verifications",
+      "schema": "public",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "certificates_account_id_fkey",
+      "type": "f",
+      "table": "certificates",
+      "schema": "public",
+      "definition": "FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE RESTRICT"
+    },
+    {
+      "name": "certificates_pkey",
+      "type": "p",
+      "table": "certificates",
+      "schema": "public",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "certificates_template_id_fkey",
+      "type": "f",
+      "table": "certificates",
+      "schema": "public",
+      "definition": "FOREIGN KEY (template_id) REFERENCES certificate_templates(id) ON DELETE SET NULL"
+    },
+    {
+      "name": "certificates_user_certificate_id_unique",
+      "type": "u",
+      "table": "certificates",
+      "schema": "public",
+      "definition": "UNIQUE (user_id, certificate_id)"
+    },
+    {
+      "name": "certificates_user_id_fkey",
+      "type": "f",
+      "table": "certificates",
+      "schema": "public",
+      "definition": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE"
+    },
+    {
+      "name": "profiles_pkey",
+      "type": "p",
+      "table": "profiles",
+      "schema": "public",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "profiles_user_id_fkey",
+      "type": "f",
+      "table": "profiles",
+      "schema": "public",
+      "definition": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE"
+    },
+    {
+      "name": "profiles_user_id_key",
+      "type": "u",
+      "table": "profiles",
+      "schema": "public",
+      "definition": "UNIQUE (user_id)"
+    }
+  ],
+  "project_ref": "jhnxztaqfikgvkshifel",
+  "captured_at_utc": "2026-10-10T13:25:48.707914+00:00"
+}

@@ -28,7 +28,15 @@ export default function LoginPage() {
       return;
     }
 
-    window.location.href = "/dashboard";
+    const requested = new URLSearchParams(window.location.search).get("next");
+    let destination = "/dashboard";
+    if (requested) {
+      const next = new URL(requested, window.location.origin);
+      if (next.origin === window.location.origin && next.pathname === "/accept-invite") {
+        destination = next.pathname + next.search;
+      }
+    }
+    window.location.assign(destination);
   }
 
   return (

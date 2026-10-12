@@ -2,6 +2,8 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { consumeEmailSession, invitationSignInPath } from "@/lib/auth/email-session";
+import { selectAccount } from "@/lib/accounts/context";
 
 async function sha256(value: string) {
   const digest = await crypto.subtle.digest(
@@ -19,6 +21,7 @@ export default function AcceptInvitePage() {
   const [email, setEmail] = useState("");
   const [mode, setMode] = useState<"setup" | "join">("setup");
   const [tokenHash, setTokenHash] = useState("");
+  const [name, setName] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [message, setMessage] = useState("");
@@ -57,19 +60,25 @@ export default function AcceptInvitePage() {
         return;
       }
 
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      if (cancelled) return;
-
-      if (sessionError || !session?.user) {
-        setError("We could not verify your sign-in session. Open the newest invitation email again or sign in and ask your admin to resend it.");
-        setLoading(false);
+      let user;
+      try {
+        const result = await consumeEmailSession(supabase, window.location.href, "invite");
+        user = result.user;
+        if (requestedMode === "setup" && !result.emailProof) throw new Error("Open your invitation email to finish setting up your account.");
+      } catch (reason) {
+        if (!cancelled) {
+          setError(reason instanceof Error ? reason.message : "Could not verify this invitation.");
+          setLoading(false);
+        }
         return;
       }
+      if (cancelled) return;
 
       const hash = await sha256(rawToken);
       if (cancelled) return;
 
-      setEmail(session.user.email ?? "");
+      setEmail(user.email ?? "");
+      setName(user.user_metadata.professional_name ?? "");
       setMode(requestedMode);
       setTokenHash(hash);
 
@@ -96,6 +105,10 @@ export default function AcceptInvitePage() {
     }
 
     if (mode === "setup") {
+      if (name.trim().length < 2 || name.trim().length > 120) {
+        setError("Enter your name (2–120 characters).");
+        return;
+      }
       if (password.length < 8) {
         setError("Choose a password with at least 8 characters.");
         return;
@@ -109,7 +122,7 @@ export default function AcceptInvitePage() {
     setSaving(true);
 
     if (mode === "setup") {
-      const { error: passwordError } = await supabase.auth.updateUser({ password });
+      const { error: passwordError } = await supabase.auth.updateUser({ password, data: { professional_name: name.trim() } });
       if (passwordError) {
         setSaving(false);
         setError(passwordError.message);
@@ -118,11 +131,11 @@ export default function AcceptInvitePage() {
     }
 
     const { data, error: invitationError } = await supabase.rpc(
-      "accept_account_invitation",
-      { p_token_hash: tokenHash }
+      "cv_accept_invitation",
+      { p_token_hash: tokenHash, p_name: mode === "setup" ? name.trim() : null }
     );
 
-    if (invitationError || data !== true) {
+    if (invitationError || typeof data !== "string") {
       setSaving(false);
       setError(
         invitationError?.message ||
@@ -131,6 +144,12 @@ export default function AcceptInvitePage() {
       return;
     }
 
+    if (mode === "setup") {
+      // Keep setup required if acceptance failed; clear the UI hint only after
+      // membership commits. The database requirement remains authoritative.
+      await supabase.auth.updateUser({ data: { certverify_invitation_setup_required: false } });
+    }
+    selectAccount(data);
     setMessage("Your invitation has been accepted. Redirecting to your dashboard...");
     window.setTimeout(() => {
       window.location.assign("/dashboard");
@@ -161,7 +180,7 @@ export default function AcceptInvitePage() {
             </div>
           )}
 
-          {!loading && error && (
+          {!loading && error && !email && (
             <div className="mt-6 rounded-lg bg-red-50 p-4 text-sm leading-6 text-red-700">
               {error}
               <p className="mt-2">
@@ -174,6 +193,10 @@ export default function AcceptInvitePage() {
             <form onSubmit={handleAccept} className="mt-7 space-y-5">
               {mode === "setup" && (
                 <>
+                  <div>
+                    <label htmlFor="name" className="block text-sm font-medium text-slate-700">Your name</label>
+                    <input id="name" value={name} onChange={(event) => setName(event.target.value)} autoComplete="name" minLength={2} maxLength={120} required disabled={saving} className="mt-2 w-full rounded-lg border px-4 py-3" />
+                  </div>
                   <div>
                     <label htmlFor="password" className="block text-sm font-medium text-slate-700">
                       Create password
@@ -237,7 +260,7 @@ export default function AcceptInvitePage() {
           )}
 
           {!loading && !email && (
-            <a href="/login" className="mt-6 block rounded-lg bg-blue-600 px-4 py-3 text-center font-semibold text-white hover:bg-blue-700">
+            <a href={typeof window === "undefined" ? "/login" : invitationSignInPath(window.location.href)} className="mt-6 block rounded-lg bg-blue-600 px-4 py-3 text-center font-semibold text-white hover:bg-blue-700">
               Go to sign in
             </a>
           )}

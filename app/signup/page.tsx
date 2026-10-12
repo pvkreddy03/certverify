@@ -14,15 +14,20 @@ export default function SignupPage() {
   async function handleSignup(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    setLoading(true);
     setMessage("");
+    if (name.trim().length < 2 || name.trim().length > 120 || password.length < 8) {
+      setMessage("Enter a name of 2–120 characters and a password of at least 8 characters.");
+      return;
+    }
+    setLoading(true);
 
     const { error } = await supabase.auth.signUp({
-      email,
+      email: email.trim().toLowerCase(),
       password,
       options: {
+        emailRedirectTo: `${window.location.origin}/confirm-email`,
         data: {
-          professional_name: name,
+          professional_name: name.trim(),
         },
       },
     });
@@ -115,7 +120,7 @@ export default function SignupPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Create a password"
                   required
-                  minLength={6}
+                  minLength={8}
                   className="mt-2 w-full rounded-lg border border-slate-300 px-4 py-3 text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                 />
               </div>

@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { consumeEmailSession } from "@/lib/auth/email-session";
 
 export default function ResetPasswordPage() {
   const [checking, setChecking] = useState(true);
@@ -16,28 +17,16 @@ export default function ResetPasswordPage() {
     let cancelled = false;
 
     async function checkRecoverySession() {
-      const hash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
-      const authError = hash.get("error_description") || hash.get("error");
-      if (authError) {
+      try {
+        await consumeEmailSession(supabase, window.location.href, "recovery");
+      } catch (reason) {
         if (!cancelled) {
-          setError(
-            hash.get("error_code") === "otp_expired"
-              ? "This reset link has expired or has already been used. Request a new reset link."
-              : `Could not verify this reset link: ${authError.replace(/\+/g, " ")}`
-          );
+          setError(reason instanceof Error ? reason.message : "This reset link is invalid or expired.");
           setChecking(false);
         }
         return;
       }
-
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       if (cancelled) return;
-
-      if (sessionError || !session?.user) {
-        setError("This password-reset link is invalid or expired. Request a new one.");
-        setChecking(false);
-        return;
-      }
 
       window.history.replaceState({}, document.title, window.location.pathname);
       setSessionReady(true);
