@@ -90,7 +90,8 @@ export default function SettingsPage() {
       return;
     }
 
-    setAccount(accountData);
+    const { data:branding }=await supabase.rpc("cv_current_branding");
+    setAccount({ ...accountData,account_name:branding?.company_name ?? accountData.account_name });
 
     setMembership({
       role: membershipData.role,

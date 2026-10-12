@@ -25,7 +25,7 @@ test("administrator revokes with separate private/public reasons and QR record s
   await expect(page.getByRole("heading",{ name:"Certificate Revoked",exact:true })).toBeVisible();
   await expect(page.getByText("Withdrawn after issuer review",{ exact:true })).toBeVisible();
   await expect(page.getByText("CONFIDENTIAL-INVESTIGATION",{ exact:false })).toHaveCount(0);
-  await expect(page.getByRole("link",{ name:"Verified using CertVerify",exact:false })).toHaveAttribute("href","/");
+  await expect(page.getByRole("link",{ name:"Powered by CertVerify",exact:false })).toHaveAttribute("href","/");
 });
 
 test("administrators can mark inactive and restore Active before revocation",async ({ page }) => {

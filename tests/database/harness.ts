@@ -45,9 +45,9 @@ const ids = {
   templateA: "20000000-0000-0000-0000-000000000001",
   templateB: "20000000-0000-0000-0000-000000000002",
 };
-function as(user: string, account: string | null, statement: string) {
+function as(user: string, account: string | null, statement: string, aal = "aal1") {
   return `begin; set local role authenticated;
-    set local request.jwt.claims = ${quote(JSON.stringify({ sub: user, role: "authenticated" }))};
+    set local request.jwt.claims = ${quote(JSON.stringify({ sub: user, role: "authenticated", aal }))};
     set local request.headers = ${quote(JSON.stringify(account ? { "x-certverify-account": account } : {}))};
     ${statement}; commit;`;
 }

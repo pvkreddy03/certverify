@@ -36,7 +36,7 @@ export async function proxy(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const isDashboardRoute = request.nextUrl.pathname.startsWith("/dashboard");
+  const isDashboardRoute = request.nextUrl.pathname.startsWith("/dashboard") || request.nextUrl.pathname.startsWith("/platform");
 
   if (isDashboardRoute && !user) {
     const loginUrl = request.nextUrl.clone();
@@ -49,5 +49,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*"],
+  matcher: ["/dashboard/:path*", "/platform/:path*"],
 };

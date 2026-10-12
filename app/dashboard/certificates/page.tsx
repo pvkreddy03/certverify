@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { IssuerBranding } from "@/components/issuer-branding";
 
 import {
   generateCertificateId,
@@ -180,6 +181,7 @@ export default function CertificatesPage() {
           </p>
         </div>
 
+        <IssuerBranding />
         {replacementId && <p className="mb-6 rounded border border-blue-200 bg-blue-50 p-4">This new certificate will be linked to the revoked original. The original remains revoked and its history is preserved.</p>}
         <form
           onSubmit={handleSubmit}

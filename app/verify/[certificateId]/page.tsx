@@ -1,11 +1,15 @@
 import { createClient } from "@supabase/supabase-js";
 import Link from "next/link";
+import Image from "next/image";
 import { statusPresentation } from "@/lib/certificates/status";
 
 type PublicCertificate = {
   certificate_id: string;
   public_verification_id: string;
   issuer_name: string | null;
+  issuer_details?: string;
+  logo_available?: boolean;
+  branding_reconciled?: boolean;
   issued_at: string;
   status: string;
   revoked_at: string | null;
@@ -27,11 +31,13 @@ export default async function VerifyCertificatePage({ params }: { params: Promis
       <h1 className="text-2xl font-bold">{error ? "Verification Temporarily Unavailable" : "Certificate Not Found"}</h1>
       <p className="mt-4 text-slate-600">{error ? "We could not check the current status. Please try again; this is not a validity result." : "This link could not identify a certificate. Ask the issuer for the certificate's current QR code."}</p>
     </section>
+    <footer className="mt-6 text-center text-sm"><Link href="/">Powered by CertVerify</Link></footer>
   </main>;
   const presentation = statusPresentation(certificate.status);
   return <main className="mx-auto max-w-2xl px-6 py-12">
     <article className="overflow-hidden rounded-2xl bg-white shadow-sm">
       <header className="border-b p-8 text-center">
+        {certificate.logo_available && <Image src={`/api/public/certificates/${certificate.public_verification_id}/logo`} alt={`${certificate.issuer_name || "Issuer"} logo`} width={128} height={128} unoptimized className="mx-auto mb-4 h-32 w-32 object-contain" />}
         <div className={`mx-auto flex h-16 w-16 items-center justify-center rounded-full text-2xl ${presentation.classes}`}>{presentation.icon}</div>
         <h1 className="mt-5 text-2xl font-bold">{presentation.title}</h1>
         <p className="mt-3 text-slate-600">{presentation.description}</p>
@@ -39,6 +45,7 @@ export default async function VerifyCertificatePage({ params }: { params: Promis
       <div className="space-y-6 p-8">
         <dl className="space-y-4 rounded-xl bg-slate-50 p-5">
           <div><dt className="text-sm text-slate-500">Issued by</dt><dd className="mt-1 font-semibold">{certificate.issuer_name || "Issuer information unavailable"}</dd></div>
+          {certificate.issuer_details && <div><dt className="text-sm text-slate-500">Professional details</dt><dd className="mt-1 whitespace-pre-wrap">{certificate.issuer_details}</dd></div>}
           <div><dt className="text-sm text-slate-500">Certificate Number</dt><dd className="mt-1 break-all font-semibold">{certificate.certificate_id}</dd></div>
           <div><dt className="text-sm text-slate-500">Issued on</dt><dd className="mt-1">{new Date(certificate.issued_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}</dd></div>
           <div><dt className="text-sm text-slate-500">Current status</dt><dd className="mt-1 font-semibold">{certificate.status}</dd></div>
@@ -54,7 +61,7 @@ export default async function VerifyCertificatePage({ params }: { params: Promis
           </dl>}
         </section>
       </div>
-      <footer className="border-t p-5 text-center text-xs text-slate-500"><Link href="/" className="font-medium text-blue-700">Verified using CertVerify — Secure Certificate Authentication</Link></footer>
+      <footer className="border-t p-5 text-center text-xs text-slate-500"><Link href="/" className="font-medium text-blue-700">Powered by CertVerify</Link></footer>
     </article>
   </main>;
 }

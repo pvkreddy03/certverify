@@ -32,7 +32,7 @@ export default function LoginPage() {
     let destination = "/dashboard";
     if (requested) {
       const next = new URL(requested, window.location.origin);
-      if (next.origin === window.location.origin && next.pathname === "/accept-invite") {
+      if (next.origin === window.location.origin && ["/accept-invite", "/platform/branding"].includes(next.pathname)) {
         destination = next.pathname + next.search;
       }
     }
