@@ -4,6 +4,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { requireSelectedAccountId } from "@/lib/accounts/context";
 
 type Template = {
   id: string;
@@ -77,6 +78,7 @@ export default function TemplatesPage() {
       .from("certificate_templates")
       .insert({
         user_id: user.id,
+        account_id: requireSelectedAccountId(),
         name: name.trim(),
         description: description.trim() || null,
       });

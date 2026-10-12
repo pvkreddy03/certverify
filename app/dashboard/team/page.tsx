@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { MemberActions } from "@/components/member-actions";
+import { accountHeaders, requireSelectedAccountId } from "@/lib/accounts/context";
 
 type TeamMember = {
   id: string;
@@ -80,8 +82,7 @@ export default function TeamPage() {
         .select("account_id, role, status")
         .eq("user_id", user.id)
         .eq("status", "active")
-        .order("joined_at", { ascending: true })
-        .limit(1)
+        .eq("account_id", requireSelectedAccountId())
         .maybeSingle();
 
     if (membershipError) {
@@ -167,7 +168,7 @@ export default function TeamPage() {
 
     const response = await fetch("/api/team/invitations", {
       method: "GET",
-      headers: { Authorization: `Bearer ${session.access_token}` },
+      headers: accountHeaders({ Authorization: `Bearer ${session.access_token}` }),
       cache: "no-store",
     });
     const result = await response.json().catch(() => ({}));
@@ -196,10 +197,10 @@ export default function TeamPage() {
 
       const response = await fetch(`/api/team/invitations/${invitationId}`, {
         method: "PATCH",
-        headers: {
+        headers: accountHeaders({
           "Content-Type": "application/json",
           Authorization: `Bearer ${session.access_token}`,
-        },
+        }),
         body: JSON.stringify({ action }),
       });
       const result = await response.json().catch(() => ({}));
@@ -255,7 +256,7 @@ export default function TeamPage() {
     setErrorMessage("");
 
     const { data, error } = await supabase.rpc(
-      "upgrade_account_to_organization"
+      "cv_upgrade_account"
     );
 
     if (error) {
@@ -320,10 +321,10 @@ export default function TeamPage() {
 
       const response = await fetch("/api/team/invite", {
         method: "POST",
-        headers: {
+        headers: accountHeaders({
           "Content-Type": "application/json",
           Authorization: `Bearer ${session.access_token}`,
-        },
+        }),
         body: JSON.stringify({
           email,
         }),
@@ -503,6 +504,7 @@ export default function TeamPage() {
                       >
                         {formatStatus(member.status)}
                       </span>
+                      <MemberActions memberId={member.id} role={member.role} actorRole={membership?.role} active={member.status === "active"} onChanged={loadTeam} />
 
                     </div>
 

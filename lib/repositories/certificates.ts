@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { requireSelectedAccountId } from "@/lib/accounts/context";
 
 export async function getCurrentUser() {
   const {
@@ -9,34 +10,14 @@ export async function getCurrentUser() {
 }
 
 export async function generateCertificateId(accountId?: string) {
-  const { data, error } = await supabase.rpc("generate_certificate_id", {
-    p_account_id: accountId ?? null,
-  });
-
-  if (error) {
-    throw new Error("Could not generate Certificate ID: " + error.message);
-  }
-
+  if (accountId && accountId !== requireSelectedAccountId()) throw new Error("Account changed. Please reload.");
+  const { data, error } = await supabase.rpc("cv_generate_certificate_id");
+  if (error) throw new Error("Could not generate Certificate ID: " + error.message);
   return data as string;
 }
 
-export async function getCurrentAccountId(userId: string) {
-  /*
-   * Get the user's active account through a SECURITY DEFINER
-   * database function instead of querying account_members
-   * directly from the browser.
-   */
-  const { data, error } = await supabase.rpc("get_current_account_id");
-
-  if (error) {
-    throw new Error("Could not find your account: " + error.message);
-  }
-
-  if (!data) {
-    throw new Error("No active account was found for this user.");
-  }
-
-  return data as string;
+export async function getCurrentAccountId() {
+  return requireSelectedAccountId();
 }
 
 export async function createCertificate(certificate: {

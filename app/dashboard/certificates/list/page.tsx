@@ -44,7 +44,6 @@ export default function CertificateListPage() {
         .select(
           "id, certificate_id, status, created_at, template_id, template_name, user_id"
         )
-        .eq("user_id", user.id)
         .order("created_at", { ascending: false });
 
     if (certificateError) {
@@ -79,7 +78,7 @@ export default function CertificateListPage() {
         templateName:
           certificate.template_name?.trim() ||
           "Template name unavailable",
-        createdBy,
+        createdBy: certificate.user_id === user.id ? createdBy : "Organization member",
       })
     );
 

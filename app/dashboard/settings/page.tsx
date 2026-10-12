@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { requireSelectedAccountId } from "@/lib/accounts/context";
 
 type Account = {
   id: string;
@@ -45,8 +46,7 @@ export default function SettingsPage() {
         .select("account_id, role, status")
         .eq("user_id", user.id)
         .eq("status", "active")
-        .order("joined_at", { ascending: true })
-        .limit(1)
+        .eq("account_id", requireSelectedAccountId())
         .maybeSingle();
 
     if (membershipError) {
@@ -137,7 +137,7 @@ export default function SettingsPage() {
       data,
       error,
     } = await supabase.rpc(
-      "upgrade_account_to_organization"
+      "cv_upgrade_account"
     );
 
     if (error) {

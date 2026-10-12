@@ -4,10 +4,12 @@ on:
   push:
     branches:
       - 'fix/**'
+      - 'feat/**'
   pull_request:
     branches:
       - main
       - fix/team-invitations-and-auth
+      - fix/ci-lint-errors
   workflow_dispatch:
 
 permissions:
@@ -39,5 +41,15 @@ jobs:
         run: npm ci
       - name: Run ESLint
         run: npm run lint
+      - name: Run unit tests
+        run: npm test
+      - name: Test isolated PostgreSQL authorization and invitation races
+        run: npm run test:db
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Run browser contract tests
+        run: npm run test:browser
+      - name: Generate Next.js types and check TypeScript
+        run: npx next typegen && npm run typecheck
       - name: Build Next.js application
         run: npm run build
