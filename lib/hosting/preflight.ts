@@ -1,3 +1,4 @@
+import { isProtectedProject } from "./isolation";
 // Offline configuration checks only: no keys, URLs or provider responses are logged.
 export function hostedPreflight(env: Record<string, string | undefined>) {
   const failures: string[] = [];
@@ -6,6 +7,7 @@ export function hostedPreflight(env: Record<string, string | undefined>) {
   if (env.CERTVERIFY_DEPLOYMENT_TARGET !== "isolated_sandbox") failures.push("Deployment target must be isolated_sandbox");
   if (env.VERCEL_ENV !== "preview") failures.push("VERCEL_ENV must be preview");
   const ref = env.CERTVERIFY_SANDBOX_PROJECT_REF ?? "";
+  if (isProtectedProject(ref,env.NEXT_PUBLIC_SUPABASE_URL)) failures.push("Protected source project cannot be used for staging");
   if (!/^[a-z0-9]{20}$/.test(ref)) failures.push("Sandbox project reference must be a Supabase project ID");
   if (env.NEXT_PUBLIC_SUPABASE_URL !== `https://${ref}.supabase.co`) failures.push("Supabase URL must exactly match the approved sandbox reference");
   try {

@@ -29,23 +29,23 @@ Production dependency audit: zero findings; full dependency audit: five high dev
 findings remain. Do not force incompatible updates or claim the full audit is clean.
 
 External gates:
-- Current injected Supabase keys are not identified as sandbox keys. No management
+- Current injected Supabase keys belong to the protected source environment. No management
   token, read-only connection or approved sandbox project reference is available.
 - Existing Vercel Git integration publishes Preview deployments, but no management
   connection/token or confirmed sandbox-only preview variables are available. Previous
   head preview cannot be inspected from this machine (proxy tunnel HTTP 403). No Razorpay test
   keys/webhook secret. Owner said they will reconnect; recheck actual bindings/tools
   after a meaningful connection change instead of repeating failed operations.
-- Actual legacy function bodies/signup triggers/numbering absent from existing snapshot.
-  Seven proposals do not bootstrap a blank project; never copy fabricated test helpers
-  into hosted Supabase. Prepare the real reviewed baseline first.
+- Actual legacy function bodies/signup triggers/numbering are absent from the source snapshot.
+  Fresh staging now has an independent reviewed baseline; do not use it to reconcile
+  source or copy fabricated Auth/Storage/test helpers into hosted Supabase.
 - Separate explicit approvals required for hosted migrations and first privileged grant.
   Approval requests must name verified sandbox, reviewed SQL/hashes and owner Auth UUID;
   credentials or an intention to reconnect are not those approvals.
 
 Owner reconnected ChatGPT plugins, but this Cloud task still has no callable provider
 management tools or injected management bindings. Existing app Supabase project ref:
-`jhnxztaqfikgvkshifel`, purpose unknown. See exact connection steps in the hosted guide.
+`jhnxztaqfikgvkshifel`, now verified by owner as protected source with application data. See exact connection steps in the hosted guide.
 Credential-free Supabase health and old-preview HTTPS both fail at the egress proxy
 with HTTP 403. Additive Cloud network requirements were saved for environment review;
 no runtime propagation or provider connection has been verified.
@@ -58,3 +58,22 @@ configure Preview-only secrets/redirects, test genuine Auth/Storage/email, enrol
 MFA, request admin-grant approval, test merchant sandbox and checklist, then report real
 preview URL and hosted evidence. Never merge/deploy production/charge real customers.
 Stage 8 PDF/OCR/AI remains postponed; this Phase 8 is hosted QR testing preparation.
+
+
+Continuation implements a fresh staging baseline (one file + seven proposals), actual
+application signup/numbering/policies tested in PostgreSQL with managed-service fixtures,
+source-rejecting Next Preview/payment/preflight guards and source-ref bootstrap rejection.
+Public anonymous definers are deliberately limited to reviewed catalog/certificate/logo
+projections. The read-only hosted inspection and curated legacy ACL candidate generator
+prepare actual advisor/body review without changing source. See
+`docs/hosted-infrastructure-handoff.md` for exact owner-verified IDs, shared Vercel scope
+separation, costs/approvals, eight-file ordering, variables and rollback.
+Final continuation validation passed: **235 tests — 46 unit, 149 isolated PostgreSQL,
+40 mocked browser**, no failures/skips. Type generation, TypeScript, lint and production
+build passed; seven existing lint warnings remain. The final bootstrap source-rejection
+change was additionally rerun through all four bootstrap PostgreSQL checks. Production
+audit is clean; full audit retains five high development findings.
+Preserve the continuation local commit plus refreshed portable bundle/patch. No Phase 8 push/PR/deployment is authorized
+while shared Preview bindings could reach source. Stage 7 CI remains the confirmed remote
+baseline; do not claim new Phase 8 CI or hosted results. Connected tools can execute the
+handoff separately after approvals; Cloud tokens are optional, not a demand on the owner.

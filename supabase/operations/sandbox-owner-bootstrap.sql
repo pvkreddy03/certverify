@@ -13,6 +13,9 @@ declare
   approval text := btrim(current_setting('certverify.bootstrap_approval'));
   project text := current_setting('certverify.bootstrap_project');
 begin
+  if project='jhnxztaqfikgvkshifel' then
+    raise exception 'Protected source project is not a sandbox bootstrap target';
+  end if;
   if length(approval) not between 8 and 200 or project !~ '^[a-z0-9]{20}$' then
     raise exception 'Valid recorded approval and sandbox project reference required';
   end if;

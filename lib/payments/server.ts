@@ -1,3 +1,4 @@
+import { isProtectedProject } from "../hosting/isolation";
 import { createClient } from "@supabase/supabase-js";
 import { createHash } from "node:crypto";
 import { RequestError, requestErrorResponse } from "../auth/request";
@@ -9,6 +10,7 @@ export function paymentService() {
   if (process.env.CERTVERIFY_PAYMENT_MODE === "razorpay_test") {
     const ref = process.env.CERTVERIFY_SANDBOX_PROJECT_REF;
     if (
+      isProtectedProject(ref,url) ||
       !ref ||
       !/^[a-z0-9]{8,40}$/.test(ref) ||
       new URL(url).origin !== `https://${ref}.supabase.co`

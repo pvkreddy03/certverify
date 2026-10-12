@@ -1,4 +1,7 @@
 import type { NextConfig } from "next";
+import { assertPreviewIsolation } from "./lib/hosting/isolation";
+
+assertPreviewIsolation(process.env);
 
 const nextConfig: NextConfig = {
   async headers() {

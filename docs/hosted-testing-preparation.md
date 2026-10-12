@@ -11,8 +11,8 @@ including 39 unit, 134 PostgreSQL and 38 browser tests, types, lint and build.
 The Phase 8 preparation branch stacks on that exact commit and adds pre-bootstrap
 account MFA, offline checks, an approval-only bootstrap operation and this checklist.
 Do not deploy the baseline alone expecting the new account-security page.
-Final local preparation validation: **220 tests passed (42 unit, 138 PostgreSQL,
-40 browser)** with no failures/skips. TypeScript, lint and production build passed;
+Final local preparation validation: **235 tests passed (46 unit, 149 PostgreSQL,
+40 mocked browser)** with no failures/skips. TypeScript, lint and production build passed;
 seven existing lint warnings remain. No new hosted integration or CI is claimed.
 
 | Draft PR | Head branch | Validated source head | Base |
@@ -30,10 +30,14 @@ Stage 7 CI does not certify every old PR against today's external infrastructure
 
 ## Current blockers and evidence
 
+See [the updated infrastructure handoff](hosted-infrastructure-handoff.md) for owner-verified
+project IDs, confirmed shared Preview/Production credentials and the new fresh baseline.
+It supersedes earlier uncertainty about the protected source project below.
+
 | Requirement | Observed status |
 | --- | --- |
-| Supabase URL / anon / server key | Present, project purpose unconfirmed; not used for writes |
-| Sandbox project ID and management access | Missing; owner reconnecting |
+| Supabase URL / anon / server key | Present for protected source project; never use for staging writes |
+| Sandbox project ID and Cloud management access | No staging project yet; connected ChatGPT tools operate separately from Cloud |
 | Actual schema/function bodies via read-only SQL | Missing connection; snapshot omits function bodies and triggers |
 | Vercel project/token or management connector | Unavailable |
 | Sandbox Razorpay test keys/webhook secret | Missing |
@@ -68,12 +72,11 @@ use an explicitly identified existing disposable project rather than production.
    inspect actual functions, owner/grants, RLS, defaults, triggers, constraints,
    Auth signup behavior, Storage policies and certificate numbering. Review snapshot
    differences before a hosted apply request.
-3. Prepare an actual sanitized legacy baseline for the separate project. **Seven
-   proposals extend an existing schema; a new empty Supabase project is insufficient.**
-   The test harness fabricates omitted helper functions and Auth/Storage tables.
-   Never install those substitutes in hosted Supabase. Obtain and review real account
-   creation/numbering functions and signup triggers before generating baseline SQL.
-   Preserve Supabase-managed Auth/Storage ownership and genuine services.
+3. Use the reviewed fresh-only `supabase/staging/20261012_fresh_baseline.sql` followed
+   by the seven proposals for a new staging database. `npm run hosting:migrations`
+   prints all eight hashes. Do not apply this baseline to source; actual function-body
+   inspection and historical reconciliation remain separate existing-database gates.
+   Never install fixture Auth/Storage or test-helper implementations in hosted Supabase.
 4. Record baseline + seven proposal SHA256 hashes using `npm run migration:manifest`.
    Prepare a restorable sandbox backup and before/after row counts and grants.
    Request explicit approval naming the sandbox project, baseline, exact seven files,
@@ -211,14 +214,19 @@ connector-discovery search. No management tokens, read-only database connection,
 Vercel team/project binding or approved sandbox ref were injected. Do not call this
 a successful Cloud connection merely because ChatGPT displays a connected plugin.
 
-The configured public Supabase project ref is `jhnxztaqfikgvkshifel`. Its project name,
-organization, billing tier and production/sandbox purpose are not visible. Treat it as
-potential production and perform no writes. GitHub lists Vercel deployments labelled
+The configured public Supabase project ref is `jhnxztaqfikgvkshifel`. The owner verified this is the active `certverify` source project in Mumbai, organization
+`vgaakofkotxijchzpkgo`; it contains application data and is protected. Cloud management
+access remains absent; perform no writes. GitHub lists Vercel deployments labelled
 Preview (`production_environment=false`), including the prior Stage 7 head. This proves
 only the Git deployment environment label, not that its Supabase data is isolated.
 Neither a production nor a sandbox project inventory has been verified.
 
-Exact access steps (no laptop software required):
+Optional Cloud-access fallback (no laptop software required):
+
+The primary current route is the connected-tools handoff above; Cloud API tokens are
+not prerequisites for external management. Do not ask the owner to reconnect the same
+ChatGPT plugins again or disclose tokens/passwords. These optional steps apply only if
+the owner separately elects to expose management access in Cloud.
 
 1. In the selected Codex Cloud task/environment, attach available Supabase and Vercel
    integrations if the product supports exposing them here. Verify actual callable

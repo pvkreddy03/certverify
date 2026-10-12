@@ -3,7 +3,7 @@ import { spawn, spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 
-export function createDatabaseHarness() {
+export function createDatabaseHarness(options: { freshStaging?: boolean } = {}) {
 // This suite never accepts a database URL. Every run creates a fresh container
 // with no network, no published ports, and no mounted/persistent production data.
 const container = `certverify-test-${randomUUID().slice(0, 8)}`;
@@ -76,6 +76,22 @@ async function start() {
     await new Promise((resolve) => setTimeout(resolve, 100));
   }
   assert.equal(ready, true, "Isolated PostgreSQL did not finish initialization");
+  if (options.freshStaging) {
+    // Only managed-service schema substitutes; the real fresh baseline supplies
+    // application DDL, signup, numbering and policies. No legacy helper substitutes.
+    sql(`create role anon;create role authenticated;create role service_role bypassrls;
+      create schema auth;create schema storage;
+      create table auth.users(id uuid primary key,email text,email_confirmed_at timestamptz,encrypted_password text default 'synthetic-test-password',raw_user_meta_data jsonb default '{}'::jsonb);
+      create function auth.uid() returns uuid language sql stable as $$ select (nullif(current_setting('request.jwt.claims',true),'')::jsonb->>'sub')::uuid $$;
+      grant usage on schema auth,public,storage to anon,authenticated,service_role;
+      create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);
+      create table storage.objects(id uuid default gen_random_uuid(),bucket_id text,name text,metadata jsonb);
+      alter table storage.objects enable row level security;grant select,insert,update,delete on storage.objects to anon,authenticated;`);
+    sql(readFileSync('supabase/staging/20261012_fresh_baseline.sql','utf8'));
+    for (const stage of ['stage1_account_security','stage2_certificate_revocation','stage3_branding','stage4_platform_admin','stage5_billing','stage6_payments','stage7_readiness'])
+      sql(readFileSync(`supabase/proposals/20261012_${stage}.sql`,'utf8'));
+    return;
+  }
   const inventory = JSON.parse(readFileSync("docs/supabase-live-schema-inventory.json", "utf8")) as Inventory;
   // These helper bodies are explicit TEST substitutes. The historical snapshot
   // does not contain production function bodies or triggers.

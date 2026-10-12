@@ -19,6 +19,9 @@ before(async () => {
 });
 after(close);
 test("unconfirmed or unenrolled users cannot be bootstrapped", () => {
+  const sourceAttempt=sql(bootstrap().replace('abcdefghijklmnopqrst','jhnxztaqfikgvkshifel'),false);
+  assert.notEqual(sourceAttempt.status,0);
+  assert.ok(sourceAttempt.error.includes('Protected source project'));
   for (const user of [ids.unconfirmed, ids.member]) assert.notEqual(sql(bootstrap(user), false).status, 0);
   assert.equal(sql("select count(*) from public.cv_platform_admins").out, "0");
 });

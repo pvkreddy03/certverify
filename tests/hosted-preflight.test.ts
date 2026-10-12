@@ -18,3 +18,7 @@ test("preflight rejects live gateway credentials and incomplete test credentials
   assert.equal(hostedPreflight({ ...env, CERTVERIFY_PAYMENT_MODE: "live" }).readyForHostedVerification, false);
   assert.equal(hostedPreflight({ ...env, CERTVERIFY_PAYMENT_MODE: "razorpay_test", RAZORPAY_TEST_KEY_ID: "rzp_test_fixture", RAZORPAY_TEST_KEY_SECRET: "fixture-api-secret", RAZORPAY_TEST_WEBHOOK_SECRET: "fixture-hook-secret" }).readyForHostedVerification, true);
 });
+
+test("known protected source is rejected even when labelled sandbox",()=>{
+  assert.equal(hostedPreflight({...env,CERTVERIFY_SANDBOX_PROJECT_REF:"jhnxztaqfikgvkshifel",NEXT_PUBLIC_SUPABASE_URL:"https://jhnxztaqfikgvkshifel.supabase.co"}).readyForHostedVerification,false);
+});

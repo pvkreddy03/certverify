@@ -14,7 +14,8 @@
     "inspect:db": "tsx scripts/inspect-stage1-database.ts",
     "migration:manifest": "tsx scripts/migration-manifest.ts",
     "payments:reconcile": "tsx scripts/reconcile-payments.ts",
-    "hosting:preflight": "tsx scripts/hosted-preflight.ts"
+    "hosting:preflight": "tsx scripts/hosted-preflight.ts",
+    "hosting:migrations": "tsx scripts/staging-manifest.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.5",
