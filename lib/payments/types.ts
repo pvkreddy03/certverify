@@ -19,11 +19,11 @@ export type PaymentNotice = {
   type: "payment" | "dispute";
 };
 export type PaymentGateway = {
-  readonly name: "razorpay";
+  readonly name: string;
   readonly capabilities: {
-    recurringMandates: false;
-    partialRefunds: true;
-    cancelOrder: false;
+    recurringMandates: boolean;
+    partialRefunds: boolean;
+    cancelOrder: boolean;
   };
   createOrder(input: {
     receipt: string;

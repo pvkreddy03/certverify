@@ -37,6 +37,8 @@ Stage 7 SQL remains an unapplied proposal.
   non-cacheable authentication/internal errors. The CSP deliberately does not claim
   complete script restriction: Next.js and Razorpay script/iframe compatibility still
   need a nonce-based policy review in staging.
+- Gateway interface capability types allow future providers to declare differing
+  support. Razorpay retains its tested capability values; only that adapter is enabled.
 - Manual order binding and reconciliation now record the initiating MFA administrator
   separately from the original payer, so financial recovery has a responsible actor.
 - Added print-only ordered migration hashes and expanded private read-only inspection.
