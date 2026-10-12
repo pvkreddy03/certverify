@@ -83,7 +83,8 @@ Do not relax redirect allowlists, confirmation, MFA, TLS or RLS to get a test pa
    replacement linkage and mandatory CertVerify attribution on the approved official domain.
 8. **Configure test-only merchant integration.** Set the sandbox variables above and
    HTTPS `/api/payments/webhook`; configure supported payment authorized/captured/failed,
-   order paid, refund processed/failed and dispute-created events. Verify actual payloads,
+   order paid, refund processed/failed and dispute-created events. Verify that plan currency precision matches the gateway’s currency minor units;
+   mismatches must refuse checkout rather than reprice or charge. Verify actual payloads,
    signature algorithm, capture settings, supported currency precision/minimums and
    retries. Callback authorization alone cannot activate access. Test tampering,
    concurrent capture, coupon reservations, failures, late payments, removed/suspended

@@ -135,6 +135,7 @@ test("adapter isolates provider endpoints, capabilities and validates order/inpu
     receipt: "a".repeat(32),
     amount: 39900,
     currency: "INR",
+    currencyExponent: 2,
   });
   assert.equal(calls[0], "https://api.razorpay.com/v1/orders");
   await assert.rejects(provider.fetchPayment("../../orders"));
@@ -143,6 +144,7 @@ test("adapter isolates provider endpoints, capabilities and validates order/inpu
       receipt: "a".repeat(32),
       amount: NaN,
       currency: "INR",
+      currencyExponent: 2,
     }),
   );
 });
@@ -156,6 +158,7 @@ test("authoritative reconciliation rejects wrong amount, currency and order rece
               receipt: "a".repeat(32),
               amount_minor: 39900,
               currency: "INR",
+              currency_exponent: 2,
             },
             error: null,
           }
@@ -214,4 +217,15 @@ test("provider order reconciliation rejects payment lists containing another ord
   assert.deepEqual(await provider.fetchOrderPayments("order_fixture"), [
     "pay_fixture",
   ]);
+});
+test("noncanonical currency precision is rejected before any gateway request", async () => {
+  const { provider, calls } = gateway();
+  const input = {
+    receipt: "a".repeat(32),
+    amount: 39900,
+    currency: "INR",
+    currencyExponent: 3,
+  };
+  await assert.rejects(provider.createOrder(input));
+  assert.equal(calls.length, 0);
 });

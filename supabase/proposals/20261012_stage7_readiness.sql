@@ -157,4 +157,34 @@ create or replace function public.cv_materialize_billing_quote(p_quote uuid) ret
  end $$;
 
 
+
+-- Gateway precision must come from immutable quote terms, never the checkout browser.
+create or replace function public.cv_prepare_checkout(p_intent uuid) returns jsonb language plpgsql security definer set search_path='' as $$
+ declare a uuid:=public.cv_billing_owner();i public.cv_payment_intents;q public.cv_billing_quotes;t public.cv_gateway_attempts;o public.cv_offers;n integer;new_id uuid:=gen_random_uuid();
+ begin
+ select * into i from public.cv_payment_intents where id=p_intent and account_id=a;if not found then raise exception 'Payment intent unavailable';end if;
+ select * into q from public.cv_billing_quotes where id=i.quote_id for update;
+ select * into t from public.cv_gateway_attempts where intent_id=i.id;
+ if found then return jsonb_build_object('id',t.id,'state',t.state,'order_id',t.order_id,'amount_minor',t.amount_minor,'currency',t.currency,'currency_exponent',(q.quote->'plan'->>'currency_exponent')::integer,'expires_at',t.expires_at,'create_order',false);end if;
+ if q.requested_by<>auth.uid() or q.status<>'awaiting_payment' or q.expires_at<=public.cv_billing_now() or q.seats<public.cv_allocated_seats(a)
+ or q.base_period_id is distinct from (select id from public.cv_billing_periods where account_id=a order by starts_at desc limit 1) then raise exception 'Checkout quote no longer valid';end if;
+ if q.intent<>'renewal' and (not exists(select 1 from public.cv_plans p join public.cv_plan_versions v on v.plan_id=p.id where v.id=q.plan_version_id and p.status='active') or (q.quote->'plan'->>'ends_at' is not null and (q.quote->'plan'->>'ends_at')::timestamptz<=public.cv_billing_now())) then raise exception 'Plan no longer available';end if;
+ if q.new_redemption then
+ select * into o from public.cv_offers where current_version_id=q.offer_version_id for update;
+ if not found or not public.cv_offer_eligible(q.offer_version_id,a,(q.quote->>'plan_id')::uuid) then raise exception 'Offer unavailable';end if;
+ select count(*) into n from public.cv_payment_offer_reservations r join public.cv_gateway_attempts x on x.id=r.attempt_id where r.offer_id=o.id and r.expires_at>public.cv_billing_now() and x.state in ('preparing','ready','authorized','failed');
+ if o.redemption_count+n>=coalesce((select (terms->>'max_redemptions')::integer from public.cv_offer_versions where id=q.offer_version_id),2147483647) then raise exception 'Offer capacity reserved';end if;
+ -- Expired reservations cannot grant access on a late capture. Retain attempts/observations as evidence.
+ delete from public.cv_payment_offer_reservations where offer_id=o.id and account_id=a and expires_at<=public.cv_billing_now();
+ end if;
+ insert into public.cv_gateway_attempts(id,intent_id,account_id,quote_id,provider,receipt,amount_minor,currency,requested_by,expires_at)
+ values(new_id,i.id,a,q.id,'razorpay',replace(new_id::text,'-',''),i.amount_minor,i.currency,auth.uid(),q.expires_at) returning * into t;
+ if q.new_redemption then insert into public.cv_payment_offer_reservations values(t.id,o.id,a,q.expires_at);end if;
+ perform public.cv_billing_event(a,auth.uid(),'payment.checkout_reserved',t.id,jsonb_build_object('intent_id',i.id));
+ return jsonb_build_object('id',t.id,'state',t.state,'receipt',t.receipt,'amount_minor',t.amount_minor,'currency',t.currency,'currency_exponent',(q.quote->'plan'->>'currency_exponent')::integer,'expires_at',t.expires_at,'create_order',true);
+ end $$;
+
+create or replace function public.cv_gateway_order_context(p_order text) returns jsonb language sql stable security definer set search_path='' as $$
+ select jsonb_build_object('id',t.id,'receipt',t.receipt,'amount_minor',t.amount_minor,'currency',t.currency,'currency_exponent',(q.quote->'plan'->>'currency_exponent')::integer) from public.cv_gateway_attempts t join public.cv_billing_quotes q on q.id=t.quote_id where t.order_id=p_order $$;
+
 commit;

@@ -179,6 +179,7 @@ async function checkout(
     receipt: t.receipt,
     amount: t.amount_minor,
     currency: t.currency,
+    currencyExponent: t.currency_exponent,
   });
   sql(
     serviceSql(

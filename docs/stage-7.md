@@ -37,6 +37,9 @@ Stage 7 SQL remains an unapplied proposal.
   non-cacheable authentication/internal errors. The CSP deliberately does not claim
   complete script restriction: Next.js and Razorpay script/iframe compatibility still
   need a nonce-based policy review in staging.
+- Added gateway currency-precision validation against standard currency metadata,
+  using immutable quote terms for new/repeated checkout and reconciliation. Incorrect
+  precision cannot initiate a gateway order; a regression failed before this guard.
 - Fixed a confirmed financial cancellation bug: owner cancellation could discard a
   captured future period without refund. Paid requests now require reviewed refund
   handling; renewal cancellation honors already-paid periods and keeps non-renewing
@@ -65,7 +68,7 @@ Next.js UI against mocked Supabase/Auth/MFA. None of these establishes hosted Su
 or production-schema compatibility. Fixture auth helpers and legacy numbering bodies
 are explicit substitutes, not verified production implementations.
 
-Passed locally: 38 unit, 134 PostgreSQL and 38 browser tests (210 total; zero failures
+Passed locally: 39 unit, 134 PostgreSQL and 38 browser tests (211 total; zero failures
 or skips), TypeScript, lint (seven existing warnings, zero errors) and Next 16.3.8
 production build. GitHub CI and final commit are recorded in the draft PR.
 Existing lint warnings are retained; no meaningful test is disabled or weakened.
@@ -86,3 +89,12 @@ synchronous Docker SQL driver blocks the fixture event loop; financial POSTs are
 See `release-runbook.md` for exact configuration, migration, integration, rollout,
 rollback and launch blockers. Stage 8 remains postponed. No paid API, production SQL,
 merge, production deployment or real payment was performed.
+
+## Final publication checkpoint
+
+Stage 6 PR #9 was published and its 188-test CI passed. Stage 7 PR #10 was published
+at 102f1f3e3aa095095e14816340274e6e3bfe1ee5; its 210-test CI passed (run 38246717339).
+The final currency guard increases the local suite to 211 passing tests and is saved
+in a local follow-up commit. GitHub injected credentials then returned HTTP 401;
+Git authentication and stored-profile fallback also failed. That follow-up cannot
+be claimed pushed or CI-verified until the connection is refreshed and push succeeds.

@@ -67,6 +67,11 @@ export async function reconcilePayment(
     payment.refunded > payment.amount
   )
     throw new PaymentError("Payment does not match a CertVerify checkout.");
+  gateway.validateMoney({
+    amount: context.amount_minor,
+    currency: context.currency,
+    currencyExponent: context.currency_exponent,
+  });
   const normalized = JSON.stringify({ ...payment, disputed });
   return checkedRpc(service, "cv_process_gateway_payment", {
     p_order: order.id,

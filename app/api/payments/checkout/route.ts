@@ -33,12 +33,18 @@ export async function POST(request: Request) {
         "Checkout cannot start. Refresh the quote and check account eligibility.",
         409,
       );
+    gateway.validateMoney({
+      amount: data.amount_minor,
+      currency: data.currency,
+      currencyExponent: data.currency_exponent,
+    });
     let orderId = data.order_id;
     if (data.create_order) {
       const order = await gateway.createOrder({
         receipt: data.receipt,
         amount: data.amount_minor,
         currency: data.currency,
+        currencyExponent: data.currency_exponent,
       });
       await checkedRpc(service, "cv_bind_gateway_order", {
         p_attempt: data.id,
