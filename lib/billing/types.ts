@@ -120,6 +120,8 @@ export type SubscriptionStatus = {
     amount_minor: number;
     currency: string;
     provider: string;
+    attempt_id?: string;
+    refunded_minor?: number;
     status: string;
     created_at: string;
   }[];

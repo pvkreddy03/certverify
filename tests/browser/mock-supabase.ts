@@ -88,6 +88,7 @@ const server = createServer(async (request, response) => {
     const owner=user.id===users.existing.id;
     json({account_id:a,account_type:"organization",can_cancel:owner,can_manage:owner&&accountAccess==="active",entitled:billingEntitled,status:billingStatus,period:billingPeriod ? {...billingPeriod,certificates_created:billingUsed,remaining_certificates:Math.max(0,20-billingUsed)}:null,allocated_seats:2,cancel_at_period_end:billingCancelled,trial_used:billingTrialUsed,requests:owner?billingQuotes:[],history:owner?billingHistory:[],payments:owner?billingPayments:[]});return;
   }
+  if(rpc==="cv_platform_payment_report"){if(user.id!==users.platform.id||aal!=="aal2"){json({message:"MFA required"},403);return;}json({attempts:[],total:0,page:body.p_page});return;}
   if(rpc==="cv_pricing_catalog"){json(billingPlans.filter(p=>p.status==="active"&&p.terms.visible));return;}
   if(["cv_platform_billing_catalog","cv_save_plan","cv_save_offer","cv_set_catalog_status","cv_platform_subscription_report","cv_admin_grant_subscription"].includes(rpc)){
     if(user.id!==users.platform.id||aal!=="aal2"){json({message:"Denied"},403);return;}
