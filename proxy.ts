@@ -40,7 +40,9 @@ export async function proxy(request: NextRequest) {
 
   if (isDashboardRoute && !user) {
     const loginUrl = request.nextUrl.clone();
-    loginUrl.pathname = "/login";
+    const platform=request.nextUrl.pathname.startsWith("/platform");
+    loginUrl.pathname = platform ? "/platform-login" : "/login";
+    if (platform) loginUrl.searchParams.set("next",request.nextUrl.pathname);
 
     return NextResponse.redirect(loginUrl);
   }

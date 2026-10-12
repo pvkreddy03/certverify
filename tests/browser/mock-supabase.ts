@@ -26,6 +26,14 @@ type Version={ id:string;account_id:string;company_name:string;professional_deta
 const baseline:Version={ id:"40000000-0000-0000-0000-000000000001",account_id:a,company_name:"Test Issuer",professional_details:"",logo_asset_id:null,created_at:"2026-10-01T00:00:00Z",origin:"baseline",approved_by:null };
 let current={ ...baseline };let versions=[current];let brandingRequests:Record<string,unknown>[]=[];
 let finalizeFailure=false;let storageDeletes=0;let logoCounter=0;const logos=new Map<string,Buffer>();let logoPath="";
+let accountAccess="active";let accessRevision=0;let accessReason:string|null=null;
+let platformAudit:Record<string,unknown>[]=[];let editingPermissions:Record<string,unknown>[]=[];
+function platformAccounts() {
+ const common={ created_at:"2026-10-01T00:00:00Z",subscription_source:null,subscription_observed_at:null,certificate_count:1,active_certificates:1,inactive_certificates:0,revoked_certificates:0,last_issued_at:"2026-10-01T00:00:00Z" };
+ return [{...common,id:a,name:current.company_name,account_code:"A",account_type:"organization",access_status:accountAccess,revision:accessRevision,subscription_status:"unknown",member_count:2},
+ {...common,id:b,name:"Organization B",account_code:"B",account_type:"individual",access_status:"active",revision:0,subscription_status:"trial",member_count:1}];
+}
+function audit(action:string,details:Record<string,unknown>={}) { platformAudit.unshift({ id:`event-${platformAudit.length+1}`,actor_id:users.platform.id,action,account_id:a,subject_id:a,occurred_at:new Date().toISOString(),details }); }
 const server = createServer(async (request, response) => {
   response.setHeader("Access-Control-Allow-Origin", "http://127.0.0.1:3100");
   response.setHeader("Access-Control-Allow-Headers", "authorization,apikey,content-type,x-client-info,x-supabase-api-version,x-certverify-account,prefer,accept,range,content-profile,accept-profile");
@@ -42,7 +50,7 @@ const server = createServer(async (request, response) => {
   const user = subject === users.platform.id ? users.platform : subject === users.new.id ? users.new : users.existing;
   response.setHeader("Content-Type", "application/json");
   function json(value: unknown, status = 200) { response.writeHead(status).end(JSON.stringify(value)); }
-  if (url.pathname === "/test/reset") { currentStatus = "Active"; internalReason = null; publicReason = null; current={...baseline};versions=[current];brandingRequests=[];logos.clear();finalizeFailure=false;storageDeletes=0;json({}); return; }
+  if (url.pathname === "/test/reset") { currentStatus = "Active"; internalReason = null; publicReason = null; current={...baseline};versions=[current];brandingRequests=[];logos.clear();accountAccess="active";accessRevision=0;accessReason=null;platformAudit=[];editingPermissions=[];finalizeFailure=false;storageDeletes=0;json({}); return; }
   if (url.pathname === "/test/finalize-failure") { finalizeFailure=true;json({});return; }
   if (url.pathname === "/test/storage-state") { json({ objects:logos.size,deletes:storageDeletes });return; }
   if (url.pathname === "/health") { json({ status: "fixture" }); return; }
@@ -55,7 +63,7 @@ const server = createServer(async (request, response) => {
   if (url.pathname === "/auth/v1/logout") { response.writeHead(204).end(); return; }
   if (url.pathname === "/auth/v1/recover" || url.pathname === "/auth/v1/signup") { json({}); return; }
   if (url.pathname.endsWith("/platform-factor/challenge")) { json({ id:"fixture-challenge",type:"totp",expires_at:Math.floor(Date.now()/1000)+60 });return; }
-  if (url.pathname.endsWith("/platform-factor/verify")) { json(session(users.platform,"aal2"));return; }
+  if (url.pathname.endsWith("/platform-factor/verify")) { if(body.code!=="123456") { json({ message:"Invalid authenticator code",code:"mfa_verification_failed" },422);return; }json(session(users.platform,"aal2"));return; }
   if (url.pathname.startsWith("/storage/v1/object/")) {
     const path=decodeURIComponent(url.pathname.replace(/^\/storage\/v1\/object\/(authenticated\/)?certverify-branding\//,""));
     if (request.method==="DELETE") { storageDeletes++;json([]);return; }
@@ -66,6 +74,26 @@ const server = createServer(async (request, response) => {
   const rpc=url.pathname.replace("/rest/v1/rpc/","");
   if (rpc==="cv_platform_identity") { json(user.id===users.platform.id);return; }
   if (rpc==="cv_is_platform_admin") { json(user.id===users.platform.id && aal==="aal2");return; }
+  if (rpc==="cv_customer_account_states") { json([{account_id:a,status:accountAccess},{account_id:b,status:"active"}]);return; }
+  if (["cv_platform_overview","cv_platform_accounts","cv_platform_account","cv_platform_set_account_access","cv_platform_audit"].includes(rpc)) {
+    if (user.id!==users.platform.id || aal!=="aal2") { json({message:"Denied"},403);return; }
+    const accounts=platformAccounts();
+    if(rpc==="cv_platform_overview") { json({accounts:2,individual_accounts:1,organization_accounts:1,users:3,certificates:2,active_certificates:2,inactive_certificates:0,revoked_certificates:0,access_statuses:{[accountAccess]:1},subscription_statuses:{unknown:1,trial:1},issuance_daily:[{date:"2026-10-01",count:2}],generated_at:new Date().toISOString()});return; }
+    if(rpc==="cv_platform_accounts") {
+      const filtered=accounts.filter((account)=>(!body.p_type || account.account_type===body.p_type) && (!body.p_status || account.access_status===body.p_status) && (!body.p_subscription || account.subscription_status===body.p_subscription) && (!body.p_search || (account.name+" existing@example.test").toLowerCase().includes(body.p_search.toLowerCase())));
+      json({accounts:filtered.slice((body.p_page-1)*body.p_limit,body.p_page*body.p_limit),total:filtered.length,page:body.p_page,limit:body.p_limit});return;
+    }
+    if(rpc==="cv_platform_account") {
+      const account=accounts.find((row)=>row.id===body.p_account);if(!account){json(null);return;}
+      json({account,access:{status:account.access_status,revision:account.revision,reason:accessReason,changed_by:users.platform.id,changed_at:"2026-10-01T00:00:00Z"},subscription:null,members:[{id:"member-owner",user_id:users.existing.id,email:users.existing.email,role:"owner",status:"active",joined_at:"2026-10-01T00:00:00Z",email_confirmed_at:"2026-10-01T00:00:00Z"}],member_page:body.p_member_page,total_members:1,activity:[{id:"activity-1",actor_id:users.existing.id,action:"certificate.created",occurred_at:"2026-10-01T00:00:00Z",subject_id:certificateId}]});return;
+    }
+    if(rpc==="cv_platform_set_account_access") {
+      if(body.p_revision!==accessRevision || !body.p_reason?.trim()) {json({message:"Conflict"},409);return;}
+      const previous=accountAccess;accountAccess=body.p_status;accessReason=body.p_reason;accessRevision++;
+      audit("account.access_changed",{previous_status:previous,status:accountAccess,reason:accessReason});json({status:accountAccess,revision:accessRevision});return;
+    }
+    if(rpc==="cv_platform_audit") { json({total:platformAudit.length,page:body.p_page,events:platformAudit});return; }
+  }
   if (rpc==="cv_current_branding") { json(current);return; }
   if (rpc==="cv_certificate_issuer") { json(baseline);return; }
   if (rpc==="cv_reserve_logo") {
@@ -81,13 +109,22 @@ const server = createServer(async (request, response) => {
     const id="60000000-0000-0000-0000-000000000001";
     brandingRequests.push({ id,account_id:a,base_version_id:current.id,company_name:body.p_name,professional_details:body.p_details,logo_asset_id:body.p_logo,explanation:body.p_explanation,requested_by:user.id,status:"pending",created_at:new Date().toISOString() });json(id);return;
   }
+  if (rpc==="cv_platform_branding_requests") {
+    const filtered=brandingRequests.filter((r)=>!body.p_status || r.status===body.p_status || (body.p_status==="open" && ["pending","needs_information","permission_granted"].includes(String(r.status))));
+    json({reviews:filtered.map((r)=>({request:r,current,fields:["company_name"],history:versions,permissions:editingPermissions,members:[{user_id:users.existing.id,email:users.existing.email,role:"owner"}]})),total:filtered.length,page:body.p_page,limit:body.p_limit});return;
+  }
   if (rpc==="cv_platform_branding_queue") {
-    json(brandingRequests.map((r)=>({ request:r,current,fields:["company_name"],history:versions,permissions:[] })));return;
+    json(brandingRequests.map((r)=>({ request:r,current,fields:["company_name"],history:versions,permissions:editingPermissions })));return;
+  }
+  if (rpc==="cv_revoke_branding_permission") {
+    const permission=editingPermissions.find((p)=>p.id===body.p_permission);if(permission) permission.revoked_at=new Date().toISOString();
+    brandingRequests.forEach((r)=>{r.status="pending";});audit("branding.permission_revoked");json(true);return;
   }
   if (rpc==="cv_review_branding") {
     if (user.id!==users.platform.id || aal!=="aal2") { json({ message:"Denied" },403);return; }
     const r=brandingRequests.find((item)=>item.id===body.p_request);
     if (!r || r.status!=="pending") { json({ message:"Not pending" },409);return; }
+    if(body.p_action==="grant") {r.status="permission_granted";editingPermissions.push({id:"permission-1",user_id:body.p_user,fields:body.p_fields,expires_at:body.p_expires,used_at:null,revoked_at:null});audit("branding.grant");json(true);return;}
     r.status=body.p_action==="approve" ? "approved" : "rejected";r.decision_reason=body.p_reason;
     if (body.p_action==="approve") { current={...current,id:"40000000-0000-0000-0000-000000000002",company_name:String(r.company_name),professional_details:String(r.professional_details),logo_asset_id:r.logo_asset_id as string|null,origin:"approved",approved_by:user.id};versions.push(current); }
     json(true);return;

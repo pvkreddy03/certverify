@@ -1,13 +1,16 @@
 import { platformBrandingContext } from "@/lib/branding/server";
+import { integer,PlatformInputError } from "@/lib/platform/validation";
 import { RequestError, requestErrorResponse } from "@/lib/auth/request";
 
 export async function GET(request: Request) {
   try {
     const { client }=await platformBrandingContext(request);
-    const { data,error }=await client.rpc("cv_platform_branding_queue");
+    const params=new URL(request.url).searchParams;const status=params.get("status") || null;
+    if (status && !["open","pending","needs_information","permission_granted","approved","rejected","cancelled"].includes(status)) throw new RequestError("Invalid branding filter.",400);
+    const { data,error }=await client.rpc("cv_platform_branding_requests",{ p_status:status,p_page:integer(params.get("page"),1),p_limit:25 });
     if (error) throw new RequestError("The branding review queue could not be loaded.",503);
     return Response.json(data,{ headers:{ "Cache-Control":"private, no-store" } });
-  } catch(error) { return requestErrorResponse(error); }
+  } catch(error) { return error instanceof PlatformInputError ? Response.json({error:error.message},{status:400}) : requestErrorResponse(error); }
 }
 export async function POST(request: Request) {
   try {
