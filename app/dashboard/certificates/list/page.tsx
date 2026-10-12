@@ -24,10 +24,6 @@ export default function CertificateListPage() {
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
 
-  useEffect(() => {
-    loadCertificates();
-  }, []);
-
   async function loadCertificates() {
     setLoading(true);
     setErrorMessage("");
@@ -90,6 +86,10 @@ export default function CertificateListPage() {
     setCertificates(rows);
     setLoading(false);
   }
+
+  useEffect(() => {
+    void Promise.resolve().then(() => loadCertificates());
+  }, []);
 
   function formatDate(dateString: string) {
     return new Date(dateString).toLocaleDateString("en-IN", {

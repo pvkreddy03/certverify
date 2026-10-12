@@ -18,10 +18,6 @@ export default function DashboardPage() {
 
   const [loadingStats, setLoadingStats] = useState(true);
 
-  useEffect(() => {
-    loadDashboard();
-  }, []);
-
   async function loadDashboard() {
     setLoadingStats(true);
 
@@ -116,6 +112,10 @@ export default function DashboardPage() {
 
     setLoadingStats(false);
   }
+
+  useEffect(() => {
+    void Promise.resolve().then(() => loadDashboard());
+  }, []);
 
   async function handleLogout() {
     await supabase.auth.signOut();

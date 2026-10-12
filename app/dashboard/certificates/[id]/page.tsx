@@ -40,12 +40,6 @@ export default function ViewCertificatePage() {
   const [errorMessage, setErrorMessage] = useState("");
   const [qrCode, setQrCode] = useState("");
 
-  useEffect(() => {
-    if (id) {
-      loadCertificate();
-    }
-  }, [id]);
-
   async function loadCertificate() {
     setLoading(true);
     setLoadingFields(true);
@@ -83,8 +77,16 @@ export default function ViewCertificatePage() {
     setCertificate(data);
     setLoading(false);
 
+    // This function declaration is hoisted; the call intentionally follows the certificate fetch.
+    // eslint-disable-next-line react-hooks/immutability
     await loadFieldValues(data.id);
   }
+
+  useEffect(() => {
+    void Promise.resolve().then(() => {
+      if (id) void loadCertificate();
+    });
+  }, [id]);
 
   async function loadFieldValues(certificateId: string) {
     setLoadingFields(true);

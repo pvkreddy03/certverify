@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Historical copy kept for reference; it is not an application route.
+    "app/dashboard/certificates/page.autoid-backup.tsx",
   ]),
 ]);
 

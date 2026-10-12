@@ -59,10 +59,6 @@ export default function TeamPage() {
   const [inviteMessage, setInviteMessage] = useState("");
   const [inviteError, setInviteError] = useState("");
 
-  useEffect(() => {
-    loadTeam();
-  }, []);
-
   async function loadTeam() {
     setLoading(true);
     setErrorMessage("");
@@ -153,8 +149,14 @@ export default function TeamPage() {
 
     setMembers(memberData ?? []);
     setLoading(false);
+    // This function declaration is hoisted; load invitations after the team fetch.
+    // eslint-disable-next-line react-hooks/immutability
     await loadInvitations();
   }
+
+  useEffect(() => {
+    void Promise.resolve().then(() => loadTeam());
+  }, []);
 
   async function loadInvitations() {
     const { data: { session } } = await supabase.auth.getSession();

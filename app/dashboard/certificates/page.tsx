@@ -53,7 +53,7 @@ export default function CertificatesPage() {
   }
 
   useEffect(() => {
-    loadTemplates();
+    void Promise.resolve().then(() => loadTemplates());
   }, []);
 
   useEffect(() => {

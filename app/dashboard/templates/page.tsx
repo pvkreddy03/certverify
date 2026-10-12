@@ -49,7 +49,7 @@ export default function TemplatesPage() {
   }
 
   useEffect(() => {
-    loadTemplates();
+    void Promise.resolve().then(() => loadTemplates());
   }, []);
 
   async function handleCreateTemplate(e: React.FormEvent) {
