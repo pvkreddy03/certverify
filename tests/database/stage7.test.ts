@@ -599,6 +599,59 @@ test("manual financial recovery records the MFA administrator actor and ordinary
     "f",
   );
 });
+test("prepaid renewal cancellation preserves booked access and non-renewing preference", () => {
+  const c = prepared();
+  captured(c);
+  const old = value("select public.cv_subscription_status()", c.a).period.id;
+  const renewal = prepared(c.a, c.p);
+  captured(renewal);
+  assert.notEqual(
+    sql(
+      as(
+        ids.owner,
+        c.a,
+        `select public.cv_subscription_action('cancel_request','${renewal.q.id}')`,
+      ),
+      false,
+    ).status,
+    0,
+  );
+  value("select public.cv_subscription_action('cancel_renewal')", c.a);
+  assert.equal(
+    sql(
+      `select status from public.cv_billing_quotes where id='${renewal.q.id}'`,
+    ).out,
+    "scheduled",
+  );
+  assert.equal(
+    value("select public.cv_subscription_status()", c.a).period.id,
+    old,
+  );
+  clock(32);
+  const next = value("select public.cv_subscription_status()", c.a);
+  assert.notEqual(next.period.id, old);
+  assert.equal(next.period.payment_status, "captured");
+  assert.equal(next.cancel_at_period_end, true);
+  assert.equal(next.status, "non_renewing");
+  clock();
+});
+test("unpaid renewal cancellation still closes checkout and any later capture needs review", () => {
+  const c = prepared();
+  value("select public.cv_subscription_action('cancel_renewal')", c.a);
+  assert.equal(
+    sql(`select status from public.cv_billing_quotes where id='${c.q.id}'`).out,
+    "cancelled",
+  );
+  captured(c);
+  assert.equal(
+    value(`select public.cv_payment_attempt('${c.t.id}')`, c.a).state,
+    "review",
+  );
+  assert.equal(
+    value("select public.cv_subscription_status()", c.a).entitled,
+    false,
+  );
+});
 test("quote budgets apply to direct RPCs across accounts, and private budget cleanup cannot delete financial evidence", () => {
   const a = account(),
     p = plan();

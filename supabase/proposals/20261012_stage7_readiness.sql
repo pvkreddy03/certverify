@@ -113,4 +113,48 @@ create function public.cv_record_payment_admin_action(p_action text,p_attempt uu
  end $$;
 revoke execute on function public.cv_record_payment_admin_action(text,uuid,text) from public,anon,authenticated,service_role;
 grant execute on function public.cv_record_payment_admin_action(text,uuid,text) to authenticated;
+
+-- Cancellation cannot discard a captured future period without a reviewed refund.
+create or replace function public.cv_subscription_action(p_action text,p_request uuid default null) returns boolean language plpgsql security definer set search_path='' as $$
+ declare a uuid:=public.cv_billing_account();
+ begin
+ perform 1 from public.accounts where id=a for update;
+ if not exists(select 1 from public.account_members where account_id=a and user_id=auth.uid() and status='active' and role='owner') then raise exception 'Owner required' using errcode='42501';end if;
+ if p_action='resume_renewal' and not public.cv_account_enabled(a) then raise exception 'Suspended account cannot resume renewal';end if;
+ insert into public.cv_subscriptions(account_id) values(a) on conflict do nothing;
+ if p_action='cancel_request' then
+ if exists(select 1 from public.cv_paid_settlements paid join public.cv_billing_quotes q on q.id=paid.quote_id where q.id=p_request and q.account_id=a and paid.state<>'refunded') then raise exception 'Paid requests require reviewed refund handling';end if;
+ update public.cv_billing_quotes set status='cancelled' where id=p_request and account_id=a and status in ('quoted','awaiting_payment','scheduled','needs_review');if not found then raise exception 'Request cannot be cancelled';end if;
+ elsif p_action in ('cancel_renewal','resume_renewal') then
+ update public.cv_subscriptions set cancel_at_period_end=(p_action='cancel_renewal'),revision=revision+1 where account_id=a;
+ if p_action='cancel_renewal' then update public.cv_billing_quotes set status='cancelled' where account_id=a and status in ('scheduled','awaiting_payment') and not exists(select 1 from public.cv_paid_settlements paid where paid.quote_id=public.cv_billing_quotes.id and paid.state in ('scheduled','active','review','disputed','reversed'));end if;
+ else raise exception 'Unsupported subscription action';end if;
+ perform public.cv_billing_event(a,auth.uid(),'billing.'||p_action,p_request);return true;
+ end $$;
+
+
+create or replace function public.cv_materialize_billing_quote(p_quote uuid) returns uuid language plpgsql security definer set search_path='' as $$
+ declare r public.cv_billing_quotes;t jsonb;p uuid;start_time timestamptz;ending timestamptz;trial integer;sub public.cv_subscriptions;
+ begin
+ select * into r from public.cv_billing_quotes where id=p_quote for update;
+ if r.status<>'scheduled' or r.scheduled_for>public.cv_billing_now() then return null;end if;
+ if r.seats<public.cv_allocated_seats(r.account_id) then update public.cv_billing_quotes set status='needs_review' where id=r.id;perform public.cv_billing_event(r.account_id,r.accepted_by,'billing.change_needs_review',r.id);return null;end if;
+ if r.grant_kind='paid' and not exists(select 1 from public.cv_paid_settlements where quote_id=r.id and state='scheduled') then raise exception 'Verified settlement required';end if;
+ t:=r.quote->'plan';start_time:=r.scheduled_for;trial:=(r.quote->>'trial_days')::integer;
+ ending:=case when trial>0 then start_time+make_interval(days=>trial) else public.cv_period_end(start_time,t) end;
+ if exists(select 1 from public.cv_billing_periods where account_id=r.account_id and starts_at<ending and ends_at>start_time) then raise exception 'Overlapping billing periods forbidden';end if;
+ insert into public.cv_billing_periods(account_id,plan_version_id,plan_snapshot,starts_at,ends_at,licensed_seats,certificate_limit,list_amount_minor,amount_due_minor,currency,offer_version_id,access_kind,payment_status,created_by)
+ values(r.account_id,r.plan_version_id,t,start_time,ending,r.seats,(t->>'certificate_limit')::bigint,(r.quote->>'list_amount_minor')::bigint,case when r.grant_kind='paid' then (r.quote->>'amount_due_minor')::bigint else 0 end,r.quote->>'currency',r.offer_version_id,
+ case when r.grant_kind='paid' then 'paid' when r.grant_kind='complimentary' then 'complimentary' when trial>0 then 'trial' else 'free' end,case when r.grant_kind='paid' then 'captured' when r.grant_kind='complimentary' then 'waived' else 'no_payment_required' end,r.accepted_by) returning id into p;
+ insert into public.cv_period_usage(period_id) values(p);
+ if r.grant_kind='paid' then update public.cv_paid_settlements set period_id=p,state='active' where quote_id=r.id and state='scheduled';if not found then raise exception 'Verified settlement required';end if;end if;
+ select * into sub from public.cv_subscriptions where account_id=r.account_id for update;
+ update public.cv_subscriptions set trial_used=trial_used or trial>0,cancel_at_period_end=case when r.grant_kind='paid' then sub.cancel_at_period_end else false end,revision=revision+1,
+ promotion_version_id=case when r.new_redemption then r.offer_version_id when r.intent in ('start','change','trial') then null else promotion_version_id end,
+ promotion_cycles_remaining=case when r.new_redemption then greatest(0,coalesce((r.quote->'offer_terms'->>'cycles')::integer,0)-1) when r.offer_version_id is not null then greatest(0,promotion_cycles_remaining-1) when r.intent in ('start','change','trial') then 0 else promotion_cycles_remaining end where account_id=r.account_id;
+ update public.cv_billing_quotes set status='applied' where id=r.id;
+ perform public.cv_billing_event(r.account_id,r.accepted_by,'billing.period_started',p,jsonb_build_object('quote_id',r.id,'access_kind',r.grant_kind,'reason',r.grant_reason,'plan_version_id',r.plan_version_id));return p;
+ end $$;
+
+
 commit;

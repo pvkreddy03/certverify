@@ -37,6 +37,10 @@ Stage 7 SQL remains an unapplied proposal.
   non-cacheable authentication/internal errors. The CSP deliberately does not claim
   complete script restriction: Next.js and Razorpay script/iframe compatibility still
   need a nonce-based policy review in staging.
+- Fixed a confirmed financial cancellation bug: owner cancellation could discard a
+  captured future period without refund. Paid requests now require reviewed refund
+  handling; renewal cancellation honors already-paid periods and keeps non-renewing
+  preference when those periods start. A regression failed before the fix.
 - Gateway interface capability types allow future providers to declare differing
   support. Razorpay retains its tested capability values; only that adapter is enabled.
 - Manual order binding and reconciliation now record the initiating MFA administrator
@@ -61,7 +65,7 @@ Next.js UI against mocked Supabase/Auth/MFA. None of these establishes hosted Su
 or production-schema compatibility. Fixture auth helpers and legacy numbering bodies
 are explicit substitutes, not verified production implementations.
 
-Passed locally: 38 unit, 132 PostgreSQL and 38 browser tests (208 total; zero failures
+Passed locally: 38 unit, 134 PostgreSQL and 38 browser tests (210 total; zero failures
 or skips), TypeScript, lint (seven existing warnings, zero errors) and Next 16.3.8
 production build. GitHub CI and final commit are recorded in the draft PR.
 Existing lint warnings are retained; no meaningful test is disabled or weakened.

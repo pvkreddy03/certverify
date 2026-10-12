@@ -87,7 +87,9 @@ Do not relax redirect allowlists, confirmation, MFA, TLS or RLS to get a test pa
    signature algorithm, capture settings, supported currency precision/minimums and
    retries. Callback authorization alone cannot activate access. Test tampering,
    concurrent capture, coupon reservations, failures, late payments, removed/suspended
-   owners, refunds and disputes. Never use real cards/charges or live keys in this work.
+   owners, refunds and disputes. Verify cancellation preserves already-paid future periods and their non-renewing
+   preference; direct paid-request cancellation must require reviewed refund handling.
+   Never use real cards/charges or live keys in this work.
 9. **Validate partial-failure recovery and operations.** Lose an order/refund response;
    recover the exact receipt-matched existing order in MFA monitoring and reconcile its
    payment. Do not recreate uncertain POSTs. Run the sandbox reconciliation job via
