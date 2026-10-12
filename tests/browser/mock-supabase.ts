@@ -28,6 +28,14 @@ let current={ ...baseline };let versions=[current];let brandingRequests:Record<s
 let finalizeFailure=false;let storageDeletes=0;let logoCounter=0;const logos=new Map<string,Buffer>();let logoPath="";
 let accountAccess="active";let accessRevision=0;let accessReason:string|null=null;
 let platformAudit:Record<string,unknown>[]=[];let editingPermissions:Record<string,unknown>[]=[];
+const billingPlanId="70000000-0000-0000-0000-000000000001";
+const billingTerms={name:"Browser baseline plan",description:"Fixture only",eligibility:["individual","organization"],audience:"standard",billing_period:"monthly",custom_days:30,price_minor:99900,renewal_price_minor:99900,currency:"INR",currency_exponent:2,included_seats:5,extra_seat_price_minor:39900,max_seats:10,certificate_limit:20,trial_days:7,visible:true,features:[],starts_at:null,ends_at:null};
+let billingPlans=[{id:billingPlanId,version_id:"71000000-0000-0000-0000-000000000001",status:"active",revision:2,terms:{...billingTerms}}];
+let billingOffers:Record<string,unknown>[]=[];let billingQuotes:Record<string,unknown>[]=[];
+let billingEntitled=true;let billingStatus="active";let billingTrialUsed=false;let billingUsed=0;let billingCancelled=false;
+let billingPeriod:Record<string,unknown>|null={id:"90000000-0000-0000-0000-000000000001",plan_id:billingPlanId,plan_version_id:"71000000-0000-0000-0000-000000000001",name:billingTerms.name,billing_period:"monthly",starts_at:"2026-10-01T00:00:00Z",ends_at:"2026-11-01T00:00:00Z",licensed_seats:5,certificate_limit:20,payment_status:"waived"};
+let billingHistory:Record<string,unknown>[]=[];let billingPayments:Record<string,unknown>[]=[];
+function resetBilling(){billingPlans=[{id:billingPlanId,version_id:"71000000-0000-0000-0000-000000000001",status:"active",revision:2,terms:{...billingTerms}}];billingOffers=[];billingQuotes=[];billingEntitled=true;billingStatus="active";billingTrialUsed=false;billingUsed=0;billingCancelled=false;billingPeriod={id:"90000000-0000-0000-0000-000000000001",plan_id:billingPlanId,plan_version_id:"71000000-0000-0000-0000-000000000001",name:billingTerms.name,billing_period:"monthly",starts_at:"2026-10-01T00:00:00Z",ends_at:"2026-11-01T00:00:00Z",licensed_seats:5,certificate_limit:20,payment_status:"waived"};billingHistory=[];billingPayments=[];}
 function platformAccounts() {
  const common={ created_at:"2026-10-01T00:00:00Z",subscription_source:null,subscription_observed_at:null,certificate_count:1,active_certificates:1,inactive_certificates:0,revoked_certificates:0,last_issued_at:"2026-10-01T00:00:00Z" };
  return [{...common,id:a,name:current.company_name,account_code:"A",account_type:"organization",access_status:accountAccess,revision:accessRevision,subscription_status:"unknown",member_count:2},
@@ -50,9 +58,11 @@ const server = createServer(async (request, response) => {
   const user = subject === users.platform.id ? users.platform : subject === users.new.id ? users.new : users.existing;
   response.setHeader("Content-Type", "application/json");
   function json(value: unknown, status = 200) { response.writeHead(status).end(JSON.stringify(value)); }
-  if (url.pathname === "/test/reset") { currentStatus = "Active"; internalReason = null; publicReason = null; current={...baseline};versions=[current];brandingRequests=[];logos.clear();accountAccess="active";accessRevision=0;accessReason=null;platformAudit=[];editingPermissions=[];finalizeFailure=false;storageDeletes=0;json({}); return; }
+  if (url.pathname === "/test/reset") { currentStatus = "Active"; internalReason = null; publicReason = null; current={...baseline};versions=[current];brandingRequests=[];logos.clear();resetBilling();accountAccess="active";accessRevision=0;accessReason=null;platformAudit=[];editingPermissions=[];finalizeFailure=false;storageDeletes=0;json({}); return; }
   if (url.pathname === "/test/finalize-failure") { finalizeFailure=true;json({});return; }
   if (url.pathname === "/test/storage-state") { json({ objects:logos.size,deletes:storageDeletes });return; }
+  if(url.pathname==="/test/billing-reset"){billingEntitled=false;billingStatus="unsubscribed";billingPeriod=null;json({});return;}
+  if(url.pathname==="/test/billing-expire"){billingEntitled=false;billingStatus="expired";billingUsed=20;json({});return;}
   if (url.pathname === "/health") { json({ status: "fixture" }); return; }
   if (url.pathname === "/auth/v1/token") { json(session(body.email === users.platform.email ? users.platform : body.email === users.new.email ? users.new : users.existing)); return; }
   if (url.pathname === "/auth/v1/verify") {
@@ -74,6 +84,44 @@ const server = createServer(async (request, response) => {
   const rpc=url.pathname.replace("/rest/v1/rpc/","");
   if (rpc==="cv_platform_identity") { json(user.id===users.platform.id);return; }
   if (rpc==="cv_is_platform_admin") { json(user.id===users.platform.id && aal==="aal2");return; }
+  if(rpc==="cv_subscription_status"){
+    const owner=user.id===users.existing.id;
+    json({account_id:a,account_type:"organization",can_cancel:owner,can_manage:owner&&accountAccess==="active",entitled:billingEntitled,status:billingStatus,period:billingPeriod ? {...billingPeriod,certificates_created:billingUsed,remaining_certificates:Math.max(0,20-billingUsed)}:null,allocated_seats:2,cancel_at_period_end:billingCancelled,trial_used:billingTrialUsed,requests:owner?billingQuotes:[],history:owner?billingHistory:[],payments:owner?billingPayments:[]});return;
+  }
+  if(rpc==="cv_pricing_catalog"){json(billingPlans.filter(p=>p.status==="active"&&p.terms.visible));return;}
+  if(["cv_platform_billing_catalog","cv_save_plan","cv_save_offer","cv_set_catalog_status","cv_platform_subscription_report","cv_admin_grant_subscription"].includes(rpc)){
+    if(user.id!==users.platform.id||aal!=="aal2"){json({message:"Denied"},403);return;}
+    if(rpc==="cv_platform_billing_catalog"){json({plans:billingPlans,offers:billingOffers});return;}
+    if(rpc==="cv_save_plan"){
+      const old=billingPlans.find(p=>p.id===body.p_id);
+      if(old){if(old.revision!==body.p_revision){json({message:"Stale"},409);return;}old.terms=body.p_terms;old.revision++;old.version_id="71000000-0000-0000-0000-000000000099";json(old.id);return;}
+      const id=`70000000-0000-0000-0000-${String(billingPlans.length+1).padStart(12,"0")}`;billingPlans.push({id,version_id:id,status:"draft",revision:1,terms:body.p_terms});json(id);return;
+    }
+    if(rpc==="cv_save_offer"){const id="72000000-0000-0000-0000-000000000001";billingOffers.push({id,version_id:id,status:"draft",revision:1,code:body.p_code,terms:body.p_terms,redemption_count:0});json(id);return;}
+    if(rpc==="cv_set_catalog_status"){const item=body.p_kind==="plan" ? billingPlans.find(p=>p.id===body.p_id):billingOffers.find(o=>o.id===body.p_id);if(item){item.status=body.p_status;item.revision=Number(item.revision)+1;}json(true);return;}
+    if(rpc==="cv_platform_subscription_report"){json({total:1,page:body.p_page,accounts:[{id:a,name:current.company_name,status:billingStatus,payment_intents:billingPayments.length,period:billingPeriod ? {...billingPeriod,plan_snapshot:billingTerms,certificates_created:billingUsed}:null,requests:billingQuotes.filter(q=>q.status!=="quoted")}],history:billingHistory,audit:[]});return;}
+    if(rpc==="cv_admin_grant_subscription"){billingEntitled=true;billingStatus="active";json({status:"applied"});return;}
+  }
+  if(["cv_quote_subscription","cv_accept_subscription","cv_subscription_action"].includes(rpc)){
+    if(user.id!==users.existing.id||request.headers["x-certverify-account"]!==a){json({message:"Owner required"},403);return;}
+    if(rpc==="cv_quote_subscription"){
+      const plan=billingPlans.find(p=>p.id===body.p_plan);if(!plan){json({message:"Plan unavailable"},409);return;}
+      if(body.p_intent==="trial"&&(billingTrialUsed||billingEntitled)){json({message:"Trial unavailable"},409);return;}
+      const terms={...plan.terms};let amount=(body.p_intent==="renewal"?terms.renewal_price_minor:terms.price_minor)+Math.max(0,body.p_seats-terms.included_seats)*terms.extra_seat_price_minor;
+      let offerTerms=null;
+      if(body.p_coupon){const campaign=billingOffers.find(o=>o.code===body.p_coupon.toUpperCase()&&o.status==="active");if(!campaign){json({message:"Coupon unavailable"},409);return;}offerTerms=campaign.terms as {kind:string;value:number};amount=offerTerms.kind==="percentage"?amount-Math.floor(amount*offerTerms.value/10000):Math.max(0,amount-offerTerms.value);}
+      if(body.p_intent==="trial")amount=0;
+      const id=`80000000-0000-0000-0000-${String(billingQuotes.length+1).padStart(12,"0")}`;
+      const quote={id,expires_at:new Date(Date.now()+1800000).toISOString(),quote:{plan_id:plan.id,plan_version_id:plan.version_id,plan:terms,licensed_seats:body.p_seats,regular_renewal_minor:terms.renewal_price_minor+Math.max(0,body.p_seats-terms.included_seats)*terms.extra_seat_price_minor,discounted_cycles:offerTerms?1:0,list_amount_minor:terms.price_minor,amount_due_minor:amount,currency:terms.currency,trial_days:body.p_intent==="trial"?terms.trial_days:0,offer_terms:offerTerms},status:"quoted",intent:body.p_intent,seats:body.p_seats,scheduled_for:null};billingQuotes.push(quote);json(quote);return;
+    }
+    if(rpc==="cv_accept_subscription"){
+      const q=billingQuotes.find(q=>q.id===body.p_quote);if(!q){json({message:"Quote unavailable"},409);return;}const terms=(q.quote as {plan:typeof billingTerms;trial_days:number;amount_due_minor:number}).plan;const details=q.quote as {trial_days:number;amount_due_minor:number};
+      if(details.amount_due_minor>0){q.status="awaiting_payment";billingPayments.push({id:q.id,amount_minor:details.amount_due_minor,currency:terms.currency,provider:"unconfigured",status:"pending",created_at:new Date().toISOString()});json({status:"awaiting_payment"});return;}
+      q.status="applied";billingEntitled=true;billingTrialUsed=details.trial_days>0;billingStatus=billingTrialUsed?"trial":"active";billingPeriod={id:"90000000-0000-0000-0000-000000000002",plan_id:(q.quote as {plan_id:string}).plan_id,name:terms.name,billing_period:terms.billing_period,starts_at:new Date().toISOString(),ends_at:new Date(Date.now()+604800000).toISOString(),licensed_seats:q.seats,certificate_limit:terms.certificate_limit,payment_status:"no_payment_required"};json({status:"applied"});return;
+    }
+    if(body.p_action==="cancel_request"){const q=billingQuotes.find(q=>q.id===body.p_request);if(q)q.status="cancelled";}
+    else{billingCancelled=body.p_action==="cancel_renewal";billingStatus=billingCancelled?"non_renewing":billingEntitled?"active":"expired";}json(true);return;
+  }
   if (rpc==="cv_customer_account_states") { json([{account_id:a,status:accountAccess},{account_id:b,status:"active"}]);return; }
   if (["cv_platform_overview","cv_platform_accounts","cv_platform_account","cv_platform_set_account_access","cv_platform_audit"].includes(rpc)) {
     if (user.id!==users.platform.id || aal!=="aal2") { json({message:"Denied"},403);return; }
