@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import QRCode from "qrcode";
+import { IssuerBranding } from "@/components/issuer-branding";
 import { CertificateStatusActions } from "@/components/certificate-status-actions";
 
 type Certificate = {
@@ -305,6 +306,7 @@ export default function ViewCertificatePage() {
 
         <div className="space-y-6">
 
+          <IssuerBranding certificateId={certificate.id} />
           {/* Certificate Header */}
           <section className="rounded-2xl bg-white p-8 shadow-sm">
             <div className="flex flex-wrap items-start justify-between gap-4">

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
+import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { chooseAccount, selectAccount, selectedAccountId, type AccountMembership } from "@/lib/accounts/context";
 
@@ -48,6 +49,7 @@ export function AccountWorkspace({ children }: { children: ReactNode }) {
         {accounts.map((account) => <option key={account.id} value={account.id}>{account.account_name} ({account.account_type})</option>)}
       </select>
       <span className="text-sm capitalize text-slate-500">{selected.role}</span>
+      <Link href="/dashboard/branding" className="text-sm text-blue-700">Branding</Link>
     </div>
     {children}
   </>;
