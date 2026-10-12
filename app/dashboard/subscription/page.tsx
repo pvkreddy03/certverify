@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { brandingFetch } from "@/lib/branding/client";
 import { formatMoney } from "@/lib/billing/money";
 import type {
@@ -404,6 +405,7 @@ export default function SubscriptionPage() {
                 <p key={p.id} className="mt-3">
                   {p.status} · {p.currency} {p.amount_minor} minor units ·
                   provider {p.provider}
+                  {s.can_manage && ["pending","ready","preparing","authorized","failed"].includes(p.status) && <Link className="ml-3 text-blue-700" href={`/dashboard/payment?intent=${p.id}`}>Open payment checkout</Link>}
                 </p>
               ))}
             </section>
