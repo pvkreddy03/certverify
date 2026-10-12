@@ -4,6 +4,13 @@ PR #4 already exists. Do not create a duplicate or change networking for PR crea
 Local PostgreSQL and browser-contract tests passed; actual deployed function bodies,
 historical ownership and real email delivery remain **pending**, not verified.
 
+Stage 2's positive issuance tests also found a Stage 1 policy visibility defect:
+the STABLE same-table helper cannot see an inserted certificate during RETURNING.
+The correction is prepared in Stage 2's unapplied proposal. Do not deploy Stage 1
+alone without reviewing/backporting that correction or reviewing the combined
+Stage 1/2 database rollout. A successful INSERT returning its ID must be part of
+the real Supabase integration matrix, not only negative authorization tests.
+
 ## Read-only inspection prepared
 
 `npm run inspect:db` executes `supabase/inspection/stage1-readonly.sql` in an explicitly
