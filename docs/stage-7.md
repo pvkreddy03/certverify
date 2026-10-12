@@ -59,8 +59,14 @@ Next.js UI against mocked Supabase/Auth/MFA. None of these establishes hosted Su
 or production-schema compatibility. Fixture auth helpers and legacy numbering bodies
 are explicit substitutes, not verified production implementations.
 
-Final test counts, TypeScript/lint/build and CI results are recorded in the draft PR.
+Passed locally: 38 unit, 132 PostgreSQL and 38 browser tests (208 total; zero failures
+or skips), TypeScript, lint (seven existing warnings, zero errors) and Next 16.3.8
+production build. GitHub CI and final commit are recorded in the draft PR.
 Existing lint warnings are retained; no meaningful test is disabled or weakened.
+Browser assertions allow 15 seconds for asynchronous cold Next.js page/API compilation;
+trace evidence showed requests still pending at the five-second default. Retries remain
+disabled. Local HTTP fixtures close connections to avoid stale idle sockets while the
+synchronous Docker SQL driver blocks the fixture event loop; financial POSTs are not retried.
 
 ## Operational commands
 

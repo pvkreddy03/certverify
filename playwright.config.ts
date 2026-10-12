@@ -4,6 +4,9 @@ export default defineConfig({
   testDir: "./tests/browser",
   workers: 1,
   fullyParallel: false,
+  // Cold Next.js route + API compilation can exceed the five-second default in cloud CI.
+  // Assertions and security expectations are unchanged; no retries are enabled.
+  expect: { timeout: 15000 },
   use: {
     baseURL: "http://127.0.0.1:3100",
     launchOptions: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH

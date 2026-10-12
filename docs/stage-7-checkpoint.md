@@ -1,19 +1,21 @@
-# Stage 7 execution checkpoint
+# Stage 7 completed checkpoint
 
-Base: Stage 6 PR #9, exact head 54ef3a2b9e8ba8da354ff61f269d5dd49c10e008.
-Branch: feat/stage-7-integration-readiness; draft PR must target feat/stage-6-secure-payments.
-Stage 6 validated 188 tests, types/lint/build; GitHub CI passed (run 38240781474).
+Base: Stage 6 PR #9 at 54ef3a2b9e8ba8da354ff61f269d5dd49c10e008.
+Branch: feat/stage-7-integration-readiness; target feat/stage-6-secure-payments.
+Stage 6: 188 tests and types/lint/build passed; GitHub CI success, run 38240781474.
+Stage 7: 38 unit + 132 PostgreSQL + 38 browser = 208 tests passed (no skips/failures),
+TypeScript, lint (seven existing warnings), Next 16.3.8 production build passed.
+Production dependency audit: zero. Full audit: five high development braces-chain findings.
 
-Implemented: patched Next.js/transitive production vulnerabilities (production audit zero;
-five development braces-chain findings remain), SQL/HTTP integration scenarios, replay
-checks, budgets, sandbox-bound payments, reconciliation jobs, responsible-admin audit,
-headers, image-authorization ordering and migration/release runbook.
+Implementation, security regression checks, local SQL/HTTP scenarios and release
+runbook are complete for the test-mode beta. Migration manifest is print-only;
+read-only hosted inspection and configured sandbox-job execution stopped safely
+because secure bindings were unavailable. Hosted Auth/MFA/Storage/email/merchant
+integration, historical reconciliation, operations and independent review remain
+release gates. Staging/production readiness is not achieved.
 
-Validation: 38 unit tests passed. Latest full PostgreSQL rerun includes the final admin
-audit regression (expected 132); browser/types/lint/build are running. Do not claim
-completion until current runner logs prove success. Next: complete checks, commit/push,
-create draft Stage 7 PR targeting Stage 6, wait for CI and report actual blockers.
-
-Preserve prior PR heads. Do not apply production SQL, merge, deploy, charge or buy services.
-Actual Supabase function bodies, Auth/MFA/Storage/email and Razorpay sandbox credentials
-remain unavailable; label corresponding full scenarios incomplete. Stage 8 is postponed.
+Next operational checkpoint: push/create Stage 7 draft, inspect GitHub CI, and record
+actual PR/head/results in its description. Before resuming development, inspect existing
+PRs rather than creating duplicates. Earlier PRs must remain unchanged and unmerged.
+See stage-7.md and release-runbook.md for exact configuration, ordered migration,
+integration and production-approval procedure. Production remains unchanged; Stage 8 deferred.
