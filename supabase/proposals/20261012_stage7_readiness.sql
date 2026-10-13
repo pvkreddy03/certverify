@@ -1,5 +1,100 @@
 -- UNAPPLIED PROPOSAL. Requires Stages 1 -> 2 -> 3 -> 4 -> 5 -> 6.
 begin;
+-- Auth state changes must revoke database access even while an issued JWT remains
+-- valid. Keep this checked at the database boundary, not solely in login/UI code.
+create function public.cv_auth_identity_active() returns boolean
+language sql stable security definer set search_path='' as $$
+ select exists(select 1 from auth.users u where u.id=auth.uid()
+   and u.email_confirmed_at is not null
+   and coalesce((to_jsonb(u)->>'banned_until')::timestamptz,'-infinity'::timestamptz)<=clock_timestamp()
+   and to_jsonb(u)->>'deleted_at' is null
+   and not coalesce((to_jsonb(u)->>'is_anonymous')::boolean,false))
+$$;
+revoke execute on function public.cv_auth_identity_active() from public,anon,authenticated,service_role;
+grant execute on function public.cv_auth_identity_active() to authenticated;
+
+create or replace function public.cv_platform_identity() returns boolean
+language sql stable security definer set search_path='' as $$
+ select public.cv_auth_identity_active() and exists(select 1 from public.cv_platform_admins p
+   where p.user_id=auth.uid() and p.active)
+$$;
+create or replace function public.cv_account_role(p_account_id uuid) returns text
+language sql stable security definer set search_path='' as $$
+ select m.role from public.account_members m where m.account_id=p_account_id
+   and m.user_id=auth.uid() and m.status='active'
+   and public.cv_account_enabled(p_account_id) and public.cv_auth_identity_active()
+$$;
+create or replace function public.is_active_account_member(requested_account_id uuid) returns boolean
+language sql stable security definer set search_path='' as $$
+ select public.cv_auth_identity_active() and exists(select 1 from public.account_members m
+   where m.account_id=requested_account_id and m.user_id=auth.uid() and m.status='active')
+$$;
+-- Disabled organizations remain discoverable for an active user to switch away
+-- or access renewal/history. Auth-disabled identities cannot use those paths.
+create or replace function public.cv_list_accounts()
+returns table(id uuid,account_name text,account_code text,account_type text,role text)
+language sql stable security definer set search_path='' as $$
+ select a.id,coalesce(v.company_name,a.account_name),a.account_code,a.account_type,m.role
+ from public.accounts a join public.account_members m on m.account_id=a.id
+ left join public.cv_account_branding b on b.account_id=a.id
+ left join public.cv_branding_versions v on v.id=b.current_version_id
+ where m.user_id=auth.uid() and m.status='active' and public.cv_auth_identity_active()
+ order by m.joined_at,a.id
+$$;
+create or replace function public.cv_customer_account_states() returns jsonb
+language sql stable security definer set search_path='' as $$
+ select coalesce(jsonb_agg(jsonb_build_object('account_id',s.account_id,'status',s.status)),'[]'::jsonb)
+ from public.cv_account_access s join public.account_members m on m.account_id=s.account_id
+ where m.user_id=auth.uid() and m.status='active' and public.cv_auth_identity_active()
+$$;
+create or replace function public.cv_billing_account() returns uuid
+language plpgsql stable security definer set search_path='' as $$
+ declare a text:=nullif(current_setting('request.headers',true),'')::jsonb->>'x-certverify-account';
+ begin
+ if not public.cv_auth_identity_active() then raise exception 'Active confirmed authentication required' using errcode='42501';end if;
+ if a is null or a !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then raise exception 'Choose an account' using errcode='42501';end if;
+ if not exists(select 1 from public.account_members where account_id=a::uuid and user_id=auth.uid() and status='active') then raise exception 'Account membership required' using errcode='42501';end if;
+ return a::uuid;
+ end $$;
+create policy cv_profiles_active_identity on public.profiles as restrictive for all to authenticated
+using(public.cv_auth_identity_active()) with check(public.cv_auth_identity_active());
+
+-- Invitation recipients have no selected membership yet. Apply the same Auth
+-- boundary before preserving the existing recipient/expiry/password/race checks.
+create or replace function public.cv_accept_invitation(p_token_hash text,p_name text default null)
+returns uuid language plpgsql security definer set search_path='' as $$
+ declare v_invitation public.account_invitations;v_user auth.users;v_account uuid;v_name text;
+ begin
+ if not public.cv_auth_identity_active() then raise exception 'Active confirmed authentication required' using errcode='42501';end if;
+ if p_token_hash is null or p_token_hash !~ '^[0-9a-f]{64}$' then raise exception 'Invalid invitation';end if;
+ select account_id into v_account from public.account_invitations where token_hash=p_token_hash;
+ if v_account is null then raise exception 'Invalid invitation';end if;
+ perform 1 from public.accounts where id=v_account for update;
+ select * into v_invitation from public.account_invitations where token_hash=p_token_hash for update;
+ select * into v_user from auth.users where id=auth.uid();
+ if v_user.email_confirmed_at is null or lower(v_user.email) is distinct from lower(v_invitation.invited_email)
+   or (v_invitation.invited_user_id is not null and v_invitation.invited_user_id<>auth.uid()) then
+   raise exception 'This invitation belongs to another verified user' using errcode='42501';
+ end if;
+ if v_invitation.status<>'pending' or v_invitation.expires_at<=clock_timestamp() then raise exception 'Invitation expired, revoked or already accepted';end if;
+ v_name:=nullif(btrim(p_name),'');
+ if v_invitation.requires_setup and (v_name is null or coalesce(v_user.encrypted_password,'')='') then raise exception 'Complete your name and password setup before accepting';end if;
+ if v_name is not null and (length(v_name)<2 or length(v_name)>120) then raise exception 'Invalid name';end if;
+ if v_name is not null then
+   insert into public.profiles(user_id,professional_name,email) values(auth.uid(),v_name,v_user.email)
+   on conflict(user_id) do update set professional_name=excluded.professional_name;
+ end if;
+ insert into public.account_members(account_id,user_id,role,status) values(v_account,auth.uid(),'member','active')
+ on conflict(account_id,user_id) do update set status='active',
+   role=case when account_members.status='active' then account_members.role else 'member' end,updated_at=clock_timestamp();
+ update public.account_invitations set status='accepted',accepted_by=auth.uid(),invited_user_id=auth.uid(),accepted_at=clock_timestamp(),updated_at=clock_timestamp() where id=v_invitation.id;
+ insert into public.cv_audit_events(account_id,actor_id,action,subject_id) values(v_account,auth.uid(),'invitation.accepted',v_invitation.id);
+ return v_account;
+ end $$;
+-- CREATE OR REPLACE retains the reviewed ACLs of existing functions. Explicitly
+-- deny the new identity predicate to anonymous/service roles; its authenticated
+-- result discloses only the caller's current account validity.
+
 -- Replay checks run after HMAC verification but before expensive gateway fetching.
 create function public.cv_gateway_event_seen(p_event text,p_fingerprint text,p_payment text) returns boolean language plpgsql security definer set search_path='' as $$
  declare e public.cv_gateway_observations;

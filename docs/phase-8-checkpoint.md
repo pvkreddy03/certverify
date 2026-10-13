@@ -95,3 +95,47 @@ build passed (seven existing warnings); the build now includes a successful serv
 literal scan across 41 client JavaScript files. Actual Next configuration refused source
 binding before network access. Publish exactly one draft PR against Stage 7; record remote
 CI and Preview results in the PR without claiming genuine hosted user journeys.
+
+## Final staging continuation — 13 October 2026
+
+Preserved the complete Phase 8 lineage through `9655b87260dd0b157fb9071d62836010e7e8375e`
+and continued on the same PR #11 branch, without recreating previous stages.
+The owner-reported deployment `dpl_7YnbHUHwB2UpUcug52eafvNveQmi` failed after the four
+Preview staging flags/public credentials had already been repaired. Do not repeat those
+settings blindly. The build previously required a service credential twice: in the shared
+isolation guard and an eager admin client import. Both dependencies are now removed from
+public compilation. Public configuration/credential validation still pins the approved
+staging project and rejects source, leaked secrets and live payment modes. Privileged
+operations verify the service credential at the pinned sandbox when invoked and return
+503 on failure. No fallback database is permitted.
+
+Installer 8 fixes a confirmed stale-session SQL authorization issue: banned/deleted/
+anonymous/unconfirmed Auth identities cannot retain tenant or platform access through
+existing AAL1/AAL2 claims. Central role/billing/discovery/invitation checks and profile
+RLS enforce this; public verification and active-user billing on suspended accounts remain.
+The new plain SQL bootstrap is compatible with connected management tools, fail-closed
+with placeholders, and separately requires owner privilege approval plus real verified MFA.
+
+The staging-only checkout demonstration presents approved/declined/cancelled outcomes
+without any gateway request, payment record, coupon redemption or entitlement activation.
+Trials or separately approved audited complimentary access support issuance testing.
+It is not evidence of Razorpay sandbox settlement.
+
+Complete validation: **271 tests — 65 unit, 164 disposable PostgreSQL 17, 42 mocked
+browser**, zero failures/skips; TypeScript, lint, production build/client-secret scan
+passed. Seven existing lint warnings remain; production dependency audit is clean.
+The optimized local build exercised Preview configuration with the private Supabase key
+absent and only the read-only public credential response stubbed. This is local build
+evidence, not hosted integration evidence. Eight installer files remain, with the updated
+installer 8 hash recorded in the print-only manifest.
+
+No Supabase/Vercel management methods or provider identities are available in this task.
+Do not retry known egress 403s or use unverified injected Supabase credentials. Current
+staging emptiness and private-key validity remain unverified, hosted migrations and
+administrator grant remain unapproved, and no genuine Auth/email/MFA/Storage/payment
+journey has run. Follow `docs/phase-8-connected-tools-handoff.md` and
+`docs/phase-8-migration-review.md`; operators perform routine technical work. The founder
+only needs the specific staging/privilege approvals, their own MFA and customer testing.
+Record the final commit, new CI/deployment outcomes and recovery artifact hashes outside
+this self-referential checkpoint after publication. A build success is not a fully
+functional website while these integration gates remain.

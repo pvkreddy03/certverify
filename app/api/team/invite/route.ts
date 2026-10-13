@@ -1,4 +1,4 @@
-import { supabaseAdmin } from "@/lib/supabase/server";
+import { getSupabaseAdmin } from "@/lib/supabase/server";
 import { teamAdminContext } from "@/lib/auth/team-context";
 import { RequestError, requestErrorResponse } from "@/lib/auth/request";
 import { applicationOrigin } from "@/lib/auth/urls";
@@ -13,6 +13,7 @@ export async function POST(request: Request) {
       throw new RequestError("Enter a valid email address.", 400);
     }
     const previousId = typeof body.previousInvitationId === "string" ? body.previousInvitationId : null;
+    const supabaseAdmin = await getSupabaseAdmin();
     const baseUrl = applicationOrigin(request.url, {
       appUrl: process.env.NEXT_PUBLIC_APP_URL,
       vercelEnv: process.env.VERCEL_ENV,

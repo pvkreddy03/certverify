@@ -23,3 +23,10 @@ test("preflight rejects live gateway credentials and incomplete test credentials
 test("known protected source is rejected even when labelled sandbox",()=>{
   assert.equal(hostedPreflight({...env,CERTVERIFY_SANDBOX_PROJECT_REF:"jhnxztaqfikgvkshifel",NEXT_PUBLIC_SUPABASE_URL:"https://jhnxztaqfikgvkshifel.supabase.co"}).readyForHostedVerification,false);
 });
+test("preflight reports public readiness separately from unavailable privileged functionality",()=>{
+  const result=hostedPreflight({...env,SUPABASE_SECRET_KEY:undefined});
+  assert.equal(result.publicConfigurationReady,true);
+  assert.equal(result.privilegedConfigurationReady,false);
+  assert.equal(result.readyForHostedVerification,false);
+  assert.equal(result.hostedIntegrationVerified,false);
+});

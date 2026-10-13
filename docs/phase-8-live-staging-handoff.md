@@ -18,14 +18,18 @@ Super Admin grant, paid resource or live payment is authorized.
 
 - Preview URL/ref must exactly equal the approved staging project. No fallback project
   or alternate credential is used. Runtime server-client creation checks the same guard.
-- Both keys must exist. Legacy key claims must match the project and expected role;
-  public keys must be anon/publishable, never service-role/secret. These offline checks
-  do not authenticate a JWT or establish ownership of an opaque key.
-- Before Next compilation, Preview performs only two read-only credential checks at
-  the pinned staging host: anon `GET /rest/v1/` and service
-  `GET /auth/v1/admin/users?page=1&per_page=1`. Responses must be successful JSON;
-  bodies are cancelled without reading/logging user data. Redirects/timeouts/errors
-  stop the build. No migration, signup, privilege grant or source request occurs.
+- Public keys must be anon/publishable, never service-role/secret. Legacy key claims
+  must match the staging project and role. Before compilation, Preview checks only
+  the public credential with read-only `GET /rest/v1/` at the pinned staging host.
+  This check does not need a private server key or populated application tables.
+  Successful JSON is required; redirects/timeouts/errors stop the build.
+- Privileged clients are created lazily after authorization. Invitations, private
+  logo storage and payment settlement validate the server key's format/role/project
+  and then verify its capability with read-only
+  `GET /auth/v1/admin/users?page=1&per_page=1` at the same pinned host. No user body
+  is parsed or logged. Missing, incorrect or revoked credentials return a safe 503
+  for that operation. They cannot cause a fallback to the original database.
+  A successful public build does not prove privileged services are configured.
 - Every public binding is checked for secret names/role/prefix or a copied private key.
   Build/client JavaScript is scanned for server-secret literals and common encodings;
   negative tests prove detection without echoing values. `npm run build` includes this
@@ -39,7 +43,7 @@ Super Admin grant, paid resource or live payment is authorized.
   by default; only complete Razorpay test settings are allowed. Live IDs/mode and
   sandbox declarations on Production are refused.
 
-A failed build with missing flags or an invalid secret is an expected safe refusal,
+A failed build with missing flags or an invalid public credential is a safe refusal,
 not proof the app is deployed or functional. A successful build's read-only checks prove
 credential access, not signup/MFA/Storage/customer/payment journeys. Old deployments
 retain old bindings and must not be used for writing tests.
@@ -51,11 +55,11 @@ Using the separately connected Vercel/Supabase management tools, without printin
 1. Confirm the existing staging identity and current effective Preview scopes/branch
    overrides. Do not recreate the project or change Production values/scopes.
 2. Preserve the three already configured Preview Supabase entries. Verify their target
-   and service role through secure interfaces or the new build's read-only checks.
-3. Set **Preview only** `CERTVERIFY_DEPLOYMENT_TARGET=isolated_sandbox`,
-   `CERTVERIFY_SANDBOX_PROJECT_REF=nubohxesjeaodqcveiud`, a random >=32-character
-   `CERTVERIFY_RATE_LIMIT_SECRET`, and `CERTVERIFY_PAYMENT_MODE=disabled`.
-   The first two are non-secret flags; the request-budget value stays private.
+   and service role through secure interfaces and the new runtime checks. Do not
+   infer private-key validity from a successful build.
+3. Preserve the four already configured Preview staging flags and request-budget
+   secret. Inspect effective branch scopes only if a new failure identifies a
+   specific problem; do not repeat completed setup or alter Production entries.
 4. Keep provider `VERCEL_ENV`/`VERCEL_URL` automatic. Remove only a stale Preview
    `NEXT_PUBLIC_APP_URL` binding if necessary; never alter Production's origin.
    This build derives the current HTTPS deployment origin automatically.
@@ -125,7 +129,8 @@ passwords, keys and private certificate values out of reports, traces and screen
    their separate staging account and enrolls/validates TOTP at `/account/security`.
    Ordinary users can enroll MFA without gaining platform roles. Record staging Auth UUID
    privately; request separate explicit bootstrap approval. Apply reviewed
-   `supabase/operations/sandbox-owner-bootstrap.sql` only after approval and genuine
+   `supabase/operations/sandbox-owner-bootstrap-management.sql` through connected
+   tools only after approval and genuine
    verified factor. Test aal1 denial, aal2 access, revoked privilege and audit evidence.
 3. **Catalog/trial:** MFA admin creates synthetic sandbox plans and offers, configurable
    prices, seats/quota, dates and coupon limits. Owner selects trial/free plan; no automatic
@@ -150,6 +155,11 @@ passwords, keys and private certificate values out of reports, traces and screen
    switch Preview mode to `razorpay_test`. Configure exact HTTPS `/api/payments/webhook`
    and approved protection exception if needed, without paid upgrades or Production
    changes. Use provider-documented test instruments, never real cards/live keys.
+   With payments disabled, the isolated Preview offers a checkout demonstration
+   for verified active account owners. It has explicitly labeled approved/declined/
+   cancelled outcomes; it does not record payments, activate subscriptions, consume
+   coupons, change quotas or call a gateway. Use a free trial or separately approved
+   audited complimentary entitlement to test issuance. This is not Razorpay evidence.
 9. **Financial lifecycle:** trial → quote → checkout → authoritative captured settlement;
    compare amount/currency/receipt, one period and audit history. Authorized/pending/
    failure cannot activate. Test renewal, change/cancel renewal with future prepaid
@@ -168,8 +178,11 @@ approval, Storage and merchant test configuration must remain explicit blockers.
 No production-readiness claim is supported yet. OCR/AI remains postponed.
 
 
-Final local publication validation: **241 passing tests — 51 unit, 150 PostgreSQL,
-40 mocked browser**, no failures/skips. TypeScript, lint and integrated production build/
+Latest local continuation validation: **271 passing tests — 65 unit, 164 PostgreSQL,
+42 mocked browser**, no failures/skips. TypeScript, lint and integrated production build/
 client-secret scan passed; seven existing warnings remain. No real signup, MFA, Storage,
-email or Razorpay merchant flow has run. The future successful Vercel build's credential
+email or Razorpay merchant flow has run. The local optimized build exercised the exact
+Preview configuration with no private Supabase key and a stubbed read-only public
+credential response. That proves compilation behavior, not hosted credential validity.
+Production dependency audit reports zero vulnerabilities. The future Vercel build's credential
 checks are narrower read-only evidence and must not be reported as these user journeys.

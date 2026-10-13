@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { brandingFetch } from "@/lib/branding/client";
+import { PaymentSimulation } from "@/components/payment-simulation";
 import { formatMoney } from "@/lib/billing/money";
 import type {
   CatalogPlan,
@@ -315,6 +316,7 @@ export default function SubscriptionPage() {
               )}
             </section>
           )}
+          {s.can_manage && <PaymentSimulation key={s.account_id} />}
           {s.can_cancel && (
             <button
               disabled={busy || (s.cancel_at_period_end && !s.can_manage)}

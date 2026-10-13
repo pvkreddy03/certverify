@@ -1,8 +1,8 @@
-import { isProtectedProject, approvedStagingProject, assertPreviewIsolation } from "./isolation";
+import { isProtectedProject, approvedStagingProject, assertPreviewIsolation, assertPrivilegedConfiguration } from "./isolation";
 // Offline configuration checks only: no keys, URLs or provider responses are logged.
 export function hostedPreflight(env: Record<string, string | undefined>) {
   const failures: string[] = [];
-  const required = ["NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_ANON_KEY", "SUPABASE_SECRET_KEY", "CERTVERIFY_SANDBOX_PROJECT_REF", "CERTVERIFY_RATE_LIMIT_SECRET"];
+  const required = ["NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_ANON_KEY", "CERTVERIFY_SANDBOX_PROJECT_REF", "CERTVERIFY_RATE_LIMIT_SECRET"];
   for (const name of required) if (!env[name]?.trim()) failures.push(`${name}: missing`);
   if (env.CERTVERIFY_DEPLOYMENT_TARGET !== "isolated_sandbox") failures.push("Deployment target must be isolated_sandbox");
   if (env.VERCEL_ENV !== "preview") failures.push("VERCEL_ENV must be preview");
@@ -26,5 +26,10 @@ export function hostedPreflight(env: Record<string, string | undefined>) {
   for (const [name, value] of Object.entries(env)) {
     if (name.startsWith("NEXT_PUBLIC_") && /SECRET|SERVICE_ROLE|DATABASE_URL|ACCESS_TOKEN|WEBHOOK|PASSWORD/.test(name) && value) failures.push(`${name}: prohibited public secret binding`);
   }
-  return { mode: "offline-only", readyForHostedVerification: failures.length === 0, failures, hostedIntegrationVerified: false };
+  const publicConfigurationReady = failures.length === 0;
+  const privilegedFailures: string[] = [];
+  try { assertPrivilegedConfiguration(env); } catch { privilegedFailures.push("Privileged credential configuration needs verification before invitations, logo services or gateway settlement"); }
+  return { mode: "offline-only", publicConfigurationReady, privilegedConfigurationReady: privilegedFailures.length===0,
+    readyForHostedVerification: publicConfigurationReady && privilegedFailures.length===0,
+    failures: [...failures,...privilegedFailures], hostedIntegrationVerified: false };
 }
