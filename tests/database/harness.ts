@@ -3,7 +3,7 @@ import { spawn, spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 
-export function createDatabaseHarness(options: { freshStaging?: boolean } = {}) {
+export function createDatabaseHarness(options: { freshStaging?: boolean; preexistingAuth?: boolean } = {}) {
 // This suite never accepts a database URL. Every run creates a fresh container
 // with no network, no published ports, and no mounted/persistent production data.
 const container = `certverify-test-${randomUUID().slice(0, 8)}`;
@@ -87,6 +87,7 @@ async function start() {
       create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);
       create table storage.objects(id uuid default gen_random_uuid(),bucket_id text,name text,metadata jsonb);
       alter table storage.objects enable row level security;grant select,insert,update,delete on storage.objects to anon,authenticated;`);
+    if (options.preexistingAuth) sql(`insert into auth.users(id,email) values('${ids.owner}','synthetic-preexisting@example.test')`);
     sql(readFileSync('supabase/staging/20261012_fresh_baseline.sql','utf8'));
     for (const stage of ['stage1_account_security','stage2_certificate_revocation','stage3_branding','stage4_platform_admin','stage5_billing','stage6_payments','stage7_readiness'])
       sql(readFileSync(`supabase/proposals/20261012_${stage}.sql`,'utf8'));

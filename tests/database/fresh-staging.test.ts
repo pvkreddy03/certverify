@@ -111,3 +111,12 @@ test("legacy definer ACL candidates are read-only and preserve authenticated pol
   assert.equal(sql("select has_function_privilege('anon','public.is_account_admin(uuid)','EXECUTE')").out,'f');
   assert.equal(sql("select has_function_privilege('authenticated','public.is_account_admin(uuid)','EXECUTE')").out,'t');
 });
+
+test("fresh baseline fails before schema installation when prior Auth signups need reconciliation",async()=>{
+  const secondary=createDatabaseHarness({freshStaging:true,preexistingAuth:true});
+  try{
+    await assert.rejects(()=>secondary.start(),/Fresh staging requires empty Auth users/);
+    assert.equal(secondary.sql("select to_regclass('public.accounts') is null").out,'t');
+    assert.equal(secondary.sql('select count(*) from auth.users').out,'1');
+  }finally{secondary.close();}
+});

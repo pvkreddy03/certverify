@@ -1,5 +1,5 @@
 import type { NextConfig } from "next";
-import { assertPreviewIsolation } from "./lib/hosting/isolation";
+import { assertPreviewIsolation, verifyPreviewCredentials, previewOrigin } from "./lib/hosting/isolation";
 
 assertPreviewIsolation(process.env);
 
@@ -26,4 +26,9 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default async function configuredNext() {
+  await verifyPreviewCredentials(process.env);
+  return process.env.VERCEL_ENV === "preview"
+    ? { ...nextConfig, env: { NEXT_PUBLIC_APP_URL: previewOrigin(process.env) } }
+    : nextConfig;
+}

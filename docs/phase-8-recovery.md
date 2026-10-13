@@ -40,3 +40,10 @@ body through a file or structured GitHub argument. Inspect CI for that exact new
 
 Current remote evidence: Stage 7 PR #10 CI passed at `573d511`. Phase 8 has complete
 local validation but **no published CI, draft PR or verified isolated preview URL**.
+
+
+Publication authorization update: the owner confirms staging exists and scopes are split,
+and explicitly permits the feature push/automatic Preview when the strengthened guard
+fails closed. Publish after final checks; missing flags/invalid secrets may produce a safe
+failed Preview. Migration/admin grant/Production approval remain separate. Current procedure
+is `docs/phase-8-live-staging-handoff.md`; earlier publication hold is historical context.

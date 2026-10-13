@@ -1,9 +1,11 @@
+import { assertPreviewIsolation } from "../hosting/isolation";
 import { isProtectedProject } from "../hosting/isolation";
 import { createClient } from "@supabase/supabase-js";
 import { createHash } from "node:crypto";
 import { RequestError, requestErrorResponse } from "../auth/request";
 import { PaymentError, type PaymentGateway } from "./types";
 export function paymentService() {
+  assertPreviewIsolation(process.env);
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL,
     key = process.env.SUPABASE_SECRET_KEY;
   if (!url || !key) throw new PaymentError();

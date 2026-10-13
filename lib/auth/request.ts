@@ -1,3 +1,4 @@
+import { assertPreviewIsolation } from "@/lib/hosting/isolation";
 import { createClient } from "@supabase/supabase-js";
 import { ACCOUNT_HEADER, isAccountId } from "@/lib/accounts/context";
 
@@ -6,6 +7,7 @@ export class RequestError extends Error {
 }
 
 export async function authenticatedRequest(request: Request, requireAccount = true) {
+  assertPreviewIsolation(process.env);
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!url || !key) throw new RequestError("Authentication is unavailable.", 503);

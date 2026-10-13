@@ -10,6 +10,9 @@ do $$ begin
  if to_regclass('auth.users') is null or to_regprocedure('auth.uid()') is null or to_regclass('storage.objects') is null then
    raise exception 'Supabase-managed Auth/Storage prerequisites required';
  end if;
+ if exists(select 1 from auth.users) then
+   raise exception 'Fresh staging requires empty Auth users; reconcile prior signups before applying';
+ end if;
 end $$;
 revoke create on schema public from public,anon,authenticated,service_role;
 alter default privileges in schema public revoke execute on functions from public,anon,authenticated,service_role;

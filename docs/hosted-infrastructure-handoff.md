@@ -1,5 +1,9 @@
 # Connected management-tools handoff — Phase 8
 
+**Update:** staging `nubohxesjeaodqcveiud` exists and the three Vercel Supabase scopes
+are separated. Use [the current live-staging handoff](phase-8-live-staging-handoff.md)
+instead of repeating the earlier creation/scope-separation steps below.
+
 This is hosted QR integration, not postponed OCR/AI. Continue the preserved
 `feat/phase-8-hosted-testing-preparation` branch, including `16e0e83`, on exact Stage 7
 head `573d511`. No production merge or deployment is needed for staging.

@@ -1,17 +1,19 @@
-import { isProtectedProject } from "./isolation";
+import { isProtectedProject, approvedStagingProject, assertPreviewIsolation } from "./isolation";
 // Offline configuration checks only: no keys, URLs or provider responses are logged.
 export function hostedPreflight(env: Record<string, string | undefined>) {
   const failures: string[] = [];
-  const required = ["NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_ANON_KEY", "SUPABASE_SECRET_KEY", "NEXT_PUBLIC_APP_URL", "CERTVERIFY_SANDBOX_PROJECT_REF", "CERTVERIFY_RATE_LIMIT_SECRET"];
+  const required = ["NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_ANON_KEY", "SUPABASE_SECRET_KEY", "CERTVERIFY_SANDBOX_PROJECT_REF", "CERTVERIFY_RATE_LIMIT_SECRET"];
   for (const name of required) if (!env[name]?.trim()) failures.push(`${name}: missing`);
   if (env.CERTVERIFY_DEPLOYMENT_TARGET !== "isolated_sandbox") failures.push("Deployment target must be isolated_sandbox");
   if (env.VERCEL_ENV !== "preview") failures.push("VERCEL_ENV must be preview");
   const ref = env.CERTVERIFY_SANDBOX_PROJECT_REF ?? "";
   if (isProtectedProject(ref,env.NEXT_PUBLIC_SUPABASE_URL)) failures.push("Protected source project cannot be used for staging");
+  if (ref !== approvedStagingProject) failures.push("Preview must use the approved staging project");
+  try { assertPreviewIsolation(env); } catch { failures.push("Preview isolation/credential/origin checks failed"); }
   if (!/^[a-z0-9]{20}$/.test(ref)) failures.push("Sandbox project reference must be a Supabase project ID");
   if (env.NEXT_PUBLIC_SUPABASE_URL !== `https://${ref}.supabase.co`) failures.push("Supabase URL must exactly match the approved sandbox reference");
   try {
-    const url = new URL(env.NEXT_PUBLIC_APP_URL ?? "");
+    const url = new URL(env.NEXT_PUBLIC_APP_URL || (env.VERCEL_URL ? `https://${env.VERCEL_URL}` : ""));
     if (url.protocol !== "https:" || url.username || url.password || url.pathname !== "/" || url.search || url.hash || url.port || url.hostname === "localhost" || /^[\d.]+$/.test(url.hostname)) throw new Error();
   } catch { failures.push("Application URL must be a canonical public HTTPS origin"); }
   if ((env.CERTVERIFY_RATE_LIMIT_SECRET?.length ?? 0) < 32) failures.push("Rate-limit secret must contain at least 32 characters");

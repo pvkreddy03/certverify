@@ -77,3 +77,21 @@ Preserve the continuation local commit plus refreshed portable bundle/patch. No 
 while shared Preview bindings could reach source. Stage 7 CI remains the confirmed remote
 baseline; do not claim new Phase 8 CI or hosted results. Connected tools can execute the
 handoff separately after approvals; Cloud tokens are optional, not a demand on the owner.
+
+
+Latest owner update: new staging `nubohxesjeaodqcveiud` is active/healthy/initially empty;
+Vercel Production/Preview Supabase entries are separate. Original source stays protected.
+The owner now permits push and automatic Preview after fail-closed safeguards, even if
+missing configuration causes the build to fail safely. This supersedes the previous
+publication hold. Hosted SQL, Super Admin grants, Production, merges and live payments
+remain unapproved. Follow `docs/phase-8-live-staging-handoff.md` and do not recreate staging.
+Current safeguards pin this exact staging ref, require correct public/service key formats,
+verify both read-only provider accesses before compilation without reading user payloads,
+check runtime server clients, reject public secret bindings and Production origins, derive
+Preview auth origin from provider hostname, and scan client JavaScript for secret literals.
+Final publication validation passed **241 tests — 51 unit, 150 isolated PostgreSQL,
+40 mocked browser**, no failures/skips. Type generation, TypeScript, lint and production
+build passed (seven existing warnings); the build now includes a successful server-secret
+literal scan across 41 client JavaScript files. Actual Next configuration refused source
+binding before network access. Publish exactly one draft PR against Stage 7; record remote
+CI and Preview results in the PR without claiming genuine hosted user journeys.
