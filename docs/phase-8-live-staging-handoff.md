@@ -30,6 +30,9 @@ Super Admin grant, paid resource or live payment is authorized.
   is parsed or logged. Missing, incorrect or revoked credentials return a safe 503
   for that operation. They cannot cause a fallback to the original database.
   A successful public build does not prove privileged services are configured.
+  If the public key was mistakenly copied into the private binding, public pages
+  can still compile; the runtime rejects it as a privileged credential. Real and
+  unknown private values remain included in the client-secret scan.
 - Every public binding is checked for secret names/role/prefix or a copied private key.
   Build/client JavaScript is scanned for server-secret literals and common encodings;
   negative tests prove detection without echoing values. `npm run build` includes this
@@ -110,6 +113,15 @@ dependencies are exercised in disposable PostgreSQL. Storage creates a private
 application validation accepts genuine PNG/JPEG/WebP, re-encodes, rejects SVG/oversize.
 Actual managed ownership/grants/SMTP remain hosted integration checks.
 
+To remove technical catalog setup from owner acceptance testing, the separately
+approval-gated `supabase/operations/sandbox-demo-catalog.sql` prepares a clearly
+synthetic free-trial plan after all eight installers. It is a data seed, not a ninth
+migration. Its stored editable terms are 7 trial days, 5 certificates and 3 total seats.
+Immutable evidence identifies the real database operator without impersonating owner
+JWT/MFA or granting platform privileges. No users, subscriptions or payments are created.
+Customers choose this trial through the existing server-validated subscription flow;
+ordinary credentials cannot execute the seed and replay refuses.
+
 After approval/apply, verify grants, advisor results, constraints, triggers, Storage
 policies and zero customer-data imports. Three intended public definer projections are
 catalog/certificate/logo; inspect bodies rather than blindly revoke them. Source legacy
@@ -178,11 +190,13 @@ approval, Storage and merchant test configuration must remain explicit blockers.
 No production-readiness claim is supported yet. OCR/AI remains postponed.
 
 
-Latest local continuation validation: **271 passing tests — 65 unit, 164 PostgreSQL,
+Latest local continuation validation: **279 passing tests — 66 unit, 171 PostgreSQL,
 42 mocked browser**, no failures/skips. TypeScript, lint and integrated production build/
 client-secret scan passed; seven existing warnings remain. No real signup, MFA, Storage,
 email or Razorpay merchant flow has run. The local optimized build exercised the exact
 Preview configuration with no private Supabase key and a stubbed read-only public
 credential response. That proves compilation behavior, not hosted credential validity.
+An additional optimized Preview-configured build also passed with the private binding
+mistakenly containing the public key; it remains invalid for every privileged call.
 Production dependency audit reports zero vulnerabilities. The future Vercel build's credential
 checks are narrower read-only evidence and must not be reported as these user journeys.

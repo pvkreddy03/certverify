@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { assertPreviewIsolation, assertPrivilegedConfiguration, verifyPrivilegedCredentials, isProtectedProject, verifyPreviewCredentials, previewOrigin, approvedStagingProject } from "../lib/hosting/isolation";
+import { assertPreviewIsolation, assertPrivilegedConfiguration, verifyPrivilegedCredentials, isProtectedProject, verifyPreviewCredentials, previewOrigin, approvedStagingProject, serverSecretValues } from "../lib/hosting/isolation";
 import { getSupabaseAdmin } from "../lib/supabase/server";
 import { paymentService } from "../lib/payments/server";
 import { previewEnv, fixtureKey } from "./preview-fixtures";
@@ -51,7 +51,7 @@ test("Preview public verification rejects blocked provider access and redirected
 });
 
 test("public Preview compilation remains isolated without a usable private credential",async()=>{
-  for(const key of [undefined,'not-a-server-key',fixtureKey('service_role','jhnxztaqfikgvkshifel')]) {
+  for(const key of [undefined,'not-a-server-key',fixtureKey('service_role','jhnxztaqfikgvkshifel'),previewEnv.NEXT_PUBLIC_SUPABASE_ANON_KEY]) {
     const env={...previewEnv,SUPABASE_SECRET_KEY:key};
     assert.doesNotThrow(()=>assertPreviewIsolation(env));
     const mock:typeof fetch=async(input,init)=>{
@@ -62,6 +62,16 @@ test("public Preview compilation remains isolated without a usable private crede
     await verifyPreviewCredentials(env,mock);
     assert.throws(()=>assertPrivilegedConfiguration(env));
   }
+});
+
+test("duplicated public binding is not classified as a private credential while real/unknown secrets remain protected",()=>{
+  const env={...previewEnv,SUPABASE_SECRET_KEY:previewEnv.NEXT_PUBLIC_SUPABASE_ANON_KEY};
+  assert.ok(!serverSecretValues(env).includes(env.SUPABASE_SECRET_KEY));
+  for(const key of [previewEnv.SUPABASE_SECRET_KEY,'sb_secret_'+'a'.repeat(32),'unknown-private-sentinel'])
+    assert.ok(serverSecretValues({...env,SUPABASE_SECRET_KEY:key}).includes(key));
+  assert.ok(serverSecretValues({...env,CERTVERIFY_SANDBOX_PROJECT_REF:'jhnxztaqfikgvkshifel'}).includes(env.SUPABASE_SECRET_KEY));
+  assert.ok(serverSecretValues({...env,VERCEL_ENV:'production'}).includes(env.SUPABASE_SECRET_KEY));
+  assert.throws(()=>assertPrivilegedConfiguration(env));
 });
 
 test("privileged verification rejects missing, malformed and source keys before making a request",async()=>{

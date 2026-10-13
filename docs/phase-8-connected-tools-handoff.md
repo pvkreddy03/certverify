@@ -31,6 +31,15 @@ egress tunnel with HTTP 403. Do not retry those endpoints or bypass the proxy. G
 metadata remains accessible. Current staging emptiness and effective Vercel keys
 cannot be independently established in this task.
 
+Read-only local configuration comparison confirms this Cloud task's Supabase URL
+still targets the protected original project. Its injected application bindings must
+not be used for hosted staging tests. Local checks explicitly replace them with fixtures.
+The initial continuation commit `665204fce37d4b5a2305c85101a9edac49245ce5` passed CI
+[38397868130](https://github.com/pvkreddy03/certverify/actions/runs/38397868130), but
+Vercel `dpl_BpyYAGJc9Wgr2CKechcP72KTWA9X` failed. Its GitHub status does not reveal
+the build error. Inspect sanitized logs for the **final current PR head** before
+changing any already-completed settings; do not assume the old private-key error persists.
+
 ## 1. Complete the Preview build without repeating completed setup
 
 Use Vercel project `certverify`, ID `prj_yX5ltq28CGjvTo9iM7OtDH1A4z74`, team
@@ -97,6 +106,18 @@ and the provider security advisor. Verify function grants/search paths, signup
 triggers, tenant RLS, quota locks, immutable audits and private Storage policies.
 Review intended public catalog/certificate/logo projections before revoking grants.
 Do not apply protected-source reconciliation suggestions to the original project.
+
+Include the separately reviewed `supabase/operations/sandbox-demo-catalog.sql` in
+the requested **staging-only installation and synthetic catalog seed approval**.
+After the eight installers/security checks, substitute its approval reference and
+execute through the already-authorized database management operator. This is a
+data preparation operation, not installer 9. It creates one visibly synthetic stored
+free-trial plan (7 days, 5 certificates, 3 total seats) with immutable external-operator
+audits. No owner identity, JWT/MFA claim, user, platform grant, subscription or payment
+is created. App credentials cannot seed it; replay refuses. Customers can then select
+the trial themselves through the existing pricing flow without requiring the founder
+to configure a catalog before testing issuance. The eventual MFA-backed administrator
+can edit/version the stored test plan normally.
 
 ## 3. Finish the genuine integrations
 

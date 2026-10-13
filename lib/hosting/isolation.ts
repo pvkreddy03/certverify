@@ -21,6 +21,20 @@ export function credentialMatchesProject(key: string | undefined, role: "anon" |
   // Format/claim checks only. Provider signature and actual access are checked separately.
   return parsed?.role === role && parsed?.ref === ref;
 }
+export function serverSecretValues(env: Record<string,string|undefined>): string[] {
+  // A common misconfiguration copies the public key into the private binding.
+  // It remains unusable for privileged calls, but is not a confidential value.
+  // Only exempt the exact approved public credential in a pinned Preview; unknown
+  // values and every real service-role/secret credential remain leak candidates.
+  const duplicatedPublicKey = env.VERCEL_ENV === "preview" &&
+    env.CERTVERIFY_SANDBOX_PROJECT_REF === approvedStagingProject &&
+    env.NEXT_PUBLIC_SUPABASE_URL === `https://${approvedStagingProject}.supabase.co` &&
+    env.SUPABASE_SECRET_KEY === env.NEXT_PUBLIC_SUPABASE_ANON_KEY &&
+    credentialMatchesProject(env.SUPABASE_SECRET_KEY,"anon",approvedStagingProject);
+  return [duplicatedPublicKey ? undefined : env.SUPABASE_SECRET_KEY,
+    env.RAZORPAY_TEST_KEY_SECRET,env.RAZORPAY_TEST_WEBHOOK_SECRET,env.CERTVERIFY_RATE_LIMIT_SECRET]
+    .filter((value): value is string=>Boolean(value));
+}
 export function previewOrigin(env: Record<string,string|undefined>) {
   const host = env.VERCEL_URL;
   if (!host || !/^certverify(?:-[a-z0-9-]+)?-pvkreddy03\.vercel\.app$/i.test(host))
@@ -39,7 +53,7 @@ export function assertPreviewIsolation(env: Record<string,string|undefined>) {
     throw new Error("Preview build refused: configure the approved staging project; protected source credentials are forbidden.");
   if (!credentialMatchesProject(env.NEXT_PUBLIC_SUPABASE_ANON_KEY,"anon",ref))
     throw new Error("Preview public credential configuration is missing, invalid or belongs to another project.");
-  const privateKeys = [env.SUPABASE_SECRET_KEY,env.RAZORPAY_TEST_KEY_SECRET,env.RAZORPAY_TEST_WEBHOOK_SECRET,env.CERTVERIFY_RATE_LIMIT_SECRET].filter(Boolean);
+  const privateKeys = serverSecretValues(env);
   for (const [name,value] of Object.entries(env)) if (name.startsWith("NEXT_PUBLIC_") && value &&
     (/SECRET|SERVICE_ROLE|DATABASE_URL|ACCESS_TOKEN|WEBHOOK|PASSWORD/.test(name) || value.startsWith("sb_secret_") || claims(value)?.role === "service_role" || privateKeys.includes(value)))
     throw new Error("Preview contains a prohibited public secret binding.");

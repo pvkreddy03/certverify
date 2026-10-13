@@ -121,7 +121,7 @@ without any gateway request, payment record, coupon redemption or entitlement ac
 Trials or separately approved audited complimentary access support issuance testing.
 It is not evidence of Razorpay sandbox settlement.
 
-Complete validation: **271 tests — 65 unit, 164 disposable PostgreSQL 17, 42 mocked
+Complete validation: **279 tests — 66 unit, 171 disposable PostgreSQL 17, 42 mocked
 browser**, zero failures/skips; TypeScript, lint, production build/client-secret scan
 passed. Seven existing lint warnings remain; production dependency audit is clean.
 The optimized local build exercised Preview configuration with the private Supabase key
@@ -139,3 +139,23 @@ only needs the specific staging/privilege approvals, their own MFA and customer 
 Record the final commit, new CI/deployment outcomes and recovery artifact hashes outside
 this self-referential checkpoint after publication. A build success is not a fully
 functional website while these integration gates remain.
+
+First continuation publication: `665204fce37d4b5a2305c85101a9edac49245ce5`, same draft
+PR #11. GitHub CI `38397868130` passed all checks, but automatic Vercel Preview
+`dpl_BpyYAGJc9Wgr2CKechcP72KTWA9X` failed. GitHub does not expose its build error;
+the separately connected Vercel tools must inspect that deployment's sanitized logs.
+A further confirmed local edge case misclassified a public key copied into the private
+binding as a leaked secret. The follow-up recognizes only that exact approved public
+credential as public, still rejects it for privileged calls, and retains literal scanning
+for real/unknown private values. Both key-absent and copied-public-key optimized Preview
+build fixtures pass. Do not infer this edge case caused the actual Vercel failure.
+
+The separate approval-gated `supabase/operations/sandbox-demo-catalog.sql` prepares
+one stored synthetic trial catalog so the founder can sign up, choose the trial and
+issue certificates without first performing pricing configuration. No Auth/admin
+identity or claims are fabricated; immutable evidence identifies an external database
+operator, approval reference and actual session/current role. Seven additional real
+disposable PostgreSQL tests pass for denied app roles, one-time/concurrent operator
+seed, immutable audits, actual customer trial/issuance, seat/quota enforcement and later
+MFA-admin version editing. This operation is separate from the eight migrations and
+requires explicit staging seed approval; it creates no paid settlement or privilege grant.

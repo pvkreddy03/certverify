@@ -1,8 +1,8 @@
 // Inspect only generated client JS. Never prints values or matching content.
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-const names=["SUPABASE_SECRET_KEY","RAZORPAY_TEST_KEY_SECRET","RAZORPAY_TEST_WEBHOOK_SECRET","CERTVERIFY_RATE_LIMIT_SECRET"];
-const privateValues=names.map(n=>process.env[n]).filter((v):v is string=>Boolean(v && v.length>=12));
+import { serverSecretValues } from "../lib/hosting/isolation";
+const privateValues=serverSecretValues(process.env).filter(v=>v.length>=12);
 if (!privateValues.length) throw new Error("Supply server-only secret bindings or an offline build sentinel for this check.");
 function files(dir:string):string[]{return readdirSync(dir,{withFileTypes:true}).flatMap(e=>e.isDirectory()?files(join(dir,e.name)):[join(dir,e.name)]);}
 const scripts=files('.next/static').filter(f=>f.endsWith('.js'));
