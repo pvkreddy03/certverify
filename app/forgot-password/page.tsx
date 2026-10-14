@@ -2,6 +2,7 @@
 
 import { FormEvent, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { explainEmailError } from "@/lib/auth/email-errors";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -23,7 +24,7 @@ export default function ForgotPasswordPage() {
 
     setLoading(false);
     if (resetError) {
-      setError(resetError.message);
+      setError(explainEmailError(resetError, "recovery"));
       return;
     }
 
