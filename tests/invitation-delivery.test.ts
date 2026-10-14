@@ -30,3 +30,15 @@ test("cleanup failures are distinguishable and require administrator review", as
   await assert.rejects(deliverInvitation({ reserve: async () => "new", send: async () => { throw new Error(); }, cancel: async () => { throw new Error(); } }),
     (error: unknown) => error instanceof InvitationDeliveryError && error.cleanupFailed);
 });
+
+
+test("provider rate limiting cancels the pending invite and communicates a retry delay", async () => {
+  let cancelled = false;
+  await assert.rejects(deliverInvitation({
+    reserve: async () => "new",
+    send: async () => { throw { code: "over_email_send_rate_limit", status: 429, message: "private provider detail" }; },
+    cancel: async () => { cancelled = true; },
+  }), (error: unknown) => error instanceof InvitationDeliveryError && error.rateLimited &&
+    /wait a few minutes/i.test(error.message) && !error.message.includes("private provider detail"));
+  assert.equal(cancelled, true);
+});
