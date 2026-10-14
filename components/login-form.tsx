@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { PortalNavigation } from "@/components/portal-navigation";
-import { loginDestination } from "@/lib/auth/login-destination";
 import { useEmailCooldown } from "@/lib/auth/email-cooldown";
 import { isValidEmail, INVALID_EMAIL_MESSAGE } from "@/lib/auth/email-validation";
 import { explainEmailError } from "@/lib/auth/email-errors";
@@ -129,24 +128,12 @@ export function LoginForm({ platform = false }: { platform?: boolean }) {
           : "Email or password is incorrect. Please check your credentials.");
         return;
       }
-      // Role-aware routing uses the authenticated Supabase identity, never
-      // an email string or user-controlled profile metadata. This check only
-      // decides the landing page; the platform route/API still enforce
-      // administrator membership and MFA on the server.
-      const { data: isPlatformAdmin, error: roleError } = await supabase.rpc("cv_platform_identity");
-      if (roleError) {
-        setMessage("Sign-in succeeded, but account permissions could not be verified. Please retry before continuing.");
-        return;
-      }
-      if (platform && isPlatformAdmin !== true) {
-        setMessage("This account does not have Super Admin access. Use the customer sign-in page instead.");
-        return;
-      }
+      // A fresh server request checks the current authenticated role before
+      // deciding which portal to open. The platform still enforces MFA.
       const requested = new URLSearchParams(window.location.search).get("next");
-      const destination = loginDestination(requested, window.location.origin, isPlatformAdmin === true);
-      window.location.assign(isPlatformAdmin === true && !destination.startsWith("/platform")
-        ? "/platform"
-        : destination);
+      const landing = new URL("/auth/landing", window.location.origin);
+      if (requested) landing.searchParams.set("next", requested);
+      window.location.assign(landing.pathname + landing.search);
     } catch {
       setMessage("Unable to sign in. Please try again.");
     } finally {
