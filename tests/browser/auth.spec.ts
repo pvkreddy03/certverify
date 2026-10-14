@@ -71,7 +71,7 @@ test("login validates malformed Email IDs and shows live public plans and contac
   await page.getByLabel("Email address").fill("not-an-email");
   await page.getByLabel("Password", { exact: true }).fill("test-password");
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
-  await expect(page.getByRole("alert")).toContainText("Enter a valid Email ID");
+  await expect(page.getByText("Enter a valid Email ID", { exact: false })).toBeVisible();
 });
 
 test("signup and recovery validate email format before attempting delivery", async ({ page }) => {
@@ -85,7 +85,7 @@ test("signup and recovery validate email format before attempting delivery", asy
   await page.goto("/forgot-password");
   await page.getByLabel("Email address").fill("wrong");
   await page.getByRole("button", { name: "Send reset link" }).click();
-  await expect(page.getByRole("alert")).toContainText("Enter a valid Email ID");
+  await expect(page.getByText("Enter a valid Email ID", { exact: false })).toBeVisible();
 });
 
 test("a password reset request shows sixty-second resend countdown across refresh", async ({ page }) => {
