@@ -1,3 +1,6 @@
+import Link from "next/link";
+import { VerificationLookup } from "@/components/verification-lookup";
+
 export default function Home() {
   return (
     <main className="min-h-screen bg-slate-50">
@@ -55,13 +58,13 @@ export default function Home() {
           </p>
 
           <div className="mt-10 flex flex-wrap gap-4">
-            <button className="rounded-lg bg-blue-600 px-6 py-3 font-semibold text-white shadow-sm hover:bg-blue-700">
+            <Link href="/signup" className="rounded-lg bg-blue-600 px-6 py-3 font-semibold text-white shadow-sm hover:bg-blue-700">
               Get Started
-            </button>
+            </Link>
 
-            <button className="rounded-lg border border-slate-300 bg-white px-6 py-3 font-semibold text-slate-700 hover:bg-slate-50">
+            <a href="#verify" className="rounded-lg border border-slate-300 bg-white px-6 py-3 font-semibold text-slate-700 hover:bg-slate-50">
               Verify a Certificate
-            </button>
+            </a>
           </div>
         </div>
 
@@ -180,17 +183,7 @@ export default function Home() {
               scan its QR code.
             </p>
 
-            <div className="mt-8 flex max-w-xl flex-col gap-3 sm:flex-row">
-              <input
-                type="text"
-                placeholder="Enter Certificate ID"
-                className="flex-1 rounded-lg border border-slate-600 bg-white px-4 py-3 text-slate-900 outline-none placeholder:text-slate-400 focus:border-blue-400"
-              />
-
-              <button className="rounded-lg bg-blue-600 px-6 py-3 font-semibold text-white hover:bg-blue-700">
-                Verify
-              </button>
-            </div>
+            <VerificationLookup />
           </div>
         </div>
       </section>
