@@ -32,6 +32,7 @@ const billingPlanId="70000000-0000-0000-0000-000000000001";
 const billingTerms={name:"Browser baseline plan",description:"Fixture only",eligibility:["individual","organization"],audience:"standard",billing_period:"monthly",custom_days:30,price_minor:99900,renewal_price_minor:99900,currency:"INR",currency_exponent:2,included_seats:5,extra_seat_price_minor:39900,max_seats:10,certificate_limit:20,trial_days:7,visible:true,features:[],starts_at:null,ends_at:null};
 let billingPlans=[{id:billingPlanId,version_id:"71000000-0000-0000-0000-000000000001",status:"active",revision:2,terms:{...billingTerms}}];
 let billingOffers:Record<string,unknown>[]=[];let billingQuotes:Record<string,unknown>[]=[];
+let publicContact={support_email:"help@certverify.example",support_phone:"+91 90000 00000",website_url:"https://example.com/help",help_text:"Weekday assistance"};
 let billingEntitled=true;let billingStatus="active";let billingTrialUsed=false;let billingUsed=0;let billingCancelled=false;
 let billingPeriod:Record<string,unknown>|null={id:"90000000-0000-0000-0000-000000000001",plan_id:billingPlanId,plan_version_id:"71000000-0000-0000-0000-000000000001",name:billingTerms.name,billing_period:"monthly",starts_at:"2026-10-01T00:00:00Z",ends_at:"2026-11-01T00:00:00Z",licensed_seats:5,certificate_limit:20,payment_status:"waived"};
 let billingHistory:Record<string,unknown>[]=[];let billingPayments:Record<string,unknown>[]=[];
@@ -94,6 +95,19 @@ const server = createServer(async (request, response) => {
   }
   if(rpc==="cv_platform_payment_report"){if(user.id!==users.platform.id||aal!=="aal2"){json({message:"MFA required"},403);return;}json({attempts:[],total:0,page:body.p_page});return;}
   if(rpc==="cv_pricing_catalog"){json(billingPlans.filter(p=>p.status==="active"&&p.terms.visible));return;}
+  if(rpc==="cv_public_login_information") {
+    json({
+      plans: billingPlans.filter((p)=>p.status==="active"&&p.terms.visible),
+      offers: [{name:"Public trial offer",code:"WELCOME",kind:"free_trial",value:0,cycles:1,trial_days:7,currency:null,currency_exponent:2,ends_at:null}],
+      contact:publicContact,
+    });
+    return;
+  }
+  if(rpc==="cv_platform_contact_settings" || rpc==="cv_save_platform_contact_settings") {
+    if(user.id!==users.platform.id || aal!=="aal2"){json({message:"MFA required"},403);return;}
+    if(rpc==="cv_save_platform_contact_settings"){publicContact={...publicContact,...body.p_contact};audit("platform.contact_updated");json(true);return;}
+    json(publicContact);return;
+  }
   if(["cv_platform_billing_catalog","cv_save_plan","cv_save_offer","cv_set_catalog_status","cv_platform_subscription_report","cv_admin_grant_subscription"].includes(rpc)){
     if(user.id!==users.platform.id||aal!=="aal2"){json({message:"Denied"},403);return;}
     if(rpc==="cv_platform_billing_catalog"){json({plans:billingPlans,offers:billingOffers});return;}
