@@ -18,7 +18,7 @@ export async function POST(request: Request) {
       request.headers.get("x-razorpay-signature") ?? "",
       request.headers.get("x-razorpay-event-id") ?? "",
     );
-    const service = paymentService();
+    const service = await paymentService();
     const digest = fingerprint(raw);
     if (
       (await checkedRpc(service, "cv_gateway_event_seen", {

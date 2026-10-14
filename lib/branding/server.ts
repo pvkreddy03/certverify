@@ -1,4 +1,4 @@
-import { supabaseAdmin } from "@/lib/supabase/server";
+import { getSupabaseAdmin } from "@/lib/supabase/server";
 import { authenticatedRequest, RequestError } from "@/lib/auth/request";
 import { LOGO_BUCKET, MAX_LOGO_BYTES } from "./types";
 
@@ -23,6 +23,7 @@ export async function boundedLogoForm(request: Request) {
 export async function logoResponse(path: string, publiclyVisible=false) {
   // Never fetch a client URL or expose private signed URLs. Paths come from checked RPCs.
   if (!/^[0-9a-f-]{36}\/[0-9a-f-]{36}\.webp$/i.test(path)) throw new RequestError("Logo unavailable.",404);
+  const supabaseAdmin = await getSupabaseAdmin();
   const { data,error }=await supabaseAdmin.storage.from(LOGO_BUCKET).download(path);
   if (error || !data || data.size>MAX_LOGO_BYTES || data.type!=="image/webp") throw new RequestError("Logo unavailable.",404);
   return new Response(await data.arrayBuffer(),{ headers:{ "Content-Type":"image/webp", "X-Content-Type-Options":"nosniff",

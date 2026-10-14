@@ -42,7 +42,7 @@ export async function POST(request: Request) {
         Buffer.from(await boundedBody(request, 4096)).toString("utf8"),
       ),
     );
-    const service = paymentService();
+    const service = await paymentService();
     await paymentBudget(service, user.id, "platform_financial", 20);
     if (body.action === "reconcile" && typeof body.paymentId === "string") {
       const audit = await client.rpc("cv_record_payment_admin_action", {

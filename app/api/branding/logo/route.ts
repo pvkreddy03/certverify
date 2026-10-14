@@ -2,7 +2,7 @@ import { authenticatedRequest, requestErrorResponse, RequestError } from "@/lib/
 import { boundedLogoForm } from "@/lib/branding/server";
 import { normalizeLogo, LogoValidationError } from "@/lib/branding/logo-validation";
 import { LOGO_BUCKET } from "@/lib/branding/types";
-import { supabaseAdmin } from "@/lib/supabase/server";
+import { getSupabaseAdmin } from "@/lib/supabase/server";
 
 export async function POST(request: Request) {
   try {
@@ -10,6 +10,8 @@ export async function POST(request: Request) {
     const form=await boundedLogoForm(request);
     const file=form.get("logo");
     if (!(file instanceof File)) throw new RequestError("Choose a logo file.",400);
+    // Check server credentials before reserving a slot or uploading bytes.
+    const supabaseAdmin = await getSupabaseAdmin();
     const { data:reservation,error }=await client.rpc("cv_reserve_logo");
     if (error || !reservation) throw new RequestError("Logo upload is not authorized or the daily upload limit was reached.",403);
     // Authorize and reserve the bounded daily upload slot before CPU-intensive decoding.

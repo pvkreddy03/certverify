@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "next build && npm run hosting:client-secrets",
     "start": "next start",
     "lint": "eslint",
     "test": "tsx --test tests/*.test.ts",
@@ -13,7 +13,10 @@
     "test:browser": "playwright test",
     "inspect:db": "tsx scripts/inspect-stage1-database.ts",
     "migration:manifest": "tsx scripts/migration-manifest.ts",
-    "payments:reconcile": "tsx scripts/reconcile-payments.ts"
+    "payments:reconcile": "tsx scripts/reconcile-payments.ts",
+    "hosting:preflight": "tsx scripts/hosted-preflight.ts",
+    "hosting:migrations": "tsx scripts/staging-manifest.ts",
+    "hosting:client-secrets": "tsx scripts/check-client-secret-isolation.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.5",

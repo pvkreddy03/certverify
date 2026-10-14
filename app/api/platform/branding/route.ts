@@ -20,6 +20,12 @@ export async function POST(request: Request) {
       ? await client.rpc("cv_revoke_branding_permission",{ p_permission:body.permissionId })
       : await client.rpc("cv_review_branding",{ p_request:body.requestId,p_action:body.action,p_reason:body.reason || null,
           p_user:body.userId || null,p_fields:body.fields || null,p_expires:body.expiresAt || null });
+    if (result.error?.message === "An independent administrator must review this request") {
+      throw new RequestError(
+        "You submitted this branding request. A different Super Admin must review it; self-approval is not permitted.",
+        403,
+      );
+    }
     if (result.error) throw new RequestError("The review could not be applied. Refresh the request and verify its status, scope and permission recipient.",409);
     return Response.json({ success:true });
   } catch(error) { return requestErrorResponse(error); }

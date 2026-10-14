@@ -12,7 +12,7 @@ async function main() {
       "Use --sandbox with isolated test configuration; production execution is not enabled.",
     );
   const gateway = configuredGateway(),
-    service = paymentService();
+    service = await paymentService();
   await paymentBudget(service, "maintenance", "reconciliation_job", 10);
   const result = await reconcileBatch(gateway, service);
   let pruned = 0;

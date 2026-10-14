@@ -1,14 +1,18 @@
-import { createClient } from "@supabase/supabase-js";
+import { assertPreviewIsolation } from "../hosting/isolation";
+import { isProtectedProject } from "../hosting/isolation";
+import { getSupabaseAdmin } from "../supabase/server";
 import { createHash } from "node:crypto";
 import { RequestError, requestErrorResponse } from "../auth/request";
 import { PaymentError, type PaymentGateway } from "./types";
-export function paymentService() {
+export async function paymentService() {
+  assertPreviewIsolation(process.env);
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL,
     key = process.env.SUPABASE_SECRET_KEY;
   if (!url || !key) throw new PaymentError();
   if (process.env.CERTVERIFY_PAYMENT_MODE === "razorpay_test") {
     const ref = process.env.CERTVERIFY_SANDBOX_PROJECT_REF;
     if (
+      isProtectedProject(ref,url) ||
       !ref ||
       !/^[a-z0-9]{8,40}$/.test(ref) ||
       new URL(url).origin !== `https://${ref}.supabase.co`
@@ -18,15 +22,9 @@ export function paymentService() {
       );
   }
   // This client uses only narrowly granted payment RPCs; never raw financial table writes.
-  return createClient(url, key, {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-      detectSessionInUrl: false,
-    },
-  });
+  return getSupabaseAdmin();
 }
-export type PaymentService = ReturnType<typeof paymentService>;
+export type PaymentService = Awaited<ReturnType<typeof paymentService>>;
 export async function checkedRpc(
   service: PaymentService,
   name: string,

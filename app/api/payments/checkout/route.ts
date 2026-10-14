@@ -18,7 +18,7 @@ export async function POST(request: Request) {
   try {
     const { client, user } = await authenticatedRequest(request);
     const gateway = configuredGateway();
-    const service = paymentService();
+    const service = await paymentService();
     await paymentBudget(service, user.id, "checkout"); // Disabled configuration performs no reservation or external request.
     const body = object(
       JSON.parse(

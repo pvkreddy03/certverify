@@ -5,8 +5,8 @@ import { resolve } from "node:path";
 
 async function inspect() {
   const stageArgument=process.argv.slice(2);
-  if (stageArgument.length>1 || (stageArgument[0] && !["--stage=1","--stage=3","--stage=4","--stage=5","--stage=7"].includes(stageArgument[0]))) {
-    console.error("Use --stage=1, --stage=3, --stage=4, --stage=5 or --stage=7 for the prepared read-only inspections.");process.exitCode=2;return;
+  if (stageArgument.length>1 || (stageArgument[0] && !["--stage=1","--stage=3","--stage=4","--stage=5","--stage=7","--stage=hosted"].includes(stageArgument[0]))) {
+    console.error("Use --stage=1, --stage=3, --stage=4, --stage=5, --stage=7 or --stage=hosted for the prepared read-only inspections.");process.exitCode=2;return;
   }
   const stage=stageArgument[0]?.split("=")[1] ?? "1";
   const connection = process.env.CERTVERIFY_READONLY_DATABASE_URL;
@@ -27,7 +27,7 @@ async function inspect() {
   });
   try {
     await client.connect();
-    const source = await readFile(`supabase/inspection/stage${stage}-readonly.sql`,"utf8");
+    const source = await readFile(stage==="hosted" ? "supabase/inspection/hosted-security-readonly.sql" : `supabase/inspection/stage${stage}-readonly.sql`,"utf8");
     const results = await client.query(source) as unknown as QueryResult[];
     if (!results.some((result) => result.rows.some((row) => row.readonly_transaction === "on"))) throw new Error("Read-only transaction not established");
     const directory = resolve(".certverify-private");

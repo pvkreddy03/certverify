@@ -42,7 +42,7 @@ jobs:
       - name: Audit production dependencies
         run: npm audit --omit=dev --audit-level=high
       - name: Print review-only migration manifest
-        run: npm run migration:manifest
+        run: npm run hosting:migrations
       - name: Run ESLint
         run: npm run lint
       - name: Run unit tests
@@ -56,4 +56,8 @@ jobs:
       - name: Generate Next.js types and check TypeScript
         run: npx next typegen && npm run typecheck
       - name: Build Next.js application
+        env:
+          # Public pages must compile without the privileged Supabase binding.
+          SUPABASE_SECRET_KEY: ''
+          CERTVERIFY_RATE_LIMIT_SECRET: ci-offline-private-rate-budget-sentinel-only
         run: npm run build

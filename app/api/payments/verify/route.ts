@@ -34,7 +34,7 @@ export async function POST(request: Request) {
   try {
     const { client, user } = await authenticatedRequest(request);
     const gateway = configuredGateway();
-    const service = paymentService();
+    const service = await paymentService();
     await paymentBudget(service, user.id, "verification", 30);
     const body = object(
       JSON.parse(

@@ -1,3 +1,4 @@
+import { isProtectedProject } from "../hosting/isolation";
 import { PaymentError } from "./types";
 import { razorpay } from "./razorpay";
 export function configuredGateway() {
@@ -6,6 +7,7 @@ export function configuredGateway() {
       "Payment collection is disabled. No charge was initiated.",
     );
   if (
+    isProtectedProject(process.env.CERTVERIFY_SANDBOX_PROJECT_REF,process.env.NEXT_PUBLIC_SUPABASE_URL) ||
     process.env.VERCEL_ENV === "production" ||
     process.env.CERTVERIFY_DEPLOYMENT_TARGET !== "isolated_sandbox"
   )

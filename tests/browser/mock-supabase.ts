@@ -72,6 +72,10 @@ const server = createServer(async (request, response) => {
   if (url.pathname === "/auth/v1/user") { json({ ...session(user,aal).user, ...(body.data ? { user_metadata: body.data } : {}) }); return; }
   if (url.pathname === "/auth/v1/logout") { response.writeHead(204).end(); return; }
   if (url.pathname === "/auth/v1/recover" || url.pathname === "/auth/v1/signup") { json({}); return; }
+  // Account-security enrollment substitute only; real TOTP remains a hosted gate.
+  if (url.pathname === "/auth/v1/factors" && request.method === "POST") { json({id:"account-factor",type:"totp",totp:{qr_code:"<svg xmlns='http://www.w3.org/2000/svg'/>",secret:"fixture-only-totp-secret",uri:"otpauth://totp/fixture"}});return; }
+  if (url.pathname.endsWith("/account-factor/challenge")) { json({id:"fixture-account-challenge",type:"totp",expires_at:Math.floor(Date.now()/1000)+60});return; }
+  if (url.pathname.endsWith("/account-factor/verify")) { if(body.code!=="123456"){json({message:"Invalid code"},422);return;}json(session(user,"aal2"));return; }
   if (url.pathname.endsWith("/platform-factor/challenge")) { json({ id:"fixture-challenge",type:"totp",expires_at:Math.floor(Date.now()/1000)+60 });return; }
   if (url.pathname.endsWith("/platform-factor/verify")) { if(body.code!=="123456") { json({ message:"Invalid authenticator code",code:"mfa_verification_failed" },422);return; }json(session(users.platform,"aal2"));return; }
   if (url.pathname.startsWith("/storage/v1/object/")) {
