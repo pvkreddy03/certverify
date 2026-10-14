@@ -129,8 +129,24 @@ export function LoginForm({ platform = false }: { platform?: boolean }) {
           : "Email or password is incorrect. Please check your credentials.");
         return;
       }
+      // Role-aware routing uses the authenticated Supabase identity, never
+      // an email string or user-controlled profile metadata. This check only
+      // decides the landing page; the platform route/API still enforce
+      // administrator membership and MFA on the server.
+      const { data: isPlatformAdmin, error: roleError } = await supabase.rpc("cv_platform_identity");
+      if (roleError) {
+        setMessage("Sign-in succeeded, but account permissions could not be verified. Please retry before continuing.");
+        return;
+      }
+      if (platform && isPlatformAdmin !== true) {
+        setMessage("This account does not have Super Admin access. Use the customer sign-in page instead.");
+        return;
+      }
       const requested = new URLSearchParams(window.location.search).get("next");
-      window.location.assign(loginDestination(requested, window.location.origin, platform));
+      const destination = loginDestination(requested, window.location.origin, isPlatformAdmin === true);
+      window.location.assign(isPlatformAdmin === true && !destination.startsWith("/platform")
+        ? "/platform"
+        : destination);
     } catch {
       setMessage("Unable to sign in. Please try again.");
     } finally {
