@@ -166,57 +166,6 @@ export default function DashboardPage() {
 
       <div className="mx-auto flex max-w-7xl">
 
-        {/* Sidebar */}
-        <aside className="hidden min-h-[calc(100vh-73px)] w-64 border-r border-slate-200 bg-white p-5 md:block">
-
-          <nav className="space-y-2">
-
-            <Link
-              href="/dashboard"
-              className="block rounded-lg bg-slate-100 px-4 py-3 text-sm font-medium text-slate-900"
-            >
-              Dashboard
-            </Link>
-
-            <Link
-              href="/dashboard/certificates/list"
-              className="block rounded-lg px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-            >
-              My Certificates
-            </Link>
-
-            <Link
-              href="/dashboard/certificates"
-              className="block rounded-lg px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-            >
-              Create Certificate
-            </Link>
-
-            <Link
-              href="/dashboard/templates"
-              className="block rounded-lg px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-            >
-              Templates
-            </Link>
-
-            <Link
-              href="/dashboard/team"
-              className="block rounded-lg px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-            >
-              Team
-            </Link>
-
-            <Link
-              href="/dashboard/settings"
-              className="block rounded-lg px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-            >
-              Settings
-            </Link>
-
-          </nav>
-
-        </aside>
-
         {/* Main */}
         <section className="flex-1 p-6 md:p-10">
 
