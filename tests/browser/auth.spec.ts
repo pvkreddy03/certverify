@@ -60,3 +60,44 @@ test("password recovery requires fresh email proof and allows a matching passwor
   await page.getByRole("button", { name: "Update password" }).click();
   await expect(page.getByText("Your password has been updated.", { exact: false })).toBeVisible();
 });
+
+
+test("login validates malformed Email IDs and shows live public plans and contact", async ({ page }) => {
+  await page.goto("/login");
+  await expect(page.getByText("Current CertVerify plans")).toBeVisible();
+  await expect(page.getByText("Browser baseline plan")).toBeVisible();
+  await expect(page.getByText("Public trial offer")).toBeVisible();
+  await expect(page.getByText("help@certverify.example")).toBeVisible();
+  await page.getByLabel("Email address").fill("not-an-email");
+  await page.getByLabel("Password", { exact: true }).fill("test-password");
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  await expect(page.getByRole("alert")).toContainText("Enter a valid Email ID");
+});
+
+test("signup and recovery validate email format before attempting delivery", async ({ page }) => {
+  await page.goto("/signup");
+  await page.getByLabel("Professional / Business Name").fill("Test Professional");
+  await page.getByLabel("Email address").fill("missing-at");
+  await page.getByLabel("Password", { exact: true }).fill("password-123");
+  await page.getByRole("button", { name: "Create account" }).click();
+  await expect(page.getByRole("status")).toContainText("Enter a valid Email ID");
+
+  await page.goto("/forgot-password");
+  await page.getByLabel("Email address").fill("wrong");
+  await page.getByRole("button", { name: "Send reset link" }).click();
+  await expect(page.getByRole("alert")).toContainText("Enter a valid Email ID");
+});
+
+test("a password reset request shows sixty-second resend countdown across refresh", async ({ page }) => {
+  await page.goto("/forgot-password");
+  await page.getByLabel("Email address").fill("existing@example.test");
+  await page.getByRole("button", { name: "Send reset link" }).click();
+  await expect(page.getByRole("button", { name: /Resend reset link in \d+s/ })).toBeDisabled();
+  await page.reload();
+  await expect(page.getByRole("button", { name: /Resend reset link in \d+s/ })).toBeDisabled();
+});
+
+test("public contact management is not available without administrator authorization", async ({ request }) => {
+  const response = await request.get("/api/platform/contact");
+  expect(response.status()).toBe(401);
+});
