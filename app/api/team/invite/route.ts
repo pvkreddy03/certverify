@@ -59,7 +59,7 @@ export async function POST(request: Request) {
     });
     return Response.json({ success: true, invitation_id: id, message: "Invitation instructions sent.", invited_email: email });
   } catch (error) {
-    if (error instanceof InvitationDeliveryError) return Response.json({ error: error.message }, { status: error.rateLimited ? 429 : 502 });
+    if (error instanceof InvitationDeliveryError) return Response.json({ error: error.message }, { status: error.rateLimited && !error.cleanupFailed ? 429 : 502 });
     return requestErrorResponse(error);
   }
 }
