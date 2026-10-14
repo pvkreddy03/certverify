@@ -571,10 +571,10 @@ export default function TeamPage() {
                         <button
                           type="button"
                           onClick={() => handleInvitationAction(invitation.id, "resend")}
-                          disabled={invitationActionId !== null}
+                          disabled={invitationActionId !== null || inviteCooldown.disabled}
                           className="rounded-lg border border-blue-200 px-3 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-50 disabled:opacity-50"
                         >
-                          {invitationActionId === invitation.id ? "Working..." : "Resend"}
+                          {invitationActionId === invitation.id ? "Working..." : inviteCooldown.disabled ? `Resend in ${inviteCooldown.remaining}s` : "Resend"}
                         </button>
                       )}
                       {canRevoke && (
@@ -727,12 +727,12 @@ export default function TeamPage() {
 
                 <button
                   type="submit"
-                  disabled={sendingInvite}
+                  disabled={sendingInvite || inviteCooldown.disabled}
                   className="rounded-lg bg-blue-600 px-5 py-3 font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {sendingInvite
                     ? "Sending invitation..."
-                    : "Send Invitation"}
+                    : inviteCooldown.disabled ? `Send in ${inviteCooldown.remaining}s` : "Send Invitation"}
                 </button>
 
               </div>
