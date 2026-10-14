@@ -43,13 +43,13 @@ export async function POST(request: Request) {
         const redirectTo = `${baseUrl}/accept-invite?token=${encodeURIComponent(token)}&mode=${mode}`;
         if (!existingUser) {
           const { error } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, { redirectTo, data: { certverify_invitation_setup_required: true } });
-          if (error) throw new Error("Invitation email failed");
+          if (error) throw error;
         } else if (existingUser.email_confirmed_at) {
           const { error } = await client.auth.signInWithOtp({ email, options: { emailRedirectTo: redirectTo, shouldCreateUser: false } });
-          if (error) throw new Error("Sign-in email failed");
+          if (error) throw error;
         } else {
           const { error } = await supabaseAdmin.auth.resend({ type: "signup", email, options: { emailRedirectTo: redirectTo } });
-          if (error) throw new Error("Confirmation email failed");
+          if (error) throw error;
         }
       },
       cancel: async (id) => {
@@ -59,7 +59,7 @@ export async function POST(request: Request) {
     });
     return Response.json({ success: true, invitation_id: id, message: "Invitation instructions sent.", invited_email: email });
   } catch (error) {
-    if (error instanceof InvitationDeliveryError) return Response.json({ error: error.message }, { status: 502 });
+    if (error instanceof InvitationDeliveryError) return Response.json({ error: error.message }, { status: error.rateLimited ? 429 : 502 });
     return requestErrorResponse(error);
   }
 }
