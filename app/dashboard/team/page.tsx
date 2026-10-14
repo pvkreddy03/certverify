@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { useEmailCooldown } from "@/lib/auth/email-cooldown";
+import { isValidEmail, INVALID_EMAIL_MESSAGE } from "@/lib/auth/email-validation";
 import { MemberActions } from "@/components/member-actions";
 import { accountHeaders, requireSelectedAccountId } from "@/lib/accounts/context";
 
@@ -56,6 +58,7 @@ export default function TeamPage() {
 
   const [upgrading, setUpgrading] = useState(false);
   const [sendingInvite, setSendingInvite] = useState(false);
+  const inviteCooldown = useEmailCooldown("team-invitation");
 
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteMessage, setInviteMessage] = useState("");
@@ -184,6 +187,7 @@ export default function TeamPage() {
   }
 
   async function handleInvitationAction(invitationId: string, action: "resend" | "revoke") {
+    if (action === "resend" && inviteCooldown.disabled) return;
     setInvitationActionId(invitationId);
     setInvitationListError("");
     setInviteError("");
@@ -196,6 +200,7 @@ export default function TeamPage() {
         return;
       }
 
+      if (action === "resend") inviteCooldown.start();
       const response = await fetch(`/api/team/invitations/${invitationId}`, {
         method: "PATCH",
         headers: accountHeaders({
@@ -300,11 +305,12 @@ export default function TeamPage() {
 
     const email = inviteEmail.trim().toLowerCase();
 
-    if (!email) {
-      setInviteError("Please enter an email address.");
+    if (!isValidEmail(email)) {
+      setInviteError(INVALID_EMAIL_MESSAGE);
       return;
     }
 
+    if (inviteCooldown.disabled) { setInviteError(`Please retry in ${inviteCooldown.remaining}s.`); return; }
     setSendingInvite(true);
 
     try {
@@ -320,6 +326,7 @@ export default function TeamPage() {
         return;
       }
 
+      inviteCooldown.start();
       const response = await fetch("/api/team/invite", {
         method: "POST",
         headers: accountHeaders({
