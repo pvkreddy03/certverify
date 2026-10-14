@@ -1,7 +1,9 @@
 "use client";
 
 import { PortalNavigation } from "@/components/portal-navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { useEmailCooldown } from "@/lib/auth/email-cooldown";
+import { isValidEmail, INVALID_EMAIL_MESSAGE } from "@/lib/auth/email-validation";
 import { supabase } from "@/lib/supabase";
 import { explainEmailError } from "@/lib/auth/email-errors";
 
@@ -14,19 +16,25 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
   const [awaitingConfirmation, setAwaitingConfirmation] = useState(false);
+  const cooldown = useEmailCooldown("signup-confirmation");
+  const signupLock = useRef(false);
+  const resendLock = useRef(false);
 
   async function handleSignup(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-
+    if (signupLock.current) return;
     setMessage("");
     setAwaitingConfirmation(false);
+    if (!isValidEmail(email)) { setMessage(INVALID_EMAIL_MESSAGE); return; }
     if (name.trim().length < 2 || name.trim().length > 120 || password.length < 8) {
       setMessage("Enter a name of 2–120 characters and a password of at least 8 characters.");
       return;
     }
+    signupLock.current = true;
     setLoading(true);
-
-    const { error } = await supabase.auth.signUp({
+    let error;
+    try {
+      const result = await supabase.auth.signUp({
       email: email.trim().toLowerCase(),
       password,
       options: {
@@ -35,9 +43,12 @@ export default function SignupPage() {
           professional_name: name.trim(),
         },
       },
-    });
-
-    setLoading(false);
+      });
+      error = result.error;
+    } catch {
+      setMessage("Unable to create your account. Please retry.");
+      return;
+    } finally { signupLock.current = false; setLoading(false); }
 
     if (error) {
       setMessage(explainEmailError(error, "signup"));
@@ -45,23 +56,33 @@ export default function SignupPage() {
     }
 
     setAwaitingConfirmation(true);
+    cooldown.start();
     setMessage(
       "Account created successfully. Please check your email to confirm your account."
     );
   }
 
   async function handleResendConfirmation() {
-    if (!email.trim()) return;
+    if (resendLock.current || cooldown.disabled) return;
+    if (!isValidEmail(email)) { setMessage(INVALID_EMAIL_MESSAGE); return; }
+    resendLock.current = true;
     setResending(true);
-    const { error } = await supabase.auth.resend({
-      type: "signup",
-      email: email.trim().toLowerCase(),
-      options: { emailRedirectTo: `${window.location.origin}/confirm-email` },
-    });
-    setResending(false);
-    setMessage(error
-      ? explainEmailError(error, "confirmation")
-      : "If confirmation is still needed, a new email has been requested. Please check your inbox and spam folder.");
+    cooldown.start();
+    try {
+      const { error } = await supabase.auth.resend({
+        type: "signup",
+        email: email.trim().toLowerCase(),
+        options: { emailRedirectTo: `${window.location.origin}/confirm-email` },
+      });
+      setMessage(error
+        ? explainEmailError(error, "confirmation")
+        : "If confirmation is still needed, check your inbox and spam folder for the newest email.");
+    } catch {
+      setMessage("Unable to request confirmation. Please try again later.");
+    } finally {
+      resendLock.current = false;
+      setResending(false);
+    }
   }
 
   return (
@@ -87,7 +108,7 @@ export default function SignupPage() {
 
           <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
 
-            <form onSubmit={handleSignup} className="space-y-5">
+            <form onSubmit={handleSignup} noValidate className="space-y-5">
 
               <div>
                 <label
@@ -163,9 +184,9 @@ export default function SignupPage() {
               </div>
             )}
             {awaitingConfirmation && (
-              <button type="button" onClick={handleResendConfirmation} disabled={resending}
+              <button type="button" onClick={handleResendConfirmation} disabled={resending || cooldown.disabled}
                 className="mt-3 w-full rounded-lg border border-blue-200 px-4 py-3 text-sm font-semibold text-blue-700 hover:bg-blue-50 disabled:opacity-60">
-                {resending ? "Requesting confirmation..." : "Resend confirmation email"}
+                {resending ? "Requesting confirmation..." : cooldown.disabled ? `Resend confirmation in ${cooldown.remaining}s` : "Resend confirmation email"}
               </button>
             )}
 
