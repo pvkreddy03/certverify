@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { explainEmailError } from "@/lib/auth/email-errors";
 
 export default function SignupPage() {
   const [name, setName] = useState("");
@@ -10,11 +11,14 @@ export default function SignupPage() {
 
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [awaitingConfirmation, setAwaitingConfirmation] = useState(false);
 
   async function handleSignup(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     setMessage("");
+    setAwaitingConfirmation(false);
     if (name.trim().length < 2 || name.trim().length > 120 || password.length < 8) {
       setMessage("Enter a name of 2–120 characters and a password of at least 8 characters.");
       return;
@@ -35,13 +39,28 @@ export default function SignupPage() {
     setLoading(false);
 
     if (error) {
-      setMessage(error.message);
+      setMessage(explainEmailError(error, "signup"));
       return;
     }
 
+    setAwaitingConfirmation(true);
     setMessage(
       "Account created successfully. Please check your email to confirm your account."
     );
+  }
+
+  async function handleResendConfirmation() {
+    if (!email.trim()) return;
+    setResending(true);
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email: email.trim().toLowerCase(),
+      options: { emailRedirectTo: `${window.location.origin}/confirm-email` },
+    });
+    setResending(false);
+    setMessage(error
+      ? explainEmailError(error, "confirmation")
+      : "If confirmation is still needed, a new email has been requested. Please check your inbox and spam folder.");
   }
 
   return (
@@ -136,9 +155,15 @@ export default function SignupPage() {
             </form>
 
             {message && (
-              <div className="mt-5 rounded-lg bg-slate-100 p-4 text-sm text-slate-700">
+              <div role="status" className="mt-5 rounded-lg bg-slate-100 p-4 text-sm text-slate-700">
                 {message}
               </div>
+            )}
+            {awaitingConfirmation && (
+              <button type="button" onClick={handleResendConfirmation} disabled={resending}
+                className="mt-3 w-full rounded-lg border border-blue-200 px-4 py-3 text-sm font-semibold text-blue-700 hover:bg-blue-50 disabled:opacity-60">
+                {resending ? "Requesting confirmation..." : "Resend confirmation email"}
+              </button>
             )}
 
             <div className="my-6 flex items-center gap-3">
