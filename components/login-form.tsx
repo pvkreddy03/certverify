@@ -84,7 +84,7 @@ function LoginHighlights() {
             {offer.ends_at && <p className="mt-1 text-xs text-slate-500">Ends {new Date(offer.ends_at).toLocaleDateString("en-IN")}</p>}
           </div>)}
         </div>
-        <p className="mt-3 text-xs text-slate-600">Subject to the offer's eligibility and checkout terms.</p>
+        <p className="mt-3 text-xs text-slate-600">Subject to the offer&apos;s eligibility and checkout terms.</p>
       </section>}
       {hasContact && <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <h2 className="text-lg font-bold text-slate-900">Contact CertVerify</h2>
