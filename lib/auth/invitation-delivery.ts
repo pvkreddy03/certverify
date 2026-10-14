@@ -7,10 +7,12 @@ export type InvitationDeliveryDependencies = {
 };
 
 export class InvitationDeliveryError extends Error {
-  constructor(public cleanupFailed: boolean) {
+  constructor(public cleanupFailed: boolean, public rateLimited = false) {
     super(cleanupFailed
       ? "Email delivery failed and the invitation needs administrator review."
-      : "Email delivery failed. The new invitation has been cancelled; please retry.");
+      : rateLimited
+        ? "Email sending is temporarily limited. The invitation was cancelled. Please wait a few minutes before retrying."
+        : "Email delivery failed. The new invitation has been cancelled; please retry.");
   }
 }
 
@@ -22,10 +24,14 @@ export async function deliverInvitation(dependencies: InvitationDeliveryDependen
   const id = await dependencies.reserve(hash);
   try {
     await dependencies.send(token, id);
-  } catch {
+  } catch (reason) {
+    const rateLimited = Boolean(reason && typeof reason === "object" && (
+      ("code" in reason && reason.code === "over_email_send_rate_limit") ||
+      ("status" in reason && reason.status === 429)
+    ));
     let cleanupFailed = false;
     try { await dependencies.cancel(id); } catch { cleanupFailed = true; }
-    throw new InvitationDeliveryError(cleanupFailed);
+    throw new InvitationDeliveryError(cleanupFailed, rateLimited);
   }
   return id;
 }
