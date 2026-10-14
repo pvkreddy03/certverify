@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { loginDestination } from "@/lib/auth/login-destination";
 import { supabase } from "@/lib/supabase";
+import { explainEmailError } from "@/lib/auth/email-errors";
 
 export function LoginForm({ platform=false }: { platform?:boolean }) {
   const [email, setEmail] = useState("");
@@ -10,12 +11,17 @@ export function LoginForm({ platform=false }: { platform?:boolean }) {
 
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [needsConfirmation, setNeedsConfirmation] = useState(false);
+  const [notice, setNotice] = useState("");
 
   async function handleLogin(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     setLoading(true);
     setMessage("");
+    setNotice("");
+    setNeedsConfirmation(false);
 
     const { error } = await supabase.auth.signInWithPassword({
       email,
@@ -25,13 +31,31 @@ export function LoginForm({ platform=false }: { platform?:boolean }) {
     setLoading(false);
 
     if (error) {
-      setMessage(error.message);
+      setNeedsConfirmation(error.code === "email_not_confirmed");
+      setMessage(error.code === "email_not_confirmed"
+        ? explainEmailError(error, "confirmation")
+        : error.message);
       return;
     }
 
     const requested = new URLSearchParams(window.location.search).get("next");
     const destination = loginDestination(requested,window.location.origin,platform);
     window.location.assign(destination);
+  }
+
+  async function handleResendConfirmation() {
+    if (!email.trim()) return;
+    setResending(true);
+    setNotice("");
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email: email.trim().toLowerCase(),
+      options: { emailRedirectTo: `${window.location.origin}/confirm-email` },
+    });
+    setResending(false);
+    setNotice(error
+      ? explainEmailError(error, "confirmation")
+      : "If confirmation is still needed, a new email has been requested. Please check your inbox and spam folder.");
   }
 
   return (
@@ -112,10 +136,17 @@ export function LoginForm({ platform=false }: { platform?:boolean }) {
             </form>
 
             {message && (
-              <div className="mt-5 rounded-lg bg-red-50 p-4 text-sm text-red-700">
+              <div role="alert" className="mt-5 rounded-lg bg-red-50 p-4 text-sm text-red-700">
                 {message}
               </div>
             )}
+            {needsConfirmation && (
+              <button type="button" onClick={handleResendConfirmation} disabled={resending}
+                className="mt-3 w-full rounded-lg border border-blue-200 px-4 py-3 text-sm font-semibold text-blue-700 hover:bg-blue-50 disabled:opacity-60">
+                {resending ? "Requesting confirmation..." : "Resend confirmation email"}
+              </button>
+            )}
+            {notice && <p role="status" className="mt-3 rounded-lg bg-slate-100 p-3 text-sm text-slate-700">{notice}</p>}
 
             <div className="my-6 flex items-center gap-3">
               <div className="h-px flex-1 bg-slate-200" />
