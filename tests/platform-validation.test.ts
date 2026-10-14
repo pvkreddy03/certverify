@@ -14,7 +14,11 @@ test("access changes require a bounded reason and exact safe revision",()=>{
 });
 test("shared and platform login destinations prevent open redirects and preserve safe invitation/account links",()=>{
   const origin="https://certverify.example";const id="10000000-0000-0000-0000-000000000001";
-  assert.equal(loginDestination(`/platform/accounts/${id}`,origin),`/platform/accounts/${id}`);
+  assert.equal(loginDestination(`/platform/accounts/${id}`,origin,true),`/platform/accounts/${id}`);
+  assert.equal(loginDestination(`/platform/accounts/${id}`,origin,false),"/dashboard");
+  assert.equal(loginDestination("/platform",origin,false),"/dashboard");
+  assert.equal(loginDestination("/dashboard",origin,true),"/platform");
+  assert.equal(loginDestination("/platform/contact",origin,true),"/platform/contact");
   assert.equal(loginDestination("/accept-invite?token=fixture",origin),"/accept-invite?token=fixture");
   assert.equal(loginDestination(null,origin,true),"/platform");
   for(const path of ["https://attacker.example/platform","//attacker.example/platform","javascript:alert(1)","/api/platform/accounts","/platform/accounts/not-a-uuid","/platform/../api/platform", "http://[malformed"]) assert.equal(loginDestination(path,origin),"/dashboard");
