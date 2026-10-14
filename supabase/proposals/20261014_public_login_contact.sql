@@ -78,7 +78,10 @@ CREATE OR REPLACE FUNCTION public.cv_save_platform_contact_settings(p_contact js
 RETURNS boolean LANGUAGE plpgsql SECURITY DEFINER SET search_path TO ''
 AS $function$
 DECLARE actor uuid := public.cv_require_platform_admin();
-DECLARE e text; DECLARE p text; DECLARE w text; DECLARE h text;
+  e text;
+  p text;
+  w text;
+  h text;
 BEGIN
   IF p_contact IS NULL OR jsonb_typeof(p_contact) <> 'object'
      OR EXISTS (SELECT 1 FROM jsonb_object_keys(p_contact) AS k(key)
