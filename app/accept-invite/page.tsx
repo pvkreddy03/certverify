@@ -1,5 +1,6 @@
 "use client";
 
+import { PortalNavigation } from "@/components/portal-navigation";
 import { FormEvent, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { consumeEmailSession, invitationSignInPath } from "@/lib/auth/email-session";
@@ -157,6 +158,8 @@ export default function AcceptInvitePage() {
   }
 
   return (
+    <>
+      <PortalNavigation />
     <main className="min-h-screen bg-slate-50 px-6 py-12">
       <div className="mx-auto flex min-h-[75vh] max-w-md items-center">
         <section className="w-full rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
@@ -271,5 +274,6 @@ export default function AcceptInvitePage() {
         </section>
       </div>
     </main>
+    </>
   );
 }
