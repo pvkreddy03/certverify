@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { consumeEmailSession } from "@/lib/auth/email-session";
+import { PortalNavigation } from "@/components/portal-navigation";
 
 export default function ConfirmEmailPage() {
   const [message, setMessage] = useState("Confirming your email…");
@@ -19,5 +20,5 @@ export default function ConfirmEmailPage() {
     });
     return () => { cancelled = true; };
   }, []);
-  return <main className="mx-auto max-w-lg p-8"><h1 className="text-2xl font-semibold">Email confirmation</h1><p role="status" className="my-6">{message}</p><a href="/dashboard" className="text-blue-700">Continue</a></main>;
+  return <><PortalNavigation /><main className="mx-auto max-w-lg p-8"><h1 className="text-2xl font-semibold">Email confirmation</h1><p role="status" className="my-6">{message}</p><a href="/dashboard" className="text-blue-700">Continue</a></main></>;
 }
