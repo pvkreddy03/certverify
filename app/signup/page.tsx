@@ -1,5 +1,6 @@
 "use client";
 
+import { PortalNavigation } from "@/components/portal-navigation";
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { explainEmailError } from "@/lib/auth/email-errors";
@@ -64,6 +65,8 @@ export default function SignupPage() {
   }
 
   return (
+    <>
+      <PortalNavigation />
     <main className="min-h-screen bg-slate-50">
       <div className="flex min-h-screen items-center justify-center px-6 py-12">
         <div className="w-full max-w-md">
@@ -191,5 +194,6 @@ export default function SignupPage() {
         </div>
       </div>
     </main>
+    </>
   );
 }
