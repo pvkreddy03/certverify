@@ -199,11 +199,12 @@ export default function CertificatesPage() {
         >
           {/* Certificate Template */}
           <div>
-            <label className="mb-2 block text-sm font-medium text-slate-700">
+            <label htmlFor="certificate-template" className="mb-2 block text-sm font-medium text-slate-700">
               Certificate Template
             </label>
 
             <select
+              id="certificate-template"
               value={selectedTemplateId}
               onChange={(e) => {
                 if (e.target.value === "__create__") {
