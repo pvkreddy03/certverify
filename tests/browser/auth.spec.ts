@@ -101,3 +101,44 @@ test("public contact management is not available without administrator authoriza
   const response = await request.get("/api/platform/contact");
   expect(response.status()).toBe(401);
 });
+
+test("passwordless invitation recipient must create a password even if invite link says join", async ({ page }) => {
+  const rawToken = "a".repeat(64);
+  await page.goto(`/accept-invite?token=${rawToken}&mode=join&token_hash=new&type=invite`);
+  await expect(page.getByRole("heading", { name: "Set up your CertVerify account" })).toBeVisible();
+  await expect(page.getByLabel("Create password", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Accept invitation", exact: true })).toHaveCount(0);
+  await page.getByLabel("Your name").fill("Invited Colleague");
+  await page.getByLabel("Create password", { exact: true }).fill("a-valid-password");
+  await page.getByLabel("Confirm password").fill("a-valid-password");
+  await page.getByRole("button", { name: "Create account and accept" }).click();
+  await expect(page.getByLabel("Current account")).toHaveValue(b);
+});
+
+test("team owner sees member emails, not raw user identifiers", async ({ page }) => {
+  await page.goto("/login");
+  await page.getByLabel("Email address").fill("existing@example.test");
+  await page.getByLabel("Password", { exact: true }).fill("test-password");
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  await expect(page.getByLabel("Current account")).toBeVisible();
+  await page.goto("/dashboard/team");
+  await expect(page.getByText("existing@example.test", { exact: true })).toBeVisible();
+  await expect(page.getByText("new@example.test", { exact: true })).toBeVisible();
+  await expect(page.getByText("User ID", { exact: true })).toHaveCount(0);
+});
+
+test("security page offers password change and account email reset", async ({ page }) => {
+  await page.goto("/login");
+  await page.getByLabel("Email address").fill("existing@example.test");
+  await page.getByLabel("Password", { exact: true }).fill("test-password");
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  await expect(page.getByLabel("Current account")).toBeVisible();
+  await page.goto("/account/security");
+  await expect(page.getByRole("heading", { name: "Password and recovery" })).toBeVisible();
+  await page.getByLabel("New password", { exact: true }).fill("new-safe-password");
+  await page.getByLabel("Confirm new password").fill("new-safe-password");
+  await page.getByRole("button", { name: "Change password" }).click();
+  await expect(page.getByRole("status").filter({ hasText: "Password updated successfully" })).toBeVisible();
+  await page.getByRole("button", { name: "Email me a reset link" }).click();
+  await expect(page.getByRole("status").filter({ hasText: "password-reset link" })).toBeVisible();
+});
