@@ -23,6 +23,13 @@ export default function TemplatesPage() {
   const [description, setDescription] = useState("");
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const [fromCertificate, setFromCertificate] = useState(false);
+
+  useEffect(() => {
+    const query = new URLSearchParams(window.location.search);
+    if (query.get("create") === "1") setShowCreateForm(true);
+    if (query.get("from") === "certificate") setFromCertificate(true);
+  }, []);
 
   async function loadTemplates() {
     const {
@@ -74,14 +81,16 @@ export default function TemplatesPage() {
       return;
     }
 
-    const { error } = await supabase
+    const { data: created, error } = await supabase
       .from("certificate_templates")
       .insert({
         user_id: user.id,
         account_id: requireSelectedAccountId(),
         name: name.trim(),
         description: description.trim() || null,
-      });
+      })
+      .select("id")
+      .single();
 
     if (error) {
       setMessage("Could not create template: " + error.message);
@@ -89,7 +98,13 @@ export default function TemplatesPage() {
       return;
     }
 
-    router.push("/dashboard");
+    if (!created?.id) {
+      setMessage("Template was saved, but its details could not be opened. Check your template list before retrying.");
+      setSaving(false);
+      return;
+    }
+    // Configure the fields before issuing a certificate using this template.
+    router.push(`/dashboard/templates/${created.id}${fromCertificate ? "?from=certificate" : ""}`);
   }
 
   return (
@@ -141,6 +156,7 @@ export default function TemplatesPage() {
             <h2 className="text-xl font-semibold text-slate-900">
               Create Template
             </h2>
+            {fromCertificate && <p className="mt-2 text-sm text-blue-800">After creating the template, add your certificate fields, then return to certificate creation.</p>}
 
             <div className="mt-5">
               <label className="block text-sm font-medium text-slate-700">
