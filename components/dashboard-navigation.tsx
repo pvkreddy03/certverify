@@ -12,7 +12,7 @@ const customerRoutes = [
   { href: "/dashboard/certificates/list", label: "Certificates" },
   { href: "/dashboard/templates", label: "Templates" },
   { href: "/dashboard/team", label: "Team", managerOnly: true },
-  { href: "/dashboard/branding", label: "Branding" },
+  { href: "/dashboard/branding", label: "Branding", managerOnly: true },
   { href: "/dashboard/subscription", label: "Subscription", ownerOnly: true },
   { href: "/dashboard/settings", label: "Settings" },
   { href: "/account/security", label: "Security" },
