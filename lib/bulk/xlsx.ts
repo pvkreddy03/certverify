@@ -143,12 +143,14 @@ export function zipFiles(entries:ZipEntry[]):Buffer{
   return Buffer.concat([...localParts,centrals,end]);
 }
 function column(i:number){let n=i+1,r="";while(n){n--;r=String.fromCharCode(65+n%26)+r;n=Math.floor(n/26);}return r;}
-export function createXlsxTemplate(headers:string[]):Buffer{
+export function createXlsxTemplate(headers:string[],exampleRows:string[][]=[]):Buffer{
   if(!headers.length||headers.length>100)return invalid("Template must have 1 to 100 columns.");
   const worksheet='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
     '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData><row r="1">'+
     headers.map((h,i)=>'<c r="'+column(i)+'1" s="1" t="inlineStr"><is><t>'+textSafe(h)+'</t></is></c>').join("")+
-    '</row></sheetData></worksheet>';
+    '</row>'+exampleRows.map((row,rowIndex)=>'<row r="'+(rowIndex+2)+'">'+row.map((value,i)=>
+      '<c r="'+column(i)+(rowIndex+2)+'" s="1" t="inlineStr"><is><t>'+textSafe(value)+'</t></is></c>'
+    ).join("")+'</row>').join("")+'</sheetData></worksheet>';
   const wb='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
     '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Certificates" sheetId="1" r:id="rId1"/></sheets></workbook>';
   const rels='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
