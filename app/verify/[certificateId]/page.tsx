@@ -38,6 +38,7 @@ export default async function VerifyCertificatePage({ params }: { params: Promis
     <article className="overflow-hidden rounded-2xl bg-white shadow-sm">
       <header className="border-b p-8 text-center">
         {certificate.logo_available && <Image src={`/api/public/certificates/${certificate.public_verification_id}/logo`} alt={`${certificate.issuer_name || "Issuer"} logo`} width={128} height={128} unoptimized className="mx-auto mb-4 h-32 w-32 object-contain" />}
+        {certificate.logo_available === false && <p className="mb-3 text-xs text-slate-500">No approved logo was attached when this certificate was issued.</p>}
         <div className={`mx-auto flex h-16 w-16 items-center justify-center rounded-full text-2xl ${presentation.classes}`}>{presentation.icon}</div>
         <h1 className="mt-5 text-2xl font-bold">{presentation.title}</h1>
         <p className="mt-3 text-slate-600">{presentation.description}</p>
