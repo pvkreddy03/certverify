@@ -27,8 +27,10 @@ export default function TemplatesPage() {
 
   useEffect(() => {
     const query = new URLSearchParams(window.location.search);
-    if (query.get("create") === "1") setShowCreateForm(true);
-    if (query.get("from") === "certificate") setFromCertificate(true);
+    void Promise.resolve().then(() => {
+      if (query.get("create") === "1") setShowCreateForm(true);
+      if (query.get("from") === "certificate") setFromCertificate(true);
+    });
   }, []);
 
   async function loadTemplates() {
