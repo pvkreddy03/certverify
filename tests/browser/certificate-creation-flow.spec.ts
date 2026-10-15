@@ -8,7 +8,7 @@ async function signIn(page: import("@playwright/test").Page) {
   await page.getByLabel("Email address").fill("existing@example.test");
   await page.getByLabel("Password", { exact: true }).fill("test-password");
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
-  await expect(page.getByLabel("Current account")).toBeVisible();
+  await expect(page.getByLabel("Workspace")).toBeVisible();
 }
 
 test.beforeEach(async ({ request }) => {
