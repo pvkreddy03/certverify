@@ -1,35 +1,23 @@
-import { createClient } from "@supabase/supabase-js";
+import { publicVerificationRepository } from "@/lib/providers/public-verification";
 import Link from "next/link";
 import Image from "next/image";
 import { statusPresentation } from "@/lib/certificates/status";
 
-type PublicCertificate = {
-  certificate_id: string;
-  public_verification_id: string;
-  issuer_name: string | null;
-  issuer_details?: string;
-  logo_available?: boolean;
-  branding_reconciled?: boolean;
-  issued_at: string;
-  status: string;
-  revoked_at: string | null;
-  public_revocation_reason: string | null;
-  fields: { id: string; field_name: string; field_type: string; field_value: string | null }[];
-};
-
 export default async function VerifyCertificatePage({ params }: { params: Promise<{ certificateId: string }> }) {
   const { certificateId } = await params;
-  const client = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
-    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
-    global: { fetch: (input, init) => fetch(input, { ...init, cache: "no-store" }) },
-  });
   // Next.js already decodes route parameters; do not decode historical labels twice.
-  const { data, error } = await client.rpc("cv_public_certificate", { p_reference: certificateId });
-  const certificate = data as PublicCertificate | null;
+  // This server-only repository hides which database currently serves verification.
+  let certificate;
+  let unavailable = false;
+  try {
+    certificate = await publicVerificationRepository().findByReference(certificateId);
+  } catch {
+    unavailable = true;
+  }
   if (error || !certificate) return <main className="mx-auto max-w-xl px-6 py-12">
     <section className="rounded-2xl bg-white p-8 text-center shadow-sm">
-      <h1 className="text-2xl font-bold">{error ? "Verification Temporarily Unavailable" : "Certificate Not Found"}</h1>
-      <p className="mt-4 text-slate-600">{error ? "We could not check the current status. Please try again; this is not a validity result." : "This link could not identify a certificate. Ask the issuer for the certificate's current QR code."}</p>
+      <h1 className="text-2xl font-bold">{unavailable ? "Verification Temporarily Unavailable" : "Certificate Not Found"}</h1>
+      <p className="mt-4 text-slate-600">{unavailable ? "We could not check the current status. Please try again; this is not a validity result." : "This link could not identify a certificate. Ask the issuer for the certificate's current QR code."}</p>
     </section>
     <footer className="mt-6 text-center text-sm"><Link href="/">Powered by CertVerify</Link></footer>
   </main>;
