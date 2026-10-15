@@ -191,6 +191,7 @@ export default function CertificatesPage() {
           </p>
         </div>
 
+        <Link href="/dashboard/certificates/bulk" className="mb-6 inline-flex rounded-lg bg-blue-700 px-5 py-3 font-semibold text-white hover:bg-blue-800">Upload Excel and create up to 100 certificates →</Link>
         <IssuerBranding />
         {replacementId && <p className="mb-6 rounded border border-blue-200 bg-blue-50 p-4">This new certificate will be linked to the revoked original. The original remains revoked and its history is preserved.</p>}
         <form
