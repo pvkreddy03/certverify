@@ -44,7 +44,7 @@ export function DashboardNavigation() {
             {customerRoutes.map((item) => <option value={item.href} key={item.href}>{item.label}</option>)}
           </select>
         </div>
-        <div className="hidden flex-1 items-center gap-1 overflow-x-auto md:flex">
+        <div className="hidden flex-1 flex-wrap items-center gap-1 md:flex">
           {customerRoutes.filter((item)=>item.href!=="/dashboard").map((item) => (
             <Link
               key={item.href}
