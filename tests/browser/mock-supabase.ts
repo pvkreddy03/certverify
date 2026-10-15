@@ -212,8 +212,13 @@ const server = createServer(async (request, response) => {
   if (url.pathname==="/rest/v1/cv_branding_versions") { json(versions);return; }
   if (url.pathname==="/rest/v1/cv_branding_requests") { json(user.id===users.existing.id ? brandingRequests : []);return; }
   if (url.pathname === "/rest/v1/rpc/cv_list_accounts") {
-    json([{ id: a, account_name: "Organization A", account_code: "A", account_type: "organization", role: user.id === users.new.id ? "member" : "owner" },
-      { id: b, account_name: "Organization B", account_code: "B", account_type: "organization", role: "member" }]); return;
+    const organizations=[
+      { id: a, account_name: "Organization A", account_code: "A", account_type: "organization", role: user.id === users.new.id ? "member" : "owner" },
+      { id: b, account_name: "Organization B", account_code: "B", account_type: "organization", role: "member" },
+    ];
+    // Invitees also have a placeholder created by the signup process.
+    const individual={id:"10000000-0000-0000-0000-000000000003",account_name:"Professional account",account_code:"PERSONAL",account_type:"individual",role:"owner"};
+    json(user.id===users.new.id ? [individual,...organizations] : organizations);return;
   }
   if (url.pathname === "/rest/v1/rpc/cv_accept_invitation") { json(b); return; }
   if (url.pathname === "/rest/v1/rpc/cv_change_certificate_status") {
