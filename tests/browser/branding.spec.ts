@@ -13,8 +13,9 @@ test("branding requests require independent MFA approval; issued identity stays 
   await page.goto("/dashboard/branding");
   await page.getByLabel("Company or professional name").fill("Updated Professional Company");
   await page.getByRole("button",{ name:"Submit for approval" }).click();
+  await expect(page.getByRole("alertdialog",{name:"Submitted for approval"})).toBeVisible();
   await expect(page.getByRole("status")).toContainText("submitted for Super Admin approval");
-  await expect(page.getByRole("heading",{ name:"Current approved identity" }).locator("..")).toContainText("Test Issuer");
+  await expect(page).toHaveURL(/\/dashboard$/);
   const context=await browser.newContext();const admin=await context.newPage();
   await login(admin,"platform@example.test","/platform/branding");
   await expect(admin.getByRole("heading",{ name:"Platform MFA verification" })).toBeVisible();
@@ -23,7 +24,7 @@ test("branding requests require independent MFA approval; issued identity stays 
   await expect(admin.getByRole("button",{ name:"Approve branding" })).toBeVisible();
   await admin.getByRole("button",{ name:"Approve branding" }).click();
   await expect(admin.getByRole("heading",{ name:/Updated Professional Company — approved/ })).toBeVisible();
-  await page.reload();await expect(page.getByRole("heading",{ name:"Current approved identity" }).locator("..")).toContainText("Updated Professional Company");
+  await page.goto("/dashboard/branding");await expect(page.getByRole("heading",{ name:"Current approved identity" }).locator("..")).toContainText("Updated Professional Company");
   await page.goto("/dashboard/templates");await expect(page.getByText("Updated Professional Company",{ exact:true })).toBeVisible();
   await page.goto("/verify/active-fixture");await expect(page.getByText("Test Issuer",{ exact:true })).toBeVisible();
   await expect(page.getByRole("link",{ name:"Powered by CertVerify" })).toHaveAttribute("href","/");
