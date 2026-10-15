@@ -84,7 +84,7 @@ export function AccountWorkspace({ children }: { children: ReactNode }) {
   if (staff && (pathname === "/dashboard/team" || pathname === "/dashboard/subscription" || pathname === "/dashboard/payment" || pathname === "/dashboard/branding")) {
     content = <main className="mx-auto max-w-3xl p-8">
       <h1 className="text-2xl font-semibold">Managed by your organization</h1>
-      <p className="mt-3 text-slate-600">Team membership, billing and branding are managed by the organization owner. You can issue certificates under your organization's subscription without purchasing a separate plan.</p>
+      <p className="mt-3 text-slate-600">Team membership, billing and branding are managed by the organization owner. You can issue certificates under your organization&apos;s subscription without purchasing a separate plan.</p>
       <Link href="/dashboard" className="mt-4 inline-block font-semibold text-blue-700">Return to dashboard</Link>
     </main>;
   } else if (!staff && !owner && (pathname === "/dashboard/subscription" || pathname === "/dashboard/payment")) {
