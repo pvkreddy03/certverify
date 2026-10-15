@@ -1,19 +1,28 @@
 -- Staging proposal: scoped issuer logo upload and public snapshot read without a
 -- service-role key. The existing branding bucket stays PRIVATE and immutable.
 -- Only the audited reservation's creator may upload the expected path.
+-- Storage uses its own SQL request context. Resolve the exact reserved path
+-- through a SECURITY DEFINER read and revalidate its creator's membership.
+create or replace function public.cv_storage_logo_upload_allowed(p_path text)
+returns boolean language sql stable security definer set search_path = ''
+as $$
+select exists (
+  select 1 from public.cv_logo_assets l
+  where l.storage_path=p_path and l.state='reserved'
+    and l.created_by=auth.uid()
+    and public.cv_auth_identity_active()
+    and public.cv_account_role(l.account_id) in ('owner','admin')
+);
+$$;
+revoke all on function public.cv_storage_logo_upload_allowed(text) from public, anon;
+grant execute on function public.cv_storage_logo_upload_allowed(text) to authenticated;
+
 drop policy if exists cv_branding_storage_scoped_upload on storage.objects;
 create policy cv_branding_storage_scoped_upload on storage.objects
 for insert to authenticated
 with check (
   bucket_id = 'certverify-branding'
-  and exists (
-    select 1 from public.cv_logo_assets l
-    where l.storage_path = name
-      and l.state = 'reserved'
-      and l.created_by = auth.uid()
-      and public.cv_auth_identity_active()
-      and public.cv_account_role(l.account_id) in ('owner','admin')
-  )
+  and public.cv_storage_logo_upload_allowed(name)
 );
 
 -- Allow the private owner and the MFA platform reviewer to preview a
