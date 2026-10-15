@@ -118,3 +118,9 @@ test("privileged client can be imported without its key and invocation fails saf
     await assert.rejects(()=>getSupabaseAdmin(),e=>e instanceof Error && 'status' in e && e.status===503);
   } finally { if(original===undefined)delete process.env.SUPABASE_SECRET_KEY;else process.env.SUPABASE_SECRET_KEY=original; }
 });
+
+test("preview QR origin cannot point to an unreviewed production or third-party hostname",()=>{
+  assert.doesNotThrow(()=>assertPreviewIsolation({...previewEnv,NEXT_PUBLIC_VERIFICATION_ORIGIN:"https://certverify-staging.vercel.app"}));
+  for(const origin of ["https://other.example","https://certverify-beta.vercel.app","http://certverify-staging.vercel.app"])
+    assert.throws(()=>assertPreviewIsolation({...previewEnv,NEXT_PUBLIC_VERIFICATION_ORIGIN:origin}));
+});
