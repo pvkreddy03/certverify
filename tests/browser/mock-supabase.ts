@@ -87,6 +87,16 @@ const server = createServer(async (request, response) => {
     response.setHeader("Content-Type","image/webp");response.writeHead(200).end(bytes);return;
   }
   const rpc=url.pathname.replace("/rest/v1/rpc/","");
+  if (rpc==="cv_invitation_setup_required") {
+    json(user.id===users.new.id);return;
+  }
+  if (rpc==="cv_team_member_directory") {
+    const all=[
+      {id:"70000000-0000-0000-0000-000000000001",user_id:users.existing.id,email:users.existing.email,role:"owner",status:"active",joined_at:"2026-10-01T00:00:00Z"},
+      {id:"70000000-0000-0000-0000-000000000002",user_id:users.new.id,email:users.new.email,role:"member",status:"active",joined_at:"2026-10-02T00:00:00Z"},
+    ];
+    json(user.id===users.new.id ? all.filter(x=>x.user_id===user.id):all);return;
+  }
   if (rpc==="cv_prepare_invitation") { json("63000000-0000-0000-0000-000000000001");return; }
   if (rpc==="cv_revoke_invitation") { json(true);return; }
   if (rpc==="cv_platform_identity") { json(user.id===users.platform.id);return; }
