@@ -20,7 +20,7 @@ test("dedicated platform login preserves navigation and MFA gates dashboard data
   await expect(page.getByRole("heading",{name:"Total registered users",exact:true})).toBeVisible();await expect(page.getByText("unknown: 1",{exact:true})).toBeVisible();
 });
 test("organization owner cannot view platform dashboard or call platform APIs",async({page,request})=>{
-  await signIn(page,false);await expect(page.getByLabel("Current account")).toBeVisible();await page.goto("/platform");await expect(page).toHaveURL(/\/dashboard$/);
+  await signIn(page,false);await expect(page.getByLabel("Workspace")).toBeVisible();await page.goto("/platform");await expect(page).toHaveURL(/\/dashboard$/);
   const anonymous=await request.get("/api/platform/overview");expect(anonymous.status()).toBe(401);
   for(const bearer of [token("00000000-0000-0000-0000-000000000001"),token(undefined,"aal1")]){
     const denied=await request.get("/api/platform/accounts",{headers:{Authorization:`Bearer ${bearer}`}});expect(denied.status()).toBe(403);
@@ -36,13 +36,13 @@ test("search/filter and account inspection show memberships and metadata-only ac
 });
 test("suspension and restoration require reasons, preserve verification and allow another tenant",async({page,browser})=>{
   await signIn(page);await verify(page);await page.goto(`/platform/accounts/${account}`);
-  const customerContext=await browser.newContext();const customer=await customerContext.newPage();await signIn(customer,false);await expect(customer.getByLabel("Current account")).toBeVisible();
+  const customerContext=await browser.newContext();const customer=await customerContext.newPage();await signIn(customer,false);await expect(customer.getByLabel("Workspace")).toBeVisible();
   await page.getByLabel("Mandatory reason").fill("Security investigation completed before access review");await page.getByRole("button",{name:"Review access change"}).click();await page.getByRole("button",{name:"Confirm access change"}).click();
   await expect(page.getByRole("status")).toContainText("audit evidence recorded");await customer.reload();await expect(customer.getByRole("heading",{name:"Account access suspended"})).toBeVisible();
-  await customer.getByLabel("Current account").selectOption("10000000-0000-0000-0000-000000000002");await expect(customer.getByRole("heading",{name:"Account access suspended"})).toHaveCount(0);await expect(customer.getByLabel("Current account")).toHaveValue("10000000-0000-0000-0000-000000000002");
+  await customer.getByLabel("Workspace").selectOption("10000000-0000-0000-0000-000000000002");await expect(customer.getByRole("heading",{name:"Account access suspended"})).toHaveCount(0);await expect(customer.getByLabel("Workspace")).toHaveValue("10000000-0000-0000-0000-000000000002");
   await customer.goto("/verify/active-fixture");await expect(customer.getByRole("heading",{name:"Certificate Verified",exact:true})).toBeVisible();
   await page.getByLabel("New access status").selectOption("active");await page.getByLabel("Mandatory reason").fill("Access restored after verified review");await page.getByRole("button",{name:"Review access change"}).click();await page.getByRole("button",{name:"Confirm access change"}).click();await expect(page.getByRole("status")).toContainText("audit evidence recorded");
-  await customer.goto("/dashboard");await customer.getByLabel("Current account").selectOption(account);await expect(customer.getByLabel("Current account")).toHaveValue(account);await expect(customer.getByRole("heading",{name:"Account access suspended"})).toHaveCount(0);
+  await customer.goto("/dashboard");await customer.getByLabel("Workspace").selectOption(account);await expect(customer.getByLabel("Workspace")).toHaveValue(account);await expect(customer.getByRole("heading",{name:"Account access suspended"})).toHaveCount(0);
   await page.getByRole("link",{name:"View immutable administrative history"}).click();await expect(page.getByText("Reason: Access restored after verified review",{exact:true})).toBeVisible();await customerContext.close();
 });
 test("MFA-authorized APIs reject malformed filters and stale or reasonless access changes",async({request})=>{
@@ -54,7 +54,7 @@ test("MFA-authorized APIs reject malformed filters and stale or reasonless acces
   expect((await request.post(`/api/platform/accounts/${account}/access`,{headers,data:{status:"active",reason:"Stale restore",revision:0}})).status()).toBe(409);
 });
 test("branding approvals and temporary permission revocation remain reachable from platform navigation",async({page,browser})=>{
-  const ownerContext=await browser.newContext();const owner=await ownerContext.newPage();await signIn(owner,false);await expect(owner.getByLabel("Current account")).toBeVisible();await owner.goto("/dashboard/branding");
+  const ownerContext=await browser.newContext();const owner=await ownerContext.newPage();await signIn(owner,false);await expect(owner.getByLabel("Workspace")).toBeVisible();await owner.goto("/dashboard/branding");
   await owner.getByLabel("Company or professional name").fill("Stage Four Issuer");await owner.getByRole("button",{name:"Submit for approval"}).click();await expect(owner.getByRole("status")).toContainText("submitted for Super Admin approval");
   await signIn(page);await verify(page);await page.getByRole("link",{name:"Branding approvals",exact:true}).click();await page.getByRole("button",{name:"Grant scoped 24-hour permission"}).click();await expect(page.getByRole("button",{name:"Revoke editing permission"})).toBeVisible();
   await page.getByRole("button",{name:"Revoke editing permission"}).click();await expect(page.getByRole("button",{name:"Approve branding"})).toBeVisible();await page.getByRole("button",{name:"Approve branding"}).click();await expect(page.getByRole("heading",{name:/Stage Four Issuer — approved/})).toBeVisible();await ownerContext.close();
