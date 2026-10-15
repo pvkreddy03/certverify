@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import QRCode from "qrcode";
+import { publicVerificationUrl } from "@/lib/certificates/public-verification-url";
 import { IssuerBranding } from "@/components/issuer-branding";
 import { CertificateStatusActions } from "@/components/certificate-status-actions";
 
@@ -53,7 +54,7 @@ export default function ViewCertificatePage() {
     if (!certificate?.public_verification_id) return;
     let active = true;
     // Show the QR automatically on the saved certificate details screen.
-    const verificationUrl = `${window.location.origin}/verify/${encodeURIComponent(certificate.public_verification_id)}`;
+    const verificationUrl = publicVerificationUrl(certificate.public_verification_id, window.location.origin);
     void QRCode.toDataURL(verificationUrl, { width: 300, margin: 2 }).then((dataUrl) => {
       if (active) setQrCode(dataUrl);
     }).catch(() => {
@@ -146,8 +147,7 @@ export default function ViewCertificatePage() {
 
     try {
       const verificationUrl =
-        `${window.location.origin}/verify/` +
-        encodeURIComponent(certificate.public_verification_id);
+        publicVerificationUrl(certificate.public_verification_id, window.location.origin);
 
       const qrDataUrl = await QRCode.toDataURL(
         verificationUrl,
@@ -174,7 +174,7 @@ export default function ViewCertificatePage() {
 
     const link = document.createElement("a");
 
-    link.href = await QRCode.toDataURL(`${window.location.origin}/verify/${encodeURIComponent(certificate.public_verification_id)}`, {
+    link.href = await QRCode.toDataURL(publicVerificationUrl(certificate.public_verification_id, window.location.origin), {
       width: 600, margin: 2, type: format === "jpeg" ? "image/jpeg" : "image/png",
       color: { dark: "#000000", light: "#ffffff" },
     });
@@ -271,9 +271,7 @@ export default function ViewCertificatePage() {
 
   const verificationUrl =
     typeof window !== "undefined"
-      ? `${window.location.origin}/verify/${encodeURIComponent(
-          certificate.public_verification_id
-        )}`
+      ? publicVerificationUrl(certificate.public_verification_id, window.location.origin)
       : "";
 
   return (
