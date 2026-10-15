@@ -24,3 +24,18 @@ test("local use falls back to the active host only when a public host is not con
     if(old!==undefined) process.env.NEXT_PUBLIC_APP_URL=old;
   }
 });
+
+test("independent verification domain overrides login domain without changing certificate reference",()=>{
+  const oldQr=process.env.NEXT_PUBLIC_VERIFICATION_ORIGIN;
+  const oldApp=process.env.NEXT_PUBLIC_APP_URL;
+  try {
+    process.env.NEXT_PUBLIC_APP_URL="https://certverify-login.example";
+    process.env.NEXT_PUBLIC_VERIFICATION_ORIGIN="https://verify.example";
+    assert.equal(publicVerificationUrl("cv-test","https://preview.vercel.app"),"https://verify.example/verify/cv-test");
+    for(const invalid of ["https://verify.example/path","https://verify.example?x=1","http://verify.example"])
+      {process.env.NEXT_PUBLIC_VERIFICATION_ORIGIN=invalid; assert.throws(()=>publicVerificationUrl("cv-test","https://preview.vercel.app"));}
+  }finally{
+    if(oldQr===undefined)delete process.env.NEXT_PUBLIC_VERIFICATION_ORIGIN;else process.env.NEXT_PUBLIC_VERIFICATION_ORIGIN=oldQr;
+    if(oldApp===undefined)delete process.env.NEXT_PUBLIC_APP_URL;else process.env.NEXT_PUBLIC_APP_URL=oldApp;
+  }
+});
