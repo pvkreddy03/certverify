@@ -63,7 +63,7 @@ export default function ViewCertificatePage() {
   }, [certificate?.public_verification_id]);
 
   useEffect(() => {
-    setJustCreated(new URLSearchParams(window.location.search).get("created") === "1");
+    void Promise.resolve().then(() => setJustCreated(new URLSearchParams(window.location.search).get("created") === "1"));
   }, []);
 
   async function loadCertificate() {
