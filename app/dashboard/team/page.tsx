@@ -10,6 +10,7 @@ import { accountHeaders, requireSelectedAccountId } from "@/lib/accounts/context
 type TeamMember = {
   id: string;
   user_id: string;
+  email: string;
   role: string;
   status: string;
   joined_at: string;
@@ -126,14 +127,10 @@ export default function TeamPage() {
       return;
     }
 
+    // A tenant-scoped RPC resolves user IDs to verified auth emails.
+    // It exposes only this account's users (members see only themselves).
     const { data: memberData, error: memberError } =
-      await supabase
-        .from("account_members")
-        .select(
-          "id, user_id, role, status, joined_at"
-        )
-        .eq("account_id", membershipData.account_id)
-        .order("joined_at", { ascending: true });
+      await supabase.rpc("cv_team_member_directory");
 
     if (memberError) {
       setErrorMessage(
@@ -489,11 +486,10 @@ export default function TeamPage() {
 
                     <div>
                       <p className="font-medium text-slate-900">
-                        User ID
+                        {member.email}
                       </p>
-
-                      <p className="mt-1 break-all text-sm text-slate-500">
-                        {member.user_id}
+                      <p className="mt-1 text-sm text-slate-500">
+                        {member.role === "owner" ? "Organization owner" : member.role === "admin" ? "Organization administrator" : "Team member"}
                       </p>
                     </div>
 
