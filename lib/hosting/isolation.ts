@@ -70,6 +70,9 @@ export function assertPreviewIsolation(env: Record<string,string|undefined>) {
     throw new Error("Live payment mode is prohibited.");
   if (env.CERTVERIFY_PAYMENT_MODE === "razorpay_test" && (!/^rzp_test_[A-Za-z0-9]+$/.test(env.RAZORPAY_TEST_KEY_ID ?? "") || !env.RAZORPAY_TEST_KEY_SECRET || !env.RAZORPAY_TEST_WEBHOOK_SECRET || (env.CERTVERIFY_RATE_LIMIT_SECRET?.length ?? 0)<32))
     throw new Error("Preview test-payment configuration is incomplete or uses a live key.");
+  if (env.NEXT_PUBLIC_VERIFICATION_ORIGIN &&
+      env.NEXT_PUBLIC_VERIFICATION_ORIGIN !== "https://certverify-staging.vercel.app")
+    throw new Error("Preview verification links must use the approved public staging origin.");
   previewOrigin(env);
 }
 export async function verifyPreviewCredentials(env: Record<string,string|undefined>, request: typeof fetch = fetch) {
