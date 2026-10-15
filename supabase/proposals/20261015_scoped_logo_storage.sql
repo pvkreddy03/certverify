@@ -11,10 +11,46 @@ with check (
     where l.storage_path = name
       and l.state = 'reserved'
       and l.created_by = auth.uid()
-      and l.account_id = public.cv_selected_account()
       and public.cv_auth_identity_active()
       and public.cv_account_role(l.account_id) in ('owner','admin')
   )
+);
+
+-- Allow the private owner and the MFA platform reviewer to preview a
+-- normalized stored logo. Other members see only approved branding versions.
+-- Storage does not need to forward custom account-selector headers.
+create or replace function public.cv_storage_private_logo_read(p_path text)
+returns boolean language sql stable security definer set search_path = ''
+as $
+  select exists (
+    select 1 from public.cv_logo_assets l
+    where l.storage_path=p_path and l.state='ready'
+      and (
+        public.cv_is_platform_admin()
+        or (
+          public.cv_auth_identity_active()
+          and (
+            public.cv_account_role(l.account_id) in ('owner','admin')
+            or (
+              public.cv_account_role(l.account_id)='member'
+              and exists (
+                select 1 from public.cv_branding_versions v
+                where v.logo_asset_id=l.id
+              )
+            )
+          )
+        )
+      )
+  );
+$;
+revoke all on function public.cv_storage_private_logo_read(text) from public, anon;
+grant execute on function public.cv_storage_private_logo_read(text) to authenticated;
+drop policy if exists cv_branding_storage_authenticated_ready_read on storage.objects;
+create policy cv_branding_storage_authenticated_ready_read on storage.objects
+for select to authenticated
+using (
+  bucket_id='certverify-branding'
+  and public.cv_storage_private_logo_read(name)
 );
 
 -- Only logo objects from a completed immutable issuance snapshot become
