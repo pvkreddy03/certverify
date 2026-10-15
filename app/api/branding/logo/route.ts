@@ -1,7 +1,7 @@
 import { authenticatedRequest, requestErrorResponse, RequestError } from "@/lib/auth/request";
 import { boundedLogoForm } from "@/lib/branding/server";
 import { normalizeLogo, LogoValidationError } from "@/lib/branding/logo-validation";
-import { LOGO_BUCKET } from "@/lib/branding/types";
+import { logoObjectStorage } from "@/lib/providers/logo-storage";
 
 export async function POST(request: Request) {
   try {
@@ -13,8 +13,8 @@ export async function POST(request: Request) {
     if (error || !reservation) throw new RequestError("Logo upload is not authorized or the daily upload limit was reached.",403);
     // Authorize and reserve the bounded daily upload slot before CPU-intensive decoding.
     const normalized=await normalizeLogo(new Uint8Array(await file.arrayBuffer()),file.type);
-    const { error:uploadError }=await client.storage.from(LOGO_BUCKET).upload(reservation.path,normalized.bytes,{ contentType:normalized.mime,cacheControl:"31536000",upsert:false });
-    if (uploadError) throw new RequestError("The logo could not be stored. Please retry later.",503);
+    try { await logoObjectStorage(client).upload(reservation.path,normalized.bytes); }
+    catch { throw new RequestError("The logo could not be stored. Please retry later.",503); }
     const { error:finalizeError }=await client.rpc("cv_finalize_logo",{ p_asset:reservation.id,p_hash:normalized.hash,p_bytes:normalized.bytes.byteLength });
     if (finalizeError) {
       // A transport failure can follow a committed finalization. Retain the
