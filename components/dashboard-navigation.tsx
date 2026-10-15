@@ -9,6 +9,7 @@ import { chooseAccount, selectedAccountId, type AccountMembership } from "@/lib/
 const customerRoutes = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/dashboard/certificates", label: "Create certificate" },
+  { href: "/dashboard/certificates/bulk", label: "Bulk Excel" },
   { href: "/dashboard/certificates/list", label: "Certificates" },
   { href: "/dashboard/templates", label: "Templates" },
   { href: "/dashboard/team", label: "Team", managerOnly: true },
