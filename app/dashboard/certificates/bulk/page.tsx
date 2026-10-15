@@ -62,6 +62,7 @@ export default function BulkCertificatePage(){
   const [mapping,setMapping]=useState<Record<string,number>>({});
   const [batches,setBatches]=useState<Summary[]>([]);
   const [result,setResult]=useState<Batch|null>(null);
+  const [remaining,setRemaining]=useState<number|null>(null);
   const [busy,setBusy]=useState(false);
   const [error,setError]=useState("");
   const lock=useRef(false);
@@ -69,6 +70,12 @@ export default function BulkCertificatePage(){
 
   useEffect(()=>{
     void getCertificateTemplates().then(setTemplates).catch(e=>setError(String(e)));
+    void supabase.rpc("cv_subscription_status").then(({data,error:failure})=>{
+      if(!failure){
+        const period=(data as {period?:{remaining_certificates?:number|null}}|null)?.period;
+        if(typeof period?.remaining_certificates==="number")setRemaining(period.remaining_certificates);
+      }
+    });
     void supabase.rpc("cv_bulk_batches_list").then(({data,error:failure})=>{
       if(!failure&&Array.isArray(data))setBatches(data as Summary[]);
     });
@@ -80,7 +87,11 @@ export default function BulkCertificatePage(){
       .catch(e=>{if(active)setError(String(e));});
     return ()=>{active=false;};
   },[selected]);
-  const errors=useMemo(()=>sheet?validate(fields,mapping,sheet.rows):[],[fields,mapping,sheet]);
+  const errors=useMemo(()=>{
+    const found=sheet?validate(fields,mapping,sheet.rows):[];
+    if(sheet&&remaining!==null&&sheet.rows.length>remaining)found.push("The organization has only "+remaining+" certificate quota units remaining. Remove rows or ask the owner to renew.");
+    return found;
+  },[fields,mapping,sheet,remaining]);
   async function downloadTemplate(){
     try{
       setError("");
@@ -190,7 +201,7 @@ export default function BulkCertificatePage(){
     </section>}
     {sheet&&!result&&<section className="space-y-5 rounded-xl border bg-white p-5 shadow-sm">
       <h2 className="text-xl font-bold">2. Match columns and edit the preview</h2>
-      <p className="text-sm text-slate-600">{sheet.rows.length} filled rows found. Certificate IDs and QR codes are not generated yet.</p>
+      <p className="text-sm text-slate-600">{sheet.rows.length} filled rows found. Certificate IDs and QR codes are not generated yet.{remaining!==null?" Available organization quota: "+remaining+" certificates.":""}</p>
       <label className="block max-w-xl space-y-1"><span className="font-semibold">Batch name</span>
         <input value={batchName} onChange={e=>setBatchName(e.target.value.slice(0,120))}
           className="w-full rounded border p-2" placeholder="e.g., October valuation reports"/>
