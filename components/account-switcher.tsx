@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { DashboardNavigation } from "@/components/dashboard-navigation";
-import { chooseAccount, selectAccount, selectedAccountId, type AccountMembership } from "@/lib/accounts/context";
+import { chooseAccount, visibleWorkspaces, selectAccount, selectedAccountId, type AccountMembership } from "@/lib/accounts/context";
 
 type BillingStatus = { account_id?: string; entitled: boolean; status: string };
 
@@ -30,11 +30,12 @@ export function AccountWorkspace({ children }: { children: ReactNode }) {
         if (cancelled) return;
 
         const memberships = (data ?? []) as AccountMembership[];
-        const current = chooseAccount(memberships, selectedAccountId());
+        const workspaces = visibleWorkspaces(memberships);
+        const current = chooseAccount(workspaces, selectedAccountId());
         // The selected account is only a routing preference. Server-side RLS
         // checks its real membership and organization billing on every action.
         if (current) selectAccount(current.id);
-        setAccounts(memberships);
+        setAccounts(workspaces);
         setAccessStates(Object.fromEntries((states.data ?? []).map(
           (state: { account_id: string; status: string }) => [state.account_id, state.status],
         )));
@@ -80,10 +81,10 @@ export function AccountWorkspace({ children }: { children: ReactNode }) {
   }
 
   let content: ReactNode = children;
-  if (staff && (pathname === "/dashboard/team" || pathname === "/dashboard/subscription" || pathname === "/dashboard/payment")) {
+  if (staff && (pathname === "/dashboard/team" || pathname === "/dashboard/subscription" || pathname === "/dashboard/payment" || pathname === "/dashboard/branding")) {
     content = <main className="mx-auto max-w-3xl p-8">
       <h1 className="text-2xl font-semibold">Managed by your organization</h1>
-      <p className="mt-3 text-slate-600">Team membership and subscription settings are managed by the organization owner. You do not need a separate subscription to issue certificates through an active organization.</p>
+      <p className="mt-3 text-slate-600">Team membership, billing and branding are managed by the organization owner. You can issue certificates under your organization's subscription without purchasing a separate plan.</p>
       <Link href="/dashboard" className="mt-4 inline-block font-semibold text-blue-700">Return to dashboard</Link>
     </main>;
   } else if (!staff && !owner && (pathname === "/dashboard/subscription" || pathname === "/dashboard/payment")) {
