@@ -93,7 +93,7 @@ export function AccountWorkspace({ children }: { children: ReactNode }) {
     content = <main className="p-8"><h1 className="text-2xl font-semibold">Account access {accessStatus}</h1><p className="mt-3">Customer operations are unavailable for this account. Contact CertVerify support, or select another workspace if available. Issued certificates remain publicly verifiable.</p></main>;
   } else if (!hasEntitlement && !existingRecords && pathname !== "/dashboard/subscription" && pathname !== "/dashboard/payment") {
     content = <main className="p-8">
-      <h1 className="text-2xl font-semibold">Organization subscription unavailable</h1>
+      <h1 className="text-2xl font-semibold">{canManageBilling ? "Subscription required" : "Organization subscription unavailable"}</h1>
       <p className="mt-3 text-slate-600">{canManageBilling
         ? "Renew or activate a subscription to use this feature. Existing certificates and public verification remain available."
         : "Your organization does not currently have certificate-generation access. Contact your organization owner; do not purchase a personal subscription."}</p>
@@ -110,7 +110,7 @@ export function AccountWorkspace({ children }: { children: ReactNode }) {
       onAccountChange={switchWorkspace}
     />
     {billing && !hasEntitlement && accessStatus === "active" && (
-      <p className="border-b bg-amber-50 px-6 py-3 text-sm text-amber-950" role="status">
+      <p className="border-b bg-amber-50 px-6 py-3 text-sm text-amber-950">
         {canManageBilling
           ? <>Subscription {billing.status}. Certificate generation is restricted. <Link href="/dashboard/subscription" className="font-semibold text-blue-800 underline">Manage subscription or renewal</Link></>
           : "Your organization subscription needs attention. Ask your organization owner to resolve it; you do not need an individual subscription."}
