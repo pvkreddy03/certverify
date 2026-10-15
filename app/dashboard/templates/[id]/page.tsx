@@ -43,7 +43,7 @@ export default function TemplatePage() {
   const [fromCertificate, setFromCertificate] = useState(false);
 
   useEffect(() => {
-    setFromCertificate(new URLSearchParams(window.location.search).get("from") === "certificate");
+    void Promise.resolve().then(() => setFromCertificate(new URLSearchParams(window.location.search).get("from") === "certificate"));
   }, []);
 
   const [editingFieldId, setEditingFieldId] = useState<string | null>(null);
