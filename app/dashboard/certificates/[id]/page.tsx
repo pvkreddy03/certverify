@@ -304,7 +304,7 @@ export default function ViewCertificatePage() {
               onClick={generateQRCode}
               className="rounded-lg bg-slate-900 px-5 py-3 font-medium text-white hover:bg-slate-800"
             >
-              {qrCode ? "Regenerate QR" : "Generate QR"}
+              Generate QR
             </button>
 
             <Link
@@ -437,9 +437,9 @@ export default function ViewCertificatePage() {
                   onClick={() => { void downloadQRCode("png"); }}
                   className="rounded-lg bg-blue-700 px-5 py-3 font-semibold text-white hover:bg-blue-800"
                 >
-                  ↓ Download QR as PNG
+                  Download PNG
                 </button>
-                <button type="button" onClick={() => { void downloadQRCode("jpeg"); }} className="rounded-lg border border-blue-200 bg-white px-5 py-3 font-semibold text-blue-800 hover:bg-blue-50">↓ Download JPEG</button>
+                <button type="button" onClick={() => { void downloadQRCode("jpeg"); }} className="rounded-lg border border-blue-200 bg-white px-5 py-3 font-semibold text-blue-800 hover:bg-blue-50">Download JPEG</button>
               </div>
 
               {verificationUrl && (
