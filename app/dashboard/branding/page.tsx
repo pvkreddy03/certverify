@@ -13,6 +13,8 @@ export default function BrandingPage() {
   const [name,setName]=useState(""); const [details,setDetails]=useState("");
   const [logo,setLogo]=useState<string|null>(null); const [explanation,setExplanation]=useState("");
   const [message,setMessage]=useState(""); const [busy,setBusy]=useState(false);
+  const [selectedLogoName,setSelectedLogoName]=useState("");
+  const [uploadState,setUploadState]=useState<"idle"|"uploading"|"ready"|"failed">("idle");
   async function load() {
     const [data,accounts]=await Promise.all([brandingFetch("/api/branding"),supabase.rpc("cv_list_accounts")]);
     const account=(accounts.data as AccountMembership[]|null)?.find((item)=>item.id===selectedAccountId());
@@ -36,9 +38,32 @@ export default function BrandingPage() {
     finally { setBusy(false); }
   }
   async function upload(file:File) {
-    const form=new FormData();form.set("logo",file);setBusy(true);setMessage("");
-    try { const data=await brandingFetch("/api/branding/logo",{ method:"POST",body:form });setLogo(data.assetId);setMessage("Logo uploaded privately. Submit your change request for approval."); }
-    catch(error) { setMessage(error instanceof Error ? error.message : "Upload failed."); }finally { setBusy(false); }
+    setSelectedLogoName(file.name);
+    setMessage("");
+    // Selecting a filename is not a successful upload. Require confirmation
+    // from both the upload API and the private image preview.
+    setUploadState("uploading");
+    if (!["image/jpeg","image/png","image/webp"].includes(file.type) || file.size>2097152 || file.size===0) {
+      setUploadState("failed");
+      setMessage("Logo upload failed. Choose a valid JPEG, PNG, or WebP image under 2 MB. No new image has been submitted.");
+      return;
+    }
+    const form=new FormData();form.set("logo",file);
+    setBusy(true);
+    try {
+      const data=await brandingFetch("/api/branding/logo",{ method:"POST",body:form });
+      if (typeof data.assetId!=="string" || !/^[0-9a-f-]{36}$/i.test(data.assetId)) throw new Error("Upload confirmation missing.");
+      const preview=await fetch(`/api/branding/logo/${encodeURIComponent(data.assetId)}?account=${encodeURIComponent(selectedAccountId() ?? "")}`,{cache:"no-store"});
+      if (!preview.ok || !(preview.headers.get("content-type") ?? "").startsWith("image/webp")) {
+        throw new Error("The uploaded image could not be verified in storage.");
+      }
+      setLogo(data.assetId);
+      setUploadState("ready");
+      setMessage("Logo uploaded and image verified. Check the preview below, then submit the branding change for Super Admin approval.");
+    } catch(error) {
+      setUploadState("failed");
+      setMessage("Logo upload did not complete successfully. The selected filename alone does not mean an image was saved. "+(error instanceof Error ? error.message : "Retry the upload.")+" Do not submit for approval until you see 'Image verified'.");
+    } finally { setBusy(false); }
   }
   return <main className="mx-auto max-w-4xl space-y-6 px-6 py-8">
     <h1 className="text-3xl font-bold">Professional and organization branding</h1>
@@ -51,15 +76,22 @@ export default function BrandingPage() {
       <p className="mt-3 font-medium">{profile.current.company_name}</p><p className="whitespace-pre-wrap">{profile.current.professional_details}</p>
       {profile.current.logo_asset_id && <Image src={`/api/branding/logo/${profile.current.logo_asset_id}?account=${selectedAccountId()}`} alt="Current issuer logo" width={128} height={128} unoptimized className="object-contain" />}
     </section>}
-    {authorized && profile && <form onSubmit={(event)=>{ event.preventDefault();void act({ action:"request",companyName:name,professionalDetails:details,logoAssetId:logo,explanation }); }} className="space-y-4 rounded border bg-white p-6">
+    {authorized && profile && <form onSubmit={(event)=>{ event.preventDefault();
+      if(uploadState==="failed"||uploadState==="uploading") {setMessage("The logo has not been verified. Upload the image successfully before submitting the branding request.");return;}
+      void act({ action:"request",companyName:name,professionalDetails:details,logoAssetId:logo,explanation });
+    }} className="space-y-4 rounded border bg-white p-6">
       <h2 className="text-xl font-semibold">Request branding change</h2>
       <label className="block">Company or professional name<input className="mt-2 block w-full rounded border p-3" value={name} onChange={(event)=>setName(event.target.value)} minLength={2} maxLength={160} required disabled={busy} /></label>
       <label className="block">Public professional details<textarea className="mt-2 block w-full rounded border p-3" value={details} onChange={(event)=>setDetails(event.target.value)} maxLength={2000} disabled={busy} /></label>
       <label className="block">Proposed logo<input className="mt-2 block" type="file" accept="image/png,image/jpeg,image/webp" disabled={busy} onChange={(event)=>{ const file=event.target.files?.[0];if (file) void upload(file); }} /></label>
+      {selectedLogoName && <div role="status" className={`rounded-lg border p-4 text-sm ${uploadState==="ready" ? "border-green-300 bg-green-50 text-green-900" : uploadState==="failed" ? "border-red-300 bg-red-50 text-red-900" : "border-blue-200 bg-blue-50 text-blue-900"}`}>
+        <p className="font-semibold">{uploadState==="uploading" ? "Uploading and checking image…" : uploadState==="ready" ? "Image verified — ready for approval request" : "Upload failed — image NOT ready for approval"}</p>
+        <p className="mt-1 break-all">{selectedLogoName}</p>
+      </div>}
       <p className="text-sm text-slate-600">Static PNG, JPEG or WebP, up to 2 MB and 4096 × 4096 pixels. Logos are normalized and metadata is removed.</p>
       {logo && <><Image src={`/api/branding/logo/${logo}?account=${selectedAccountId()}`} alt="Proposed issuer logo" width={96} height={96} unoptimized /><button type="button" disabled={busy} onClick={()=>setLogo(null)} className="text-red-700">Request logo removal</button></>}
       <label className="block">Explanation (optional)<textarea className="mt-2 block w-full rounded border p-3" value={explanation} onChange={(event)=>setExplanation(event.target.value)} maxLength={2000} disabled={busy} /></label>
-      <button disabled={busy} className="rounded bg-blue-700 px-5 py-2 text-white">Submit for approval</button>
+      <button disabled={busy || uploadState==="uploading" || uploadState==="failed"} className="rounded bg-blue-700 px-5 py-2 text-white disabled:cursor-not-allowed disabled:opacity-50">Submit for approval</button>
     </form>}
     {profile?.permissions.filter((p)=>p.proposal && !p.used_at && !p.revoked_at).map((permission)=><section key={permission.id} className="rounded border bg-blue-50 p-6">
       <h2 className="font-semibold">Temporary approved editing permission</h2><p>Fields: {permission.fields.join(", ")}. Expires: {new Date(permission.expires_at).toLocaleString("en-IN")}</p><p>Approved identity: {permission.proposal?.company_name}</p><p>{permission.proposal?.professional_details}</p>
