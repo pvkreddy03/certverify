@@ -9,7 +9,7 @@ async function login(page:Page,email="existing@example.test",next="") {
 }
 test.beforeEach(async({ request })=>{ await request.post("http://127.0.0.1:54329/test/reset"); });
 test("branding requests require independent MFA approval; issued identity stays fixed",async({ page,browser })=>{
-  await login(page);await expect(page.getByLabel("Current account")).toBeVisible();
+  await login(page);await expect(page.getByLabel("Workspace")).toBeVisible();
   await page.goto("/dashboard/branding");
   await page.getByLabel("Company or professional name").fill("Updated Professional Company");
   await page.getByRole("button",{ name:"Submit for approval" }).click();
@@ -30,13 +30,13 @@ test("branding requests require independent MFA approval; issued identity stays 
   await context.close();
 });
 test("members can view branding but cannot request changes or access platform approvals",async({ page })=>{
-  await login(page,"new@example.test");await expect(page.getByLabel("Current account")).toBeVisible();
+  await login(page,"new@example.test");await expect(page.getByLabel("Workspace")).toBeVisible();
   await page.goto("/dashboard/branding");await expect(page.getByRole("heading",{ name:"Current approved identity" }).locator("..")).toContainText("Test Issuer");
   await expect(page.getByRole("button",{ name:"Submit for approval" })).toHaveCount(0);
   await page.goto("/platform/branding");await expect(page).toHaveURL(/\/dashboard/);
 });
 test("logo uploads normalize valid images privately and reject unsupported files",async({ page })=>{
-  await login(page);await expect(page.getByLabel("Current account")).toBeVisible();await page.goto("/dashboard/branding");
+  await login(page);await expect(page.getByLabel("Workspace")).toBeVisible();await page.goto("/dashboard/branding");
   await page.getByLabel("Proposed logo").setInputFiles({ name:"unsafe.svg",mimeType:"image/svg+xml",buffer:Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"/>') });
   await expect(page.getByRole("status")).toContainText(/PNG|JPEG|WebP/);
   const png=await sharp({ create:{ width:32,height:32,channels:3,background:"blue" } }).png().toBuffer();
@@ -47,13 +47,13 @@ test("logo uploads normalize valid images privately and reject unsupported files
   await expect(page.getByRole("heading",{ name:"Current approved identity" }).locator("..").getByRole("img")).toHaveCount(0);
 });
 test("missing stored logo returns a sanitized 404 rather than an uncaught failure",async({ page })=>{
-  await login(page);await expect(page.getByLabel("Current account")).toBeVisible();
+  await login(page);await expect(page.getByLabel("Workspace")).toBeVisible();
   const response=await page.request.get("/api/branding/logo/50000000-0000-0000-0000-000000000099?account=10000000-0000-0000-0000-000000000001");
   expect(response.status()).toBe(404);expect(await response.json()).toEqual({ error:"Logo unavailable." });
 });
 test("ambiguous upload finalization retains the object and leaves approved branding unchanged",async({ page,request })=>{
   await request.post("http://127.0.0.1:54329/test/finalize-failure");
-  await login(page);await expect(page.getByLabel("Current account")).toBeVisible();await page.goto("/dashboard/branding");
+  await login(page);await expect(page.getByLabel("Workspace")).toBeVisible();await page.goto("/dashboard/branding");
   const png=await sharp({ create:{ width:32,height:32,channels:3,background:"blue" } }).png().toBuffer();
   await page.getByLabel("Proposed logo").setInputFiles({ name:"logo.png",mimeType:"image/png",buffer:png });
   await expect(page.getByRole("status")).toContainText("could not be finalized");
