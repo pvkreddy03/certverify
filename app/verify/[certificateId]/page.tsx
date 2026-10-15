@@ -14,7 +14,7 @@ export default async function VerifyCertificatePage({ params }: { params: Promis
   } catch {
     unavailable = true;
   }
-  if (error || !certificate) return <main className="mx-auto max-w-xl px-6 py-12">
+  if (unavailable || !certificate) return <main className="mx-auto max-w-xl px-6 py-12">
     <section className="rounded-2xl bg-white p-8 text-center shadow-sm">
       <h1 className="text-2xl font-bold">{unavailable ? "Verification Temporarily Unavailable" : "Certificate Not Found"}</h1>
       <p className="mt-4 text-slate-600">{unavailable ? "We could not check the current status. Please try again; this is not a validity result." : "This link could not identify a certificate. Ask the issuer for the certificate's current QR code."}</p>
