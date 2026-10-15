@@ -28,7 +28,7 @@ test("verified administrator cannot be diverted to customer dashboard by a reque
 
 test("ordinary customer lands on dashboard and is denied manual platform access", async ({ page }) => {
   await signIn(page, "existing@example.test");
-  await expect(page.getByLabel("Current account")).toBeVisible();
+  await expect(page.getByLabel("Workspace")).toBeVisible();
   await expect(page).toHaveURL(/\/dashboard$/);
   await page.goto("/platform");
   await expect(page).toHaveURL(/\/dashboard$/);
