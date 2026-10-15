@@ -1,6 +1,7 @@
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { logoObjectStorage } from "@/lib/providers/logo-storage";
 import { authenticatedRequest, RequestError } from "@/lib/auth/request";
-import { LOGO_BUCKET, MAX_LOGO_BYTES } from "./types";
+import { MAX_LOGO_BYTES } from "./types";
 
 export async function platformBrandingContext(request: Request) {
   const context=await authenticatedRequest(request,false);
@@ -27,12 +28,8 @@ export async function logoResponse(path: string, publiclyVisible=false, viewer?:
   // anonymous visitors only for logos published in issued certificate snapshots.
   // Never expose a privileged storage key or make the entire bucket public.
   if (!publiclyVisible && !viewer) throw new RequestError("Authentication required.",401);
-  const reader = viewer ?? createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,{
-      auth: { persistSession:false, autoRefreshToken:false, detectSessionInUrl:false },
-    });
-  const { data,error }=await reader.storage.from(LOGO_BUCKET).download(path);
-  if (error || !data || data.size>MAX_LOGO_BYTES || data.type!=="image/webp") throw new RequestError("Logo unavailable.",404);
+  const data = await logoObjectStorage(viewer).download(path);
+  if (!data || data.size>MAX_LOGO_BYTES || data.type!=="image/webp") throw new RequestError("Logo unavailable.",404);
   return new Response(await data.arrayBuffer(),{ headers:{ "Content-Type":"image/webp", "X-Content-Type-Options":"nosniff",
     "Content-Security-Policy":"default-src 'none'; sandbox", "Cache-Control":publiclyVisible ? "public, max-age=300" : "private, no-store" } });
 }
