@@ -142,3 +142,35 @@ test("security page offers password change and account email reset", async ({ pa
   await page.getByRole("button", { name: "Email me a reset link" }).click();
   await expect(page.getByRole("status").filter({ hasText: "password-reset link" })).toBeVisible();
 });
+
+test("organization staff can create certificates under company billing without team or subscription controls", async ({ page }) => {
+  await page.goto("/login");
+  await page.getByLabel("Email address").fill("new@example.test");
+  await page.getByLabel("Password", { exact: true }).fill("test-password");
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  await expect(page.getByLabel("Workspace")).toHaveValue(a);
+  const navigation = page.getByRole("navigation", { name: "Customer dashboard pages" });
+  await expect(navigation.getByRole("link", { name: "Team", exact: true })).toHaveCount(0);
+  await expect(navigation.getByRole("link", { name: "Subscription", exact: true })).toHaveCount(0);
+  await expect(navigation.getByRole("link", { name: "Create certificate" })).toBeVisible();
+  await page.goto("/dashboard/certificates");
+  await expect(page.getByRole("heading", { name: "Subscription required" })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Create Certificate" })).toBeVisible();
+  await page.goto("/dashboard/team");
+  await expect(page.getByRole("heading", { name: "Managed by your organization" })).toBeVisible();
+  await page.goto("/dashboard/subscription");
+  await expect(page.getByRole("heading", { name: "Managed by your organization" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Choose or change a subscription" })).toHaveCount(0);
+});
+
+test("organization owner retains team and subscription management in single ribbon", async ({ page }) => {
+  await page.goto("/login");
+  await page.getByLabel("Email address").fill("existing@example.test");
+  await page.getByLabel("Password", { exact: true }).fill("test-password");
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  const navigation=page.getByRole("navigation", { name: "Customer dashboard pages" });
+  await expect(navigation.getByRole("link", { name: "Team", exact: true })).toBeVisible();
+  await expect(navigation.getByRole("link", { name: "Subscription", exact: true })).toBeVisible();
+  await expect(page.getByText("Current account", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("owner", { exact: true })).toHaveCount(0);
+});
