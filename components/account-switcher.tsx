@@ -56,9 +56,6 @@ export function AccountWorkspace({ children }: { children: ReactNode }) {
         {accounts.map((account) => <option key={account.id} value={account.id}>{account.account_name} ({account.account_type})</option>)}
       </select>
       <span className="text-sm capitalize text-slate-500">{selected.role}</span>
-      <Link href="/dashboard/subscription" className="text-sm text-blue-700">Subscription and renewal</Link>
-      <Link href="/dashboard/branding" className="text-sm text-blue-700">Branding</Link>
-      <Link href="/account/security" className="text-sm text-blue-700">Account security</Link>
     </div>
     {billing&&!billing.entitled&&<p className="border-b bg-amber-50 px-6 py-3">Subscription {billing.status}. New issuance and paid features are restricted. <Link href="/dashboard/subscription" className="text-blue-700">Manage subscription or renewal</Link></p>}
     {(pathname==="/dashboard/subscription" || pathname==="/dashboard/payment") ? children : accessStates[selected.id]==="active" ? (billing?.entitled || pathname==="/dashboard" || /^\/dashboard\/certificates\/(list|[0-9a-f-]{36})$/.test(pathname) ? children : <main className="p-8"><h1 className="text-2xl font-semibold">Subscription required</h1><p>Renew or activate a subscription to use this feature. Existing certificate records and public verification remain available.</p><Link className="mt-3 block text-blue-700" href="/dashboard/subscription">View subscription and renewal options</Link><Link href="/dashboard/certificates/list" className="mt-3 block text-blue-700">View issued certificates</Link></main>) : <main className="p-8"><h1 className="text-2xl font-semibold">Account access {accessStates[selected.id] ?? "unavailable"}</h1><p className="mt-3">Customer operations are unavailable for this account. Contact CertVerify support, or switch to another active account above. Issued certificates remain publicly verifiable.</p></main>}
