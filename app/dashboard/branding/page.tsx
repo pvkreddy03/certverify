@@ -44,6 +44,9 @@ export default function BrandingPage() {
     <h1 className="text-3xl font-bold">Professional and organization branding</h1>
     <p>Company name, professional details and logo are managed centrally. Changes require Super Admin approval or an approved, scoped permission.</p>
     {message && <p role="status" className="rounded border p-4">{message}</p>}
+    {profile?.current && !profile.current.logo_asset_id && <p role="note" className="rounded-xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-950">
+      Your approved name and professional details do not include a logo image. To show a logo on future certificates, upload a PNG, JPEG or WebP image below, submit the change for approval, and wait for the Super Admin to approve the image itself. Already-issued certificates retain their original approved identity.
+    </p>}
     {profile?.current && <section className="rounded border bg-white p-6"><h2 className="text-xl font-semibold">Current approved identity</h2>
       <p className="mt-3 font-medium">{profile.current.company_name}</p><p className="whitespace-pre-wrap">{profile.current.professional_details}</p>
       {profile.current.logo_asset_id && <Image src={`/api/branding/logo/${profile.current.logo_asset_id}?account=${selectedAccountId()}`} alt="Current issuer logo" width={128} height={128} unoptimized className="object-contain" />}
