@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { supabase } from "@/lib/supabase";
 import { selectedAccountId, canManageAccount, type AccountMembership } from "@/lib/accounts/context";
@@ -13,6 +13,14 @@ export default function BrandingPage() {
   const [name,setName]=useState(""); const [details,setDetails]=useState("");
   const [logo,setLogo]=useState<string|null>(null); const [explanation,setExplanation]=useState("");
   const [message,setMessage]=useState(""); const [busy,setBusy]=useState(false);
+  const [submitted,setSubmitted]=useState(false);
+  const submissionLocked=useRef(false);
+
+  useEffect(() => {
+    if (!submitted) return;
+    const timer = window.setTimeout(() => window.location.replace("/dashboard"), 2500);
+    return () => window.clearTimeout(timer);
+  }, [submitted]);
   const [selectedLogoName,setSelectedLogoName]=useState("");
   const [uploadState,setUploadState]=useState<"idle"|"uploading"|"ready"|"failed">("idle");
   async function load() {
@@ -32,10 +40,27 @@ export default function BrandingPage() {
     return()=>{ active=false; };
   },[]);
   async function act(body:Record<string,unknown>) {
+    const isNewRequest=body.action==="request";
+    if (submitted || busy || (isNewRequest && submissionLocked.current)) return;
+    // Synchronous lock prevents two clicks from racing React's disabled state.
+    if (isNewRequest) submissionLocked.current=true;
     setBusy(true);setMessage("");
-    try { await brandingFetch("/api/branding/requests",{ method:"POST",headers:{ "Content-Type":"application/json" },body:JSON.stringify(body) });await load();setMessage(body.action==="request" ? "Branding change submitted for Super Admin approval." : "Branding action completed."); }
-    catch(error) { setMessage(error instanceof Error ? error.message : "Could not complete the request."); }
-    finally { setBusy(false); }
+    try {
+      await brandingFetch("/api/branding/requests",{
+        method:"POST",headers:{ "Content-Type":"application/json" },body:JSON.stringify(body),
+      });
+      if (isNewRequest) {
+        // Do not attempt a second request, even if reloading the profile fails.
+        setSubmitted(true);
+        setMessage("Branding change submitted for Super Admin approval.");
+        return;
+      }
+      await load();
+      setMessage("Branding action completed.");
+    } catch(error) {
+      setMessage(error instanceof Error ? error.message : "Could not complete the request.");
+      if(isNewRequest) submissionLocked.current=false;
+    } finally { setBusy(false); }
   }
   async function upload(file:File) {
     setSelectedLogoName(file.name);
@@ -69,6 +94,20 @@ export default function BrandingPage() {
     <h1 className="text-3xl font-bold">Professional and organization branding</h1>
     <p>Company name, professional details and logo are managed centrally. Changes require Super Admin approval or an approved, scoped permission.</p>
     {message && <p role="status" className="rounded border p-4">{message}</p>}
+    {submitted && <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4" role="presentation">
+      <section role="alertdialog" aria-modal="true" aria-labelledby="branding-submitted-title" aria-describedby="branding-submitted-info"
+        className="w-full max-w-md space-y-4 rounded-2xl border border-green-200 bg-white p-8 text-center shadow-2xl">
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-green-100 text-3xl text-green-700" aria-hidden="true">✓</div>
+        <h2 id="branding-submitted-title" className="text-2xl font-bold text-slate-900">Submitted for approval</h2>
+        <p id="branding-submitted-info" className="text-sm leading-relaxed text-slate-600">
+          Your branding request has been sent to the Super Admin. You will return to your dashboard automatically.
+        </p>
+        <button type="button" onClick={() => window.location.replace("/dashboard")}
+          className="rounded-lg bg-blue-700 px-6 py-3 font-semibold text-white hover:bg-blue-800">
+          Go to dashboard
+        </button>
+      </section>
+    </div>}
     {profile?.current && !profile.current.logo_asset_id && <p role="note" className="rounded-xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-950">
       Your approved name and professional details do not include a logo image. To show a logo on future certificates, upload a PNG, JPEG or WebP image below, submit the change for approval, and wait for the Super Admin to approve the image itself. Already-issued certificates retain their original approved identity.
     </p>}
@@ -91,7 +130,7 @@ export default function BrandingPage() {
       <p className="text-sm text-slate-600">Static PNG, JPEG or WebP, up to 2 MB and 4096 × 4096 pixels. Logos are normalized and metadata is removed.</p>
       {logo && <><Image src={`/api/branding/logo/${logo}?account=${selectedAccountId()}`} alt="Proposed issuer logo" width={96} height={96} unoptimized /><button type="button" disabled={busy} onClick={()=>setLogo(null)} className="text-red-700">Request logo removal</button></>}
       <label className="block">Explanation (optional)<textarea className="mt-2 block w-full rounded border p-3" value={explanation} onChange={(event)=>setExplanation(event.target.value)} maxLength={2000} disabled={busy} /></label>
-      <button disabled={busy || uploadState==="uploading" || uploadState==="failed"} className="rounded bg-blue-700 px-5 py-2 text-white disabled:cursor-not-allowed disabled:opacity-50">Submit for approval</button>
+      <button disabled={busy || submitted || uploadState==="uploading" || uploadState==="failed"} className="rounded bg-blue-700 px-5 py-2 text-white disabled:cursor-not-allowed disabled:opacity-50">Submit for approval</button>
     </form>}
     {profile?.permissions.filter((p)=>p.proposal && !p.used_at && !p.revoked_at).map((permission)=><section key={permission.id} className="rounded border bg-blue-50 p-6">
       <h2 className="font-semibold">Temporary approved editing permission</h2><p>Fields: {permission.fields.join(", ")}. Expires: {new Date(permission.expires_at).toLocaleString("en-IN")}</p><p>Approved identity: {permission.proposal?.company_name}</p><p>{permission.proposal?.professional_details}</p>
