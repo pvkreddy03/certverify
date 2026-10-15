@@ -9,6 +9,7 @@ create table if not exists public.cv_bulk_batches (
  batch_name text not null check (length(batch_name) between 1 and 120),
  source_name text not null check (length(source_name) between 1 and 180),
  idempotency_key uuid not null,
+ request_hash text not null check(length(request_hash)=32),
  row_count integer not null check (row_count between 1 and 100),
  created_at timestamptz not null default clock_timestamp(),
  unique (account_id,idempotency_key)
@@ -93,7 +94,7 @@ begin
  perform 1 from public.accounts where id=a for update;
  select * into b from public.cv_bulk_batches where account_id=a and idempotency_key=p_idempotency;
  if found then
-   if b.template_id<>p_template or b.row_count<>row_count or b.source_name<>trim(p_filename) then
+   if b.template_id<>p_template or b.row_count<>row_count or b.source_name<>trim(p_filename) or b.request_hash<>md5(p_rows::text) then
      raise exception 'This import key has already been used with different data'; end if;
    return public.cv_bulk_batch_details(b.id);
  end if;
@@ -129,8 +130,8 @@ begin
  end loop;
  -- Existing AFTER INSERT quota trigger and branding trigger run for EACH row.
  -- If row 100 fails, PostgreSQL rolls back rows 1..99, counters and IDs.
- insert into public.cv_bulk_batches(account_id,created_by,template_id,batch_name,source_name,idempotency_key,row_count)
- values(a,auth.uid(),p_template,coalesce(nullif(trim(p_label),''),trim(p_filename)),trim(p_filename),p_idempotency,row_count)
+ insert into public.cv_bulk_batches(account_id,created_by,template_id,batch_name,source_name,idempotency_key,request_hash,row_count)
+ values(a,auth.uid(),p_template,coalesce(nullif(trim(p_label),''),trim(p_filename)),trim(p_filename),p_idempotency,md5(p_rows::text),row_count)
  returning * into b;
  for row_num in 0..row_count-1 loop
    row_data:=p_rows->row_num;
