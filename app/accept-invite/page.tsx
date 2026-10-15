@@ -78,9 +78,20 @@ export default function AcceptInvitePage() {
       const hash = await sha256(rawToken);
       if (cancelled) return;
 
+      // The email link's mode is only a hint. A server-side check of the
+      // verified invitee and their actual password state decides onboarding.
+      const { data: setupRequired, error: setupError } = await supabase.rpc(
+        "cv_invitation_setup_required", { p_token_hash: hash },
+      );
+      if (setupError || typeof setupRequired !== "boolean") {
+        setError("Unable to confirm your invitation setup. Open the newest invitation link, or ask your organization owner to resend it.");
+        setLoading(false);
+        return;
+      }
+
       setEmail(user.email ?? "");
       setName(user.user_metadata.professional_name ?? "");
-      setMode(requestedMode);
+      setMode(setupRequired ? "setup" : "join");
       setTokenHash(hash);
 
       // The raw invitation token is only needed once to derive its hash.
