@@ -17,7 +17,7 @@ test("new invitation requires name/password and lands in the invited organizatio
   const acceptance = page.waitForRequest((request) => request.url().includes("/rpc/cv_accept_invitation"));
   await page.getByRole("button", { name: "Create account and accept" }).click();
   expect((await acceptance).postDataJSON().p_name).toBe("Invited Professional");
-  await expect(page.getByLabel("Current account")).toHaveValue(b);
+  await expect(page.getByLabel("Workspace")).toHaveValue(b);
 });
 
 test("existing credentials preserve the invitation and do not prompt for a password reset", async ({ page }) => {
@@ -29,7 +29,7 @@ test("existing credentials preserve the invitation and do not prompt for a passw
   await expect(page.getByText("You are signed in with your existing CertVerify account.", { exact: false })).toBeVisible();
   await expect(page.getByLabel("Create password", { exact: true })).toHaveCount(0);
   await page.getByRole("button", { name: "Accept invitation", exact: true }).click();
-  await expect(page.getByLabel("Current account")).toHaveValue(b);
+  await expect(page.getByLabel("Workspace")).toHaveValue(b);
 });
 
 test("organization switching reloads the workspace and scopes subsequent data requests", async ({ page }) => {
@@ -37,10 +37,10 @@ test("organization switching reloads the workspace and scopes subsequent data re
   await page.getByLabel("Email address").fill("existing@example.test");
   await page.getByLabel("Password", { exact: true }).fill("existing-password");
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
-  await expect(page.getByLabel("Current account")).toHaveValue(a);
+  await expect(page.getByLabel("Workspace")).toHaveValue(a);
   const scoped = page.waitForRequest((request) => request.url().includes("/rest/v1/certificates") && request.headers()[ACCOUNT_HEADER] === b);
-  await page.getByLabel("Current account").selectOption(b);
-  await expect(page.getByLabel("Current account")).toHaveValue(b);
+  await page.getByLabel("Workspace").selectOption(b);
+  await expect(page.getByLabel("Workspace")).toHaveValue(b);
   expect((await scoped).headers()[ACCOUNT_HEADER]).toBe(b);
 });
 
@@ -112,7 +112,7 @@ test("passwordless invitation recipient must create a password even if invite li
   await page.getByLabel("Create password", { exact: true }).fill("a-valid-password");
   await page.getByLabel("Confirm password").fill("a-valid-password");
   await page.getByRole("button", { name: "Create account and accept" }).click();
-  await expect(page.getByLabel("Current account")).toHaveValue(b);
+  await expect(page.getByLabel("Workspace")).toHaveValue(b);
 });
 
 test("team owner sees member emails, not raw user identifiers", async ({ page }) => {
@@ -120,7 +120,7 @@ test("team owner sees member emails, not raw user identifiers", async ({ page })
   await page.getByLabel("Email address").fill("existing@example.test");
   await page.getByLabel("Password", { exact: true }).fill("test-password");
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
-  await expect(page.getByLabel("Current account")).toBeVisible();
+  await expect(page.getByLabel("Workspace")).toBeVisible();
   await page.goto("/dashboard/team");
   await expect(page.getByText("existing@example.test", { exact: true })).toBeVisible();
   await expect(page.getByText("new@example.test", { exact: true })).toBeVisible();
@@ -132,7 +132,7 @@ test("security page offers password change and account email reset", async ({ pa
   await page.getByLabel("Email address").fill("existing@example.test");
   await page.getByLabel("Password", { exact: true }).fill("test-password");
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
-  await expect(page.getByLabel("Current account")).toBeVisible();
+  await expect(page.getByLabel("Workspace")).toBeVisible();
   await page.goto("/account/security");
   await expect(page.getByRole("heading", { name: "Password and recovery" })).toBeVisible();
   await page.getByLabel("New password", { exact: true }).fill("new-safe-password");
