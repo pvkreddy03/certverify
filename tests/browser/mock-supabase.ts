@@ -72,7 +72,7 @@ const server = createServer(async (request, response) => {
   }
   if (url.pathname === "/auth/v1/user") { json({ ...session(user,aal).user, ...(body.data ? { user_metadata: body.data } : {}) }); return; }
   if (url.pathname === "/auth/v1/logout") { response.writeHead(204).end(); return; }
-  if (url.pathname === "/auth/v1/recover" || url.pathname === "/auth/v1/signup") { json({}); return; }
+  if (url.pathname === "/auth/v1/recover" || url.pathname === "/auth/v1/signup" || url.pathname === "/auth/v1/otp") { json({}); return; }
   // Account-security enrollment substitute only; real TOTP remains a hosted gate.
   if (url.pathname === "/auth/v1/factors" && request.method === "POST") { json({id:"account-factor",type:"totp",totp:{qr_code:"<svg xmlns='http://www.w3.org/2000/svg'/>",secret:"fixture-only-totp-secret",uri:"otpauth://totp/fixture"}});return; }
   if (url.pathname.endsWith("/account-factor/challenge")) { json({id:"fixture-account-challenge",type:"totp",expires_at:Math.floor(Date.now()/1000)+60});return; }
@@ -87,6 +87,8 @@ const server = createServer(async (request, response) => {
     response.setHeader("Content-Type","image/webp");response.writeHead(200).end(bytes);return;
   }
   const rpc=url.pathname.replace("/rest/v1/rpc/","");
+  if (rpc==="cv_prepare_invitation") { json("63000000-0000-0000-0000-000000000001");return; }
+  if (rpc==="cv_revoke_invitation") { json(true);return; }
   if (rpc==="cv_platform_identity") { json(user.id===users.platform.id);return; }
   if (rpc==="cv_is_platform_admin") { json(user.id===users.platform.id && aal==="aal2");return; }
   if(rpc==="cv_subscription_status"){
@@ -214,6 +216,9 @@ const server = createServer(async (request, response) => {
     json({ public_verification_id:publicId,certificate_id:"CV-FIXTURE-1",issuer_name:"Test Issuer",issued_at:"2026-10-01T00:00:00Z",status,
       revoked_at:status === "Revoked" ? revokedAt : null,public_revocation_reason:status === "Revoked" ? publicReason || "Withdrawn by issuer" : null,
       fields:[{ id:"public-field",field_name:"Public title",field_type:"text",field_value:"Public certificate record" }] }); return;
+  }
+  if (url.pathname === "/rest/v1/account_invitations" && url.searchParams.get("select") === "requires_setup") {
+    json({ requires_setup: true });return;
   }
   if (url.pathname === "/rest/v1/certificates" && url.searchParams.get("id") === `eq.${certificateId}`) {
     json({ id:certificateId,certificate_id:"CV-FIXTURE-1",status:currentStatus,created_at:"2026-10-01T00:00:00Z",template_id:null,template_name:"Test template",public_verification_id:publicId,
