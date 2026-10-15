@@ -74,9 +74,11 @@ export default function BulkCertificatePage(){
     });
   },[]);
   useEffect(()=>{
-    setSheet(null);setResult(null);setMapping({});setFileName("");setBatchName("");key.current=null;
-    if(!selected){setFields([]);return;}
-    void getCertificateFields(selected).then(setFields).catch(e=>setError(String(e)));
+    if(!selected)return;
+    let active=true;
+    void getCertificateFields(selected).then(result=>{if(active)setFields(result);})
+      .catch(e=>{if(active)setError(String(e));});
+    return ()=>{active=false;};
   },[selected]);
   const errors=useMemo(()=>sheet?validate(fields,mapping,sheet.rows):[],[fields,mapping,sheet]);
   async function downloadTemplate(){
@@ -154,7 +156,7 @@ export default function BulkCertificatePage(){
     <header className="space-y-2">
       <Link href="/dashboard/certificates" className="text-sm font-semibold text-blue-700">← Create certificate manually</Link>
       <h1 className="text-3xl font-bold">Bulk certificate generation</h1>
-      <p className="text-slate-600">Upload an Excel file with up to 100 certificates. Review and edit everything before generating IDs or using your organization's quota.</p>
+      <p className="text-slate-600">Upload an Excel file with up to 100 certificates. Review and edit everything before generating IDs or using your organization&apos;s quota.</p>
     </header>
     {error&&<p role="alert" className="rounded-xl border border-red-200 bg-red-50 p-4 text-red-800">{error}</p>}
     {result&&<section className="space-y-4 rounded-xl border border-green-300 bg-green-50 p-6">
@@ -170,7 +172,7 @@ export default function BulkCertificatePage(){
       <h2 className="text-xl font-bold">1. Select template and upload Excel</h2>
       <label className="block max-w-xl space-y-1">
         <span className="font-semibold">Certificate template</span>
-        <select className="w-full rounded border px-3 py-2" value={selected} onChange={e=>setSelected(e.target.value)} disabled={busy}>
+        <select className="w-full rounded border px-3 py-2" value={selected} onChange={e=>{setSelected(e.target.value);setFields([]);setSheet(null);setResult(null);setMapping({});setFileName("");setBatchName("");key.current=null;}} disabled={busy}>
           <option value="">Select existing template</option>
           {templates.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}
         </select>
