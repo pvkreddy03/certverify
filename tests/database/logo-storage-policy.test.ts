@@ -44,6 +44,7 @@ test("only reserved logo owner may upload; failed restrictive rules cannot overr
     "Original uploader can preview the finalized image without a custom Storage header");
   assert.equal(sql("begin;set local role anon;select count(*) from storage.objects where bucket_id='certverify-branding';commit;").out,"0",
     "Anonymous users cannot see unpublished logos");
-  assert.notEqual(sql(as(ids.owner,null,`delete from storage.objects where name='${reservation.path}'`),false).status,0,
-    "Uploaded logos remain immutable");
+  sql(as(ids.owner,null,`delete from storage.objects where name='${reservation.path}'`),false);
+  assert.equal(sql("select count(*) from storage.objects where bucket_id='certverify-branding'").out,"1",
+    "Uploaded logos remain immutable even when RLS hides rows from DELETE");
 });
