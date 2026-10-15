@@ -11,6 +11,7 @@ test("Excel import previews and edits two rows, confirms once and exports separa
   await page.getByLabel("Email address").fill("existing@example.test");
   await page.getByLabel("Password",{exact:true}).fill("test-password");
   await page.getByRole("button",{name:"Sign in",exact:true}).click();
+  await expect(page).toHaveURL(/\/dashboard(\/)?$/);
   await page.goto("/dashboard/certificates/bulk");
   await page.getByLabel("Certificate template").selectOption("81000000-0000-0000-0000-000000000001");
   await expect(page.getByLabel("Excel file")).toBeEnabled();
