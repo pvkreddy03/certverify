@@ -30,10 +30,16 @@ test("branding requests require independent MFA approval; issued identity stays 
   await expect(page.getByRole("link",{ name:"Powered by CertVerify" })).toHaveAttribute("href","/");
   await context.close();
 });
-test("members can view branding but cannot request changes or access platform approvals",async({ page })=>{
+test("sub-users cannot open owner-managed branding or platform approvals",async({ page })=>{
   await login(page,"new@example.test");await expect(page.getByLabel("Workspace")).toBeVisible();
-  await page.goto("/dashboard/branding");await expect(page.getByRole("heading",{ name:"Current approved identity" }).locator("..")).toContainText("Test Issuer");
-  await expect(page.getByRole("button",{ name:"Submit for approval" })).toHaveCount(0);
+  const nav=page.getByRole("navigation",{name:"Customer dashboard pages"});
+  await expect(nav.getByRole("link",{name:"Branding",exact:true})).toHaveCount(0);
+  await expect(page.getByLabel("Workspace").locator("option",{hasText:"Professional account"})).toHaveCount(0);
+  await expect(page.getByLabel("Workspace").locator("option",{hasText:"Organization A"})).toHaveCount(1);
+  await expect(page.getByLabel("Workspace").locator("option",{hasText:"Organization B"})).toHaveCount(1);
+  await page.goto("/dashboard/branding");
+  await expect(page.getByRole("heading",{name:"Managed by your organization"})).toBeVisible();
+  await expect(page.getByRole("button",{name:"Submit for approval"})).toHaveCount(0);
   await page.goto("/platform/branding");await expect(page).toHaveURL(/\/dashboard/);
 });
 test("logo uploads normalize valid images privately and reject unsupported files",async({ page })=>{
