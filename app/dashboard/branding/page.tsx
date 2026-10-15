@@ -59,7 +59,7 @@ export default function BrandingPage() {
       }
       setLogo(data.assetId);
       setUploadState("ready");
-      setMessage("Logo uploaded and image verified. Check the preview below, then submit the branding change for Super Admin approval.");
+      setMessage("Logo uploaded privately and image verified. Check the preview below, then submit the branding change for Super Admin approval.");
     } catch(error) {
       setUploadState("failed");
       setMessage("Logo upload did not complete successfully. The selected filename alone does not mean an image was saved. "+(error instanceof Error ? error.message : "Retry the upload.")+" Do not submit for approval until you see 'Image verified'.");
@@ -84,7 +84,7 @@ export default function BrandingPage() {
       <label className="block">Company or professional name<input className="mt-2 block w-full rounded border p-3" value={name} onChange={(event)=>setName(event.target.value)} minLength={2} maxLength={160} required disabled={busy} /></label>
       <label className="block">Public professional details<textarea className="mt-2 block w-full rounded border p-3" value={details} onChange={(event)=>setDetails(event.target.value)} maxLength={2000} disabled={busy} /></label>
       <label className="block">Proposed logo<input className="mt-2 block" type="file" accept="image/png,image/jpeg,image/webp" disabled={busy} onChange={(event)=>{ const file=event.target.files?.[0];if (file) void upload(file); }} /></label>
-      {selectedLogoName && <div role="status" className={`rounded-lg border p-4 text-sm ${uploadState==="ready" ? "border-green-300 bg-green-50 text-green-900" : uploadState==="failed" ? "border-red-300 bg-red-50 text-red-900" : "border-blue-200 bg-blue-50 text-blue-900"}`}>
+      {selectedLogoName && <div role="note" className={`rounded-lg border p-4 text-sm ${uploadState==="ready" ? "border-green-300 bg-green-50 text-green-900" : uploadState==="failed" ? "border-red-300 bg-red-50 text-red-900" : "border-blue-200 bg-blue-50 text-blue-900"}`}>
         <p className="font-semibold">{uploadState==="uploading" ? "Uploading and checking image…" : uploadState==="ready" ? "Image verified — ready for approval request" : "Upload failed — image NOT ready for approval"}</p>
         <p className="mt-1 break-all">{selectedLogoName}</p>
       </div>}
