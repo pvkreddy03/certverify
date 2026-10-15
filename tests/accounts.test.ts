@@ -9,6 +9,8 @@ const second: AccountMembership = { ...first, id: "22222222-2222-2222-2222-22222
 test("switching selects only a listed active membership; stale hints fall back", () => {
   assert.equal(chooseAccount([first, second], second.id), second);
   assert.equal(chooseAccount([first], second.id), first);
+  assert.equal(chooseAccount([first, second], null), second);
+  assert.equal(chooseAccount([first, second], "no-longer-a-member"), second);
   assert.equal(chooseAccount([], second.id), null);
 });
 test("invalid account headers are rejected and member roles cannot manage teams", () => {
