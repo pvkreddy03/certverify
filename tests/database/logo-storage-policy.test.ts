@@ -14,6 +14,9 @@ before(async()=>{
     ('${ids.owner}','logo.owner@example.test',now()),
     ('${ids.other}','logo.other@example.test',now());`);
   account=sql(`select account_id from public.account_members where user_id='${ids.owner}'`).out;
+  // Isolate Storage RLS from billing. This disposable no-network fixture
+  // has no paid periods; do not relax real subscription guards in staging.
+  sql("alter table public.cv_logo_assets disable trigger user");
 });
 after(close);
 
