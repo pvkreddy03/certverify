@@ -103,7 +103,8 @@ const server = createServer(async (request, response) => {
   if (rpc==="cv_is_platform_admin") { json(user.id===users.platform.id && aal==="aal2");return; }
   if(rpc==="cv_subscription_status"){
     const owner=user.id===users.existing.id;
-    json({account_id:a,account_type:"organization",can_cancel:owner,can_manage:owner&&accountAccess==="active",entitled:billingEntitled,status:billingStatus,period:billingPeriod ? {...billingPeriod,certificates_created:billingUsed,remaining_certificates:Math.max(0,20-billingUsed)}:null,allocated_seats:2,cancel_at_period_end:billingCancelled,trial_used:billingTrialUsed,requests:owner?billingQuotes:[],history:owner?billingHistory:[],payments:owner?billingPayments:[]});return;
+    const billedAccount=request.headers["x-certverify-account"]===b?b:a;
+    json({account_id:billedAccount,account_type:"organization",can_cancel:owner,can_manage:owner&&accountAccess==="active",entitled:billingEntitled,status:billingStatus,period:billingPeriod ? {...billingPeriod,certificates_created:billingUsed,remaining_certificates:Math.max(0,20-billingUsed)}:null,allocated_seats:2,cancel_at_period_end:billingCancelled,trial_used:billingTrialUsed,requests:owner?billingQuotes:[],history:owner?billingHistory:[],payments:owner?billingPayments:[]});return;
   }
   if(rpc==="cv_platform_payment_report"){if(user.id!==users.platform.id||aal!=="aal2"){json({message:"MFA required"},403);return;}json({attempts:[],total:0,page:body.p_page});return;}
   if(rpc==="cv_pricing_catalog"){json(billingPlans.filter(p=>p.status==="active"&&p.terms.visible));return;}
