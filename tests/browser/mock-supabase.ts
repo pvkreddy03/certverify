@@ -230,6 +230,16 @@ const server = createServer(async (request, response) => {
   if (url.pathname === "/rest/v1/account_invitations" && url.searchParams.get("select") === "requires_setup") {
     json({ requires_setup: true });return;
   }
+  if (url.pathname === "/rest/v1/account_members" && request.method === "GET") {
+    const membership = {
+      account_id:a, user_id:user.id, role:user.id===users.new.id?"member":"owner",
+      status:"active",joined_at:"2026-10-01T00:00:00Z",
+    };
+    json(membership);return;
+  }
+  if (url.pathname === "/rest/v1/accounts" && request.method === "GET") {
+    json({ id:a,account_name:"Organization A",account_code:"A",account_type:"organization" });return;
+  }
   if (url.pathname === "/rest/v1/certificates" && url.searchParams.get("id") === `eq.${certificateId}`) {
     json({ id:certificateId,certificate_id:"CV-FIXTURE-1",status:currentStatus,created_at:"2026-10-01T00:00:00Z",template_id:null,template_name:"Test template",public_verification_id:publicId,
       revoked_at:currentStatus === "Revoked" ? revokedAt : null,revoked_by:users.existing.id,
