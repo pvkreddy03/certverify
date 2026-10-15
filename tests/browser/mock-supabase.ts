@@ -16,6 +16,9 @@ function token(user: typeof users[keyof typeof users], aal="aal1") {
 function session(user: typeof users[keyof typeof users], aal="aal1") {
   return { access_token: token(user,aal), refresh_token: "browser-fixture-refresh", token_type: "bearer", expires_in: 3600, user: { ...user, aud: "authenticated", role: "authenticated", app_metadata: {}, factors: user.id===users.platform.id ? [{ id:"platform-factor",factor_type:"totp",status:"verified",friendly_name:"Test MFA" }] : [], email_confirmed_at: "2026-01-01T00:00:00Z", created_at: "2026-01-01T00:00:00Z" } };
 }
+const bulkTemplateId="81000000-0000-0000-0000-000000000001";
+const bulkFieldId="82000000-0000-0000-0000-000000000001";
+let bulkTesting=false;let bulkBatch:Record<string,unknown>|null=null;let bulkCreationCalls=0;
 const certificateId = "20000000-0000-0000-0000-000000000001";
 const publicId = "30000000-0000-0000-0000-000000000001";
 let currentStatus = "Active";
@@ -59,11 +62,13 @@ const server = createServer(async (request, response) => {
   const user = subject === users.platform.id ? users.platform : subject === users.new.id ? users.new : users.existing;
   response.setHeader("Content-Type", "application/json");
   function json(value: unknown, status = 200) { response.writeHead(status).end(JSON.stringify(value)); }
-  if (url.pathname === "/test/reset") { currentStatus = "Active"; internalReason = null; publicReason = null; current={...baseline};versions=[current];brandingRequests=[];logos.clear();resetBilling();accountAccess="active";accessRevision=0;accessReason=null;platformAudit=[];editingPermissions=[];finalizeFailure=false;storageDeletes=0;json({}); return; }
+  if (url.pathname === "/test/reset") { bulkTesting=false;bulkBatch=null;bulkCreationCalls=0;currentStatus = "Active"; internalReason = null; publicReason = null; current={...baseline};versions=[current];brandingRequests=[];logos.clear();resetBilling();accountAccess="active";accessRevision=0;accessReason=null;platformAudit=[];editingPermissions=[];finalizeFailure=false;storageDeletes=0;json({}); return; }
   if (url.pathname === "/test/finalize-failure") { finalizeFailure=true;json({});return; }
   if (url.pathname === "/test/storage-state") { json({ objects:logos.size,deletes:storageDeletes });return; }
   if(url.pathname==="/test/billing-reset"){billingEntitled=false;billingStatus="unsubscribed";billingPeriod=null;json({});return;}
   if(url.pathname==="/test/billing-expire"){billingEntitled=false;billingStatus="expired";billingUsed=20;json({});return;}
+  if (url.pathname === "/test/bulk-enable") { bulkTesting=true;json({});return; }
+  if (url.pathname === "/test/bulk-state") { json({created:bulkCreationCalls,batch:bulkBatch});return; }
   if (url.pathname === "/health") { json({ status: "fixture" }); return; }
   if (url.pathname === "/auth/v1/token") { json(session(body.email === users.platform.email ? users.platform : body.email === users.new.email ? users.new : users.existing)); return; }
   if (url.pathname === "/auth/v1/verify") {
@@ -87,6 +92,22 @@ const server = createServer(async (request, response) => {
     response.setHeader("Content-Type","image/webp");response.writeHead(200).end(bytes);return;
   }
   const rpc=url.pathname.replace("/rest/v1/rpc/","");
+  if(rpc==="cv_bulk_batches_list"){json(bulkBatch?[{id:bulkBatch.id,name:bulkBatch.name,sourceName:bulkBatch.sourceName,rowCount:bulkBatch.rowCount,createdAt:bulkBatch.createdAt}]:[]);return;}
+  if(rpc==="cv_bulk_batch_details"){json(bulkBatch&&body.p_batch===bulkBatch.id?bulkBatch:null);return;}
+  if(rpc==="cv_create_certificate_batch"){
+    const rows=body.p_rows as Record<string,string>[];
+    if(!bulkTesting||!Array.isArray(rows)||rows.length>100||rows.length<1){json({message:"Invalid batch"},400);return;}
+    if(!bulkBatch){
+      bulkCreationCalls++;
+      bulkBatch={id:"83000000-0000-0000-0000-000000000001",
+        name:body.p_label,sourceName:body.p_filename,rowCount:rows.length,createdAt:"2026-10-15T12:00:00Z",
+        items:rows.map((row,i)=>({id:"84000000-0000-0000-0000-"+String(i+1).padStart(12,"0"),
+          certificateId:"CV-FIXTURE-"+(i+1),publicReference:"85000000-0000-0000-0000-"+String(i+1).padStart(12,"0"),
+          sourceRow:i+2,status:"Active",values:row})),
+      };
+    }
+    json(bulkBatch);return;
+  }
   if (rpc==="cv_invitation_setup_required") {
     json(user.id===users.new.id);return;
   }
@@ -208,6 +229,12 @@ const server = createServer(async (request, response) => {
     r.status=body.p_action==="approve" ? "approved" : "rejected";r.decision_reason=body.p_reason;
     if (body.p_action==="approve") { current={...current,id:"40000000-0000-0000-0000-000000000002",company_name:String(r.company_name),professional_details:String(r.professional_details),logo_asset_id:r.logo_asset_id as string|null,origin:"approved",approved_by:user.id};versions.push(current); }
     json(true);return;
+  }
+  if(bulkTesting && url.pathname==="/rest/v1/certificate_templates"){
+    json([{id:bulkTemplateId,name:"Bulk template",description:"Fixture"}]);return;
+  }
+  if(bulkTesting && url.pathname==="/rest/v1/certificate_fields"){
+    json([{id:bulkFieldId,field_name:"Owner",field_type:"text",is_required:true,is_public:true,display_order:1}]);return;
   }
   if (url.pathname==="/rest/v1/cv_branding_versions") { json(versions);return; }
   if (url.pathname==="/rest/v1/cv_branding_requests") { json(user.id===users.existing.id ? brandingRequests : []);return; }
