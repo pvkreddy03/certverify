@@ -21,7 +21,7 @@ with check (
 -- Storage does not need to forward custom account-selector headers.
 create or replace function public.cv_storage_private_logo_read(p_path text)
 returns boolean language sql stable security definer set search_path = ''
-as $
+as $$
   select exists (
     select 1 from public.cv_logo_assets l
     where l.storage_path=p_path and l.state='ready'
@@ -42,7 +42,7 @@ as $
         )
       )
   );
-$;
+$$;
 revoke all on function public.cv_storage_private_logo_read(text) from public, anon;
 grant execute on function public.cv_storage_private_logo_read(text) to authenticated;
 drop policy if exists cv_branding_storage_authenticated_ready_read on storage.objects;
