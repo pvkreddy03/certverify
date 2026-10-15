@@ -26,3 +26,13 @@ test("email redirect origins honor preview and configured production origins", (
   assert.throws(() => applicationOrigin("https://spoofed-host.example", { nodeEnv: "production" }));
   assert.equal(applicationOrigin("https://spoofed-host.example", { nodeEnv: "production", vercelUrl: "trusted.vercel.app" }), "https://trusted.vercel.app");
 });
+
+test("freshly invited staff land in their employer workspace instead of an unlicensed personal account", () => {
+  const personal: AccountMembership = { id:"33333333-3333-3333-3333-333333333333",account_name:"Personal",account_code:"P",account_type:"individual",role:"owner" };
+  const employer: AccountMembership = { id:"44444444-4444-4444-4444-444444444444",account_name:"Pooja Stores",account_code:"O",account_type:"organization",role:"member" };
+  assert.equal(chooseAccount([personal, employer], null),employer);
+  assert.equal(chooseAccount([personal, employer], "invalid"),employer);
+  // Deliberately switching back to the personal workspace remains possible.
+  assert.equal(chooseAccount([personal, employer],personal.id),personal);
+  assert.equal(chooseAccount([personal],null),personal);
+});
