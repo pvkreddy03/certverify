@@ -14,7 +14,15 @@ export function isAccountId(value: unknown): value is string {
 }
 
 export function chooseAccount(accounts: AccountMembership[], requested: string | null) {
-  return accounts.find((account) => account.id === requested) ?? accounts[0] ?? null;
+  // Honour a deliberate workspace choice, but after a fresh login prioritize
+  // an organization in which the user is a sub-user. Supabase creates an
+  // individual account at signup, even when the person joined an organization.
+  // Landing in that unlicensed personal workspace would incorrectly ask for
+  // a separate subscription rather than using the organization's entitlement.
+  return accounts.find((account) => account.id === requested)
+    ?? accounts.find((account) => account.account_type === "organization"
+      && (account.role === "member" || account.role === "viewer"))
+    ?? accounts[0] ?? null;
 }
 
 // This is a routing hint, never authorization. PostgreSQL checks current membership
