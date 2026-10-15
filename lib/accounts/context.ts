@@ -20,6 +20,11 @@ export function chooseAccount(accounts: AccountMembership[], requested: string |
   // Landing in that unlicensed personal workspace would incorrectly ask for
   // a separate subscription rather than using the organization's entitlement.
   return accounts.find((account) => account.id === requested)
+    // Preserve the principal organization for its owner/administrator.
+    ?? accounts.find((account) => account.account_type === "organization"
+      && (account.role === "owner" || account.role === "admin"))
+    // Only staff without their own organization should prefer their employer
+    // over the personal account created automatically at signup.
     ?? accounts.find((account) => account.account_type === "organization"
       && (account.role === "member" || account.role === "viewer"))
     ?? accounts[0] ?? null;
