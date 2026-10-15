@@ -38,7 +38,7 @@ export default function CertificatesPage() {
   const [selectedTemplateId, setSelectedTemplateId] = useState("");
   useEffect(() => {
     const template = new URLSearchParams(window.location.search).get("template");
-    if (template && /^[0-9a-f-]{36}$/i.test(template)) setSelectedTemplateId(template);
+    if (template && /^[0-9a-f-]{36}$/i.test(template)) void Promise.resolve().then(() => setSelectedTemplateId(template));
   }, []);
   const [loadingTemplates, setLoadingTemplates] = useState(true);
 
