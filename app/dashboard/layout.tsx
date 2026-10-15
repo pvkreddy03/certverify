@@ -1,6 +1,6 @@
 import { AccountWorkspace } from "@/components/account-switcher";
-import { DashboardNavigation } from "@/components/dashboard-navigation";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  return <><DashboardNavigation /><AccountWorkspace>{children}</AccountWorkspace></>;
+  // Workspace resolves the role and renders one ribbon with only relevant links.
+  return <AccountWorkspace>{children}</AccountWorkspace>;
 }
