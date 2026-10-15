@@ -69,3 +69,6 @@ drop trigger if exists cv_require_invitee_password_before_accept on public.accou
 create trigger cv_require_invitee_password_before_accept
 before update of status on public.account_invitations
 for each row execute function public.cv_require_invitee_password();
+
+-- Only the trigger executor can invoke this privileged guard.
+revoke all on function public.cv_require_invitee_password() from public, anon, authenticated;
