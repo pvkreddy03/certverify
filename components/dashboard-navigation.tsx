@@ -99,7 +99,7 @@ export function DashboardNavigation({ role, accounts = [], selectedAccountId: se
         </div>
 
         <div className="hidden min-w-0 flex-1 items-center gap-1 overflow-x-auto py-0.5 md:flex" style={{scrollbarWidth:"thin"}}>
-          {routes.filter(item=>item.href!=="/dashboard").map(item=>{
+          {routes.map(item=>{
             const highlighted=active===item.href;
             return <Link key={item.href} href={item.href} aria-current={highlighted?"page":undefined}
               className={"inline-flex shrink-0 items-center gap-2 rounded-xl px-3 py-2.5 text-[12px] font-semibold tracking-[-.005em] whitespace-nowrap " +
