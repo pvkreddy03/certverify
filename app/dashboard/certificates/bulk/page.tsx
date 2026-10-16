@@ -69,7 +69,11 @@ export default function BulkCertificatePage(){
   const key=useRef<string|null>(null);
 
   useEffect(()=>{
-    void getCertificateTemplates().then(setTemplates).catch(e=>setError(String(e)));
+    void getCertificateTemplates().then(result=>{
+      setTemplates(result);
+      const requested = new URLSearchParams(window.location.search).get("template");
+      if(requested && result.some(t=>t.id===requested))setSelected(requested);
+    }).catch(e=>setError(String(e)));
     void supabase.rpc("cv_subscription_status").then(({data,error:failure})=>{
       if(!failure){
         const period=(data as {period?:{remaining_certificates?:number|null}}|null)?.period;
@@ -183,10 +187,18 @@ export default function BulkCertificatePage(){
       <h2 className="text-xl font-bold">1. Select template and upload Excel</h2>
       <label className="block max-w-xl space-y-1">
         <span className="font-semibold">Certificate template</span>
-        <select className="w-full rounded border px-3 py-2" value={selected} onChange={e=>{setSelected(e.target.value);setFields([]);setSheet(null);setResult(null);setMapping({});setFileName("");setBatchName("");key.current=null;}} disabled={busy}>
+        <select className="w-full rounded border px-3 py-2" value={selected} onChange={e=>{
+            if(e.target.value==="__create__"){
+              window.location.assign("/dashboard/templates?create=1&from=bulk");
+              return;
+            }
+            setSelected(e.target.value);setFields([]);setSheet(null);setResult(null);setMapping({});setFileName("");setBatchName("");key.current=null;
+          }} disabled={busy}>
           <option value="">Select existing template</option>
           {templates.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}
+          <option value="__create__">＋ Create a new template…</option>
         </select>
+        <Link href="/dashboard/templates?create=1&from=bulk" className="mt-2 inline-flex text-sm font-semibold text-teal-700 hover:text-teal-900 hover:underline">+ Create and configure a new template →</Link>
       </label>
       {selected&&<div className="flex flex-wrap items-center gap-3">
         <button type="button" disabled={!fields.length||busy} onClick={()=>void downloadTemplate()} className="rounded border border-blue-200 bg-blue-50 px-4 py-2 font-semibold text-blue-700 disabled:opacity-50">Download Excel template</button>
