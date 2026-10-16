@@ -303,8 +303,8 @@ export default function TemplatePage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-slate-50 px-6 py-10">
-        <div className="mx-auto max-w-6xl">
+      <main className="cv-page">
+        <div className="cv-shell cv-entrance">
           <p className="text-slate-500">Loading template...</p>
         </div>
       </main>
@@ -313,8 +313,8 @@ export default function TemplatePage() {
 
   if (!template) {
     return (
-      <main className="min-h-screen bg-slate-50 px-6 py-10">
-        <div className="mx-auto max-w-6xl">
+      <main className="cv-page">
+        <div className="cv-shell cv-entrance">
           <h1 className="text-2xl font-bold text-slate-900">
             Template not found
           </h1>
@@ -336,26 +336,27 @@ export default function TemplatePage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 px-6 py-10">
-      <div className="mx-auto max-w-6xl">
+    <main className="cv-page">
+      <div className="cv-shell cv-entrance">
 
         {/* Header */}
-        <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+        <div className="cv-hero">
+          <div className="cv-hero__body flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <button
               type="button"
               onClick={() => router.push("/dashboard/templates")}
-              className="mb-4 text-sm font-medium text-slate-600 hover:text-slate-900"
+              className="mb-4 text-sm font-semibold text-[#9ee4d6] hover:text-white"
             >
               ← Back to Templates
             </button>
 
-            <h1 className="text-3xl font-bold text-slate-900">
+            <p className="cv-eyebrow mb-2">TEMPLATE DESIGNER</p><h1 className="text-3xl font-bold !text-white">
               {template.name}
             </h1>
 
-            <p className="mt-2 text-slate-600">
-              {template.description || "No description"}
+            <p className="mt-2 text-[#cee4ea]">
+              {template.description || "Configure the reusable fields for each certificate."}
             </p>
           </div>
 
@@ -364,10 +365,11 @@ export default function TemplatePage() {
             type="button"
             onClick={handleDeleteTemplate}
             disabled={deletingTemplate}
-            className="rounded-lg border border-red-300 bg-white px-5 py-3 text-sm font-semibold text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-xl border border-red-200 bg-white px-5 py-3 text-sm font-bold text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {deletingTemplate ? "Deleting..." : "Delete Template"}
           </button>
+          </div>
         </div>
 
         {fromCertificate && <div className="mt-6 rounded-xl border border-blue-200 bg-blue-50 p-5">
@@ -383,7 +385,7 @@ export default function TemplatePage() {
         </div>}
 
         {/* Template Information */}
-        <div className="mt-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="cv-panel mt-6 p-6">
           <p className="text-sm text-slate-500">Template ID</p>
 
           <p className="mt-1 break-all font-mono text-sm text-slate-900">
@@ -398,7 +400,7 @@ export default function TemplatePage() {
         )}
 
         {/* Certificate Fields */}
-        <div className="mt-8 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="cv-panel mt-8 p-6 sm:p-8">
 
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
@@ -419,7 +421,7 @@ export default function TemplatePage() {
                 setEditingFieldId(null);
                 setMessage("");
               }}
-              className="rounded-lg bg-slate-900 px-5 py-3 font-medium text-white hover:bg-slate-800"
+              className="cv-primary"
             >
               + Add Field
             </button>
