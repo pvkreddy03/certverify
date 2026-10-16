@@ -41,9 +41,14 @@ export default function TemplatePage() {
   const [savingField, setSavingField] = useState(false);
   const [message, setMessage] = useState("");
   const [fromCertificate, setFromCertificate] = useState(false);
+  const [fromBulk, setFromBulk] = useState(false);
 
   useEffect(() => {
-    void Promise.resolve().then(() => setFromCertificate(new URLSearchParams(window.location.search).get("from") === "certificate"));
+    void Promise.resolve().then(() => {
+      const origin = new URLSearchParams(window.location.search).get("from");
+      setFromCertificate(origin === "certificate" || origin === "bulk");
+      setFromBulk(origin === "bulk");
+    });
   }, []);
 
   const [editingFieldId, setEditingFieldId] = useState<string | null>(null);
@@ -367,13 +372,13 @@ export default function TemplatePage() {
 
         {fromCertificate && <div className="mt-6 rounded-xl border border-blue-200 bg-blue-50 p-5">
           <p className="font-semibold text-blue-900">Template created — add the fields you need</p>
-          <p className="mt-1 text-sm text-blue-800">When you are ready, select this template on the certificate form.</p>
+          <p className="mt-1 text-sm text-blue-800">When you are ready, use this template on the {fromBulk ? "Bulk Excel importer" : "certificate form"}.</p>
           <button
             type="button"
-            onClick={() => router.push(`/dashboard/certificates?template=${encodeURIComponent(templateId)}`)}
+            onClick={() => router.push(fromBulk ? `/dashboard/certificates/bulk?template=${encodeURIComponent(templateId)}` : `/dashboard/certificates?template=${encodeURIComponent(templateId)}`)}
             className="mt-4 rounded-lg bg-blue-700 px-5 py-3 font-semibold text-white hover:bg-blue-800"
           >
-            Continue to create certificate →
+            {fromBulk ? "Continue to Bulk Excel →" : "Continue to create certificate →"}
           </button>
         </div>}
 
