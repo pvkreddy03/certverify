@@ -54,33 +54,38 @@ export default function CertificateListPage() {
 
     const certificatesData = certificateData || [];
 
-    const { data: profileData, error: profileError } =
-      await supabase
-        .from("profiles")
-        .select("user_id, professional_name")
-        .eq("user_id", user.id)
-        .maybeSingle();
+    // Resolve each certificate's actual creator, not the currently logged-in user.
+    // Limit the lookup to IDs already visible through certificate RLS.
+    const creatorIds = [...new Set(certificatesData.map((c) => c.user_id))];
+    const { data: profiles, error: profileError } = creatorIds.length
+      ? await supabase
+          .from("profiles")
+          .select("user_id, professional_name, email")
+          .in("user_id", creatorIds)
+      : { data: [], error: null };
 
     if (profileError) {
-      setErrorMessage(
-        "Could not load profile: " + profileError.message
-      );
+      setErrorMessage("Could not load creator details: " + profileError.message);
       setLoading(false);
       return;
     }
 
-    const createdBy =
-      profileData?.professional_name?.trim() || "You";
-
-    const rows: CertificateRow[] = certificatesData.map(
-      (certificate) => ({
-        ...certificate,
-        templateName:
-          certificate.template_name?.trim() ||
-          "Template name unavailable",
-        createdBy: certificate.user_id === user.id ? createdBy : "Organization member",
-      })
+    const creatorLabels = new Map(
+      (profiles ?? []).map((profile) => [
+        profile.user_id,
+        profile.professional_name?.trim() || profile.email?.trim() || profile.user_id,
+      ])
     );
+
+    const rows: CertificateRow[] = certificatesData.map((certificate) => ({
+      ...certificate,
+      templateName:
+        certificate.template_name?.trim() || "Template name unavailable",
+      createdBy:
+        creatorLabels.get(certificate.user_id) ||
+        (certificate.user_id === user.id ? user.email : null) ||
+        certificate.user_id,
+    }));
 
     setCertificates(rows);
     setLoading(false);
