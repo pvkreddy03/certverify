@@ -412,13 +412,13 @@ export default function TeamPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 px-6 py-10">
+    <main className="cv-page min-h-screen px-4 py-10 sm:px-6">
       <div className="mx-auto max-w-6xl">
 
         {/* Header */}
         <div className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">
+            <p className="cv-eyebrow mb-2">ORGANIZATION CONTROL</p><h1 className="text-3xl font-extrabold tracking-tight text-[#1c314a]">
               Team
             </h1>
 
