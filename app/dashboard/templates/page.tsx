@@ -112,25 +112,26 @@ export default function TemplatesPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 px-6 py-10">
-      <div className="mx-auto max-w-6xl">
+    <main className="cv-page">
+      <div className="cv-shell space-y-6 cv-entrance">
 
-        <div className="flex items-center justify-between">
+        <div className="cv-hero">
+          <div className="cv-hero__body flex flex-col items-start justify-between gap-6 sm:flex-row sm:items-center">
           <div>
             <button
               type="button"
               onClick={() => router.push("/dashboard")}
-              className="mb-4 text-sm font-medium text-slate-600 hover:text-slate-900"
+              className="mb-4 text-sm font-semibold text-[#9ee4d6] hover:text-white"
             >
               ← Back to Dashboard
             </button>
 
-            <h1 className="text-3xl font-bold text-slate-900">
+            <p className="cv-eyebrow mb-2">REUSABLE RECORD LAYOUTS</p><h1 className="text-3xl font-bold !text-white">
               Templates
             </h1>
 
-            <p className="mt-2 text-slate-600">
-              Create and manage your certificate templates.
+            <p className="mt-2 max-w-xl text-[#d2e5ec]">
+              Build certificate formats once, then reuse them for individual or bulk issuance.
             </p>
           </div>
 
@@ -140,10 +141,11 @@ export default function TemplatesPage() {
               setShowCreateForm(!showCreateForm);
               setMessage("");
             }}
-            className="rounded-lg bg-slate-900 px-5 py-3 font-medium text-white hover:bg-slate-800"
+            className="cv-primary shrink-0 !border-[#35bea9] !bg-[#47d5c2] !text-[#082b35]"
           >
             + Create Template
           </button>
+          </div>
         </div>
 
         {message && (
@@ -155,11 +157,9 @@ export default function TemplatesPage() {
         {showCreateForm && (
           <form
             onSubmit={handleCreateTemplate}
-            className="mt-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm"
+            className="cv-panel mt-6 p-6 sm:p-8"
           >
-            <h2 className="text-xl font-semibold text-slate-900">
-              Create Template
-            </h2>
+            <div className="flex items-center gap-3"><span className="cv-step">✦</span><h2 className="cv-section-title">Create a new template</h2></div>
             {fromCertificate && <p className="mt-2 text-sm text-blue-800">After creating the template, add your certificate fields, then return to {fromBulk ? "Bulk Excel" : "certificate creation"}.</p>}
 
             <div className="mt-5">
@@ -172,7 +172,7 @@ export default function TemplatesPage() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g. Land & Building Valuation"
-                className="mt-2 w-full rounded-lg border border-slate-300 px-4 py-3 outline-none focus:border-slate-500"
+                className="cv-field mt-2"
               />
             </div>
 
@@ -194,7 +194,7 @@ export default function TemplatesPage() {
               <button
                 type="submit"
                 disabled={saving}
-                className="rounded-lg bg-slate-900 px-5 py-3 font-medium text-white hover:bg-slate-800 disabled:opacity-50"
+                className="cv-primary disabled:opacity-50"
               >
                 {saving ? "Creating..." : "Create Template"}
               </button>
@@ -217,11 +217,11 @@ export default function TemplatesPage() {
 
         <div className="mt-8">
           {loading ? (
-            <div className="rounded-xl border border-slate-200 bg-white p-8 text-center text-slate-500">
+            <div className="cv-panel p-8 text-center text-slate-500">
               Loading templates...
             </div>
           ) : templates.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-slate-300 bg-white p-12 text-center">
+            <div className="cv-panel border-dashed p-12 text-center">
               <h2 className="text-xl font-semibold text-slate-900">
                 No templates yet
               </h2>
@@ -236,9 +236,11 @@ export default function TemplatesPage() {
                 <a
                   key={template.id}
                   href={`/dashboard/templates/${template.id}`}
-                  className="block rounded-xl border border-slate-200 bg-white p-6 shadow-sm hover:border-slate-400 hover:shadow-md"
+                  className="cv-card cv-card--interactive group block p-6"
                 >
-                  <h2 className="text-lg font-semibold text-slate-900">
+                  <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-[#e3f8f1] text-[#07786e]">
+                    <svg aria-hidden="true" width="23" height="23" viewBox="0 0 24 24" stroke="currentColor" fill="none" strokeWidth="1.7"><rect x="3" y="3" width="7" height="7" rx="1.2"/><rect x="14" y="3" width="7" height="7" rx="1.2"/><rect x="3" y="14" width="7" height="7" rx="1.2"/><rect x="14" y="14" width="7" height="7" rx="1.2"/></svg>
+                  </div><h2 className="text-lg font-extrabold text-[#243750] group-hover:text-[#087c70]">
                     {template.name}
                   </h2>
 
