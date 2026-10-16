@@ -78,8 +78,8 @@ export default function SubscriptionPage() {
   }
   const s = report?.subscription;
   return (
-    <main className="mx-auto max-w-5xl space-y-6 px-6 py-8">
-      <h1 className="text-3xl font-bold">Subscription and renewal</h1>
+    <main className="cv-page min-h-screen"><div className="mx-auto max-w-5xl space-y-6 px-4 py-9 sm:px-6">
+      <p className="cv-eyebrow mb-2">ACCOUNT PLAN</p><h1 className="text-3xl font-extrabold tracking-tight text-[#1e314b]">Subscription and renewal</h1>
       <p className="text-sm text-slate-600">Cancellation stops further renewal. Already-paid periods stay scheduled; cancelling paid access requires reviewed refund handling.</p>
       {message && (
         <p role="status" className="rounded border p-4">
@@ -415,6 +415,6 @@ export default function SubscriptionPage() {
           )}
         </>
       )}
-    </main>
+    </div></main>
   );
 }
