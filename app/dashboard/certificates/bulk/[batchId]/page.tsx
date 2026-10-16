@@ -33,22 +33,27 @@ export default function BulkBatchPage(){
     catch(e){setError(e instanceof Error?e.message:"Download failed.");}
     finally{setWorking(false);}
   }
-  return <main className="mx-auto max-w-6xl space-y-6 px-4 py-8">
-    <Link className="text-sm font-semibold text-blue-700" href="/dashboard/certificates/bulk">← Bulk imports</Link>
-    <h1 className="text-3xl font-bold">Bulk import details</h1>
+  return <main className="cv-page min-h-screen">
+    <div className="cv-shell space-y-6 cv-entrance">
+    <Link className="text-sm font-bold text-[#0f857c]" href="/dashboard/certificates/bulk">← Bulk imports</Link>
+    <header className="cv-hero"><div className="cv-hero__body">
+      <p className="cv-eyebrow mb-3">BULK IMPORT HISTORY</p>
+      <h1 className="text-3xl font-extrabold !text-white">Bulk import details</h1>
+      <p className="mt-3 text-sm text-[#d2e5ec]">Your certificates remain individually verifiable and accessible from this batch.</p>
+    </div></header>
     {error&&<p role="alert" className="rounded bg-red-50 p-4 text-red-700">{error}</p>}
     {!batch&&!error?<p>Loading certificates…</p>:batch&&<>
-      <section className="rounded-xl border bg-white p-6">
+      <section className="cv-panel p-6 sm:p-8">
         <h2 className="text-xl font-semibold">{batch.name}</h2>
         <p className="mt-2 text-slate-600">{batch.items.length} individually issued certificates · Excel file: {batch.sourceName}</p>
         <div className="mt-5 flex flex-wrap gap-3">
-          <button disabled={working} onClick={()=>void exportBatch("jpeg")} className="rounded bg-blue-700 px-4 py-3 font-semibold text-white disabled:opacity-50">Download all QRs (JPEG ZIP)</button>
-          <button disabled={working} onClick={()=>void exportBatch("png")} className="rounded border px-4 py-3 font-semibold disabled:opacity-50">Download PNG ZIP</button>
+          <button disabled={working} onClick={()=>void exportBatch("jpeg")} className="cv-primary disabled:opacity-50">Download all QRs (JPEG ZIP)</button>
+          <button disabled={working} onClick={()=>void exportBatch("png")} className="cv-secondary disabled:opacity-50">Download PNG ZIP</button>
         </div>
         <p className="mt-2 text-sm text-slate-500">The ZIP includes a certificate-to-verification-link CSV. QR images are generated when downloaded, not permanently stored.</p>
       </section>
-      <div className="overflow-x-auto rounded-xl border bg-white">
-        <table className="w-full text-left text-sm">
+      <div className="cv-panel overflow-x-auto">
+        <table className="cv-table">
           <thead className="bg-slate-100"><tr><th className="p-3">Excel row</th><th className="p-3">Certificate ID</th><th className="p-3">Status</th><th className="p-3">Certificate</th></tr></thead>
           <tbody>{batch.items.map(item=><tr key={item.id} className="border-t">
             <td className="p-3">{item.sourceRow}</td>
@@ -59,5 +64,6 @@ export default function BulkBatchPage(){
         </table>
       </div>
     </>}
+    </div>
   </main>;
 }
