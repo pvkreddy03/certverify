@@ -115,34 +115,37 @@ export default function CertificateListPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 px-6 py-10">
-      <div className="mx-auto max-w-6xl">
+    <main className="cv-page">
+      <div className="cv-shell cv-entrance">
 
-        <Link href="/dashboard/certificates/bulk" className="mb-4 inline-flex rounded border border-blue-200 bg-blue-50 px-4 py-2 font-semibold text-blue-700">View bulk imports / Upload Excel</Link>
-        <div className="mb-8 flex items-center justify-between">
+        <Link href="/dashboard/certificates/bulk" className="cv-secondary mb-5 text-sm">▦ &nbsp; Bulk imports / Upload Excel →</Link>
+        <div className="cv-hero mb-7">
+          <div className="cv-hero__body flex flex-wrap items-center justify-between gap-5">
           <div>
             <Link
               href="/dashboard"
-              className="mb-3 inline-block text-sm font-medium text-slate-600 hover:text-slate-900"
+              className="mb-3 inline-block text-sm font-bold text-[#a4ebdc] hover:text-white"
             >
               ← Back to Dashboard
             </Link>
 
-            <h1 className="text-3xl font-bold text-slate-900">
+            <p className="cv-eyebrow mb-3">VERIFICATION LIBRARY</p>
+            <h1 className="text-3xl font-bold !text-white">
               My Certificates
             </h1>
 
-            <p className="mt-2 text-slate-600">
-              View certificates you have created.
+            <p className="mt-2 text-[#d2e5ec]">
+              Review issued records, access QR codes and monitor certificate status.
             </p>
           </div>
 
           <Link
             href="/dashboard/certificates"
-            className="rounded-lg bg-slate-900 px-5 py-3 font-medium text-white hover:bg-slate-800"
+            className="cv-primary !border-[#3dcbb7] !bg-[#49d7c4] !text-[#09333b]"
           >
             + Create Certificate
           </Link>
+          </div>
         </div>
 
         {errorMessage && (
@@ -152,11 +155,11 @@ export default function CertificateListPage() {
         )}
 
         {loading ? (
-          <div className="rounded-xl border border-slate-200 bg-white p-8 text-center text-slate-500">
+          <div className="cv-panel p-8 text-center text-slate-500">
             Loading certificates...
           </div>
         ) : certificates.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-slate-300 bg-white p-12 text-center">
+          <div className="cv-panel border-dashed p-12 text-center">
             <h2 className="text-xl font-semibold text-slate-900">
               No certificates yet
             </h2>
@@ -173,9 +176,9 @@ export default function CertificateListPage() {
             </Link>
           </div>
         ) : (
-          <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+          <div className="cv-panel overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="min-w-full text-left text-sm">
+              <table className="cv-table min-w-full">
                 <thead className="border-b border-slate-200 bg-slate-50">
                   <tr>
                     <th className="px-6 py-4 font-semibold text-slate-700">
@@ -208,7 +211,7 @@ export default function CertificateListPage() {
                   {certificates.map((certificate) => (
                     <tr
                       key={certificate.id}
-                      className="hover:bg-slate-50"
+                      className="hover:bg-[#f6fbfa]"
                     >
                       <td className="px-6 py-4 font-medium text-slate-900">
                         {certificate.certificate_id}
