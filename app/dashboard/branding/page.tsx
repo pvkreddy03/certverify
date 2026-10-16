@@ -90,8 +90,8 @@ export default function BrandingPage() {
       setMessage("Logo upload did not complete successfully. The selected filename alone does not mean an image was saved. "+(error instanceof Error ? error.message : "Retry the upload.")+" Do not submit for approval until you see 'Image verified'.");
     } finally { setBusy(false); }
   }
-  return <main className="mx-auto max-w-4xl space-y-6 px-6 py-8">
-    <h1 className="text-3xl font-bold">Professional and organization branding</h1>
+  return <main className="cv-page min-h-screen"><div className="mx-auto max-w-5xl space-y-6 px-4 py-9 sm:px-6">
+    <p className="cv-eyebrow mb-2">TRUSTED ISSUER IDENTITY</p><h1 className="text-3xl font-extrabold tracking-tight text-[#1d3048]">Professional and organization branding</h1>
     <p>Company name, professional details and logo are managed centrally. Changes require Super Admin approval or an approved, scoped permission.</p>
     {message && <p role="status" className="rounded border p-4">{message}</p>}
     {submitted && <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4" role="presentation">
@@ -140,5 +140,5 @@ export default function BrandingPage() {
     {!!profile?.requests.length && <section className="space-y-3"><h2 className="text-xl font-semibold">Requests and decisions</h2>{profile.requests.map((request)=><article key={request.id} className="rounded border p-4"><p>{request.company_name} — {request.status}</p><p>{request.decision_reason}</p>{request.status==="needs_information" && <form onSubmit={(event)=>{ event.preventDefault();const form=new FormData(event.currentTarget);void act({ action:"information",requestId:request.id,message:form.get("message") }); }}><label>Additional information<textarea name="message" required maxLength={2000} className="block w-full border p-2" /></label><button disabled={busy} className="text-blue-700">Supply information</button></form>}</article>)}</section>}
     {!!profile?.versions.length && <section className="space-y-3"><h2 className="text-xl font-semibold">Immutable branding history</h2>{profile.versions.map((version)=><article key={version.id} className="rounded border p-4"><p>{version.company_name}</p><p>{version.professional_details}</p><p className="text-sm">{new Date(version.created_at).toLocaleString("en-IN")} · {version.approved_by ? `Approved by ${version.approved_by}` : "Initial identity baseline"} · user {version.created_by || "Baseline"} · {version.logo_asset_id ? "Logo version retained" : "No logo"}</p></article>)}</section>}
     {!!profile?.audit.length && <section><h2 className="text-xl font-semibold">Approval and permission audit</h2>{profile.audit.map((event)=><p key={event.id} className="mt-2 text-sm">{event.action} · {event.actor_id} · {new Date(event.occurred_at).toLocaleString("en-IN")}</p>)}</section>}
-  </main>;
+  </div></main>;
 }
