@@ -24,12 +24,14 @@ export default function TemplatesPage() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [fromCertificate, setFromCertificate] = useState(false);
+  const [fromBulk, setFromBulk] = useState(false);
 
   useEffect(() => {
     const query = new URLSearchParams(window.location.search);
     void Promise.resolve().then(() => {
       if (query.get("create") === "1") setShowCreateForm(true);
-      if (query.get("from") === "certificate") setFromCertificate(true);
+      if (query.get("from") === "certificate" || query.get("from") === "bulk") setFromCertificate(true);
+      if (query.get("from") === "bulk") setFromBulk(true);
     });
   }, []);
 
@@ -106,7 +108,7 @@ export default function TemplatesPage() {
       return;
     }
     // Configure the fields before issuing a certificate using this template.
-    router.push(`/dashboard/templates/${created.id}${fromCertificate ? "?from=certificate" : ""}`);
+    router.push(`/dashboard/templates/${created.id}${fromBulk ? "?from=bulk" : fromCertificate ? "?from=certificate" : ""}`);
   }
 
   return (
@@ -158,7 +160,7 @@ export default function TemplatesPage() {
             <h2 className="text-xl font-semibold text-slate-900">
               Create Template
             </h2>
-            {fromCertificate && <p className="mt-2 text-sm text-blue-800">After creating the template, add your certificate fields, then return to certificate creation.</p>}
+            {fromCertificate && <p className="mt-2 text-sm text-blue-800">After creating the template, add your certificate fields, then return to {fromBulk ? "Bulk Excel" : "certificate creation"}.</p>}
 
             <div className="mt-5">
               <label className="block text-sm font-medium text-slate-700">
