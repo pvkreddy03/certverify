@@ -179,24 +179,34 @@ export default function CertificatesPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 px-6 py-10">
-      <div className="mx-auto max-w-4xl">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-slate-900">
+    <main className="cv-page">
+      <div className="cv-shell !max-w-5xl cv-entrance">
+        <div className="cv-hero mb-7">
+          <div className="cv-hero__body">
+            <p className="cv-eyebrow mb-3">SINGLE CERTIFICATE</p>
+          <h1 className="text-3xl font-bold !text-white">
             Create Certificate
           </h1>
 
-          <p className="mt-2 text-slate-600">
-            Enter the certificate details below.
+          <p className="mt-3 text-[#d0e5eb]">
+            Choose your template, enter certificate details, and generate a unique verification ID.
           </p>
+          </div>
         </div>
 
-        <Link href="/dashboard/certificates/bulk" className="mb-6 inline-flex rounded-lg bg-blue-700 px-5 py-3 font-semibold text-white hover:bg-blue-800">Upload Excel and create up to 100 certificates →</Link>
+        <div className="cv-card cv-card--interactive mb-6 flex flex-wrap items-center justify-between gap-4 p-5">
+          <div className="flex items-center gap-3">
+            <span className="cv-glow-icon"><svg aria-hidden="true" width="23" height="23" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 4v16M15 10v10"/></svg></span>
+            <div><p className="font-extrabold text-[#1d3449]">Have an Excel spreadsheet?</p>
+            <p className="mt-1 text-xs text-[#6b7d95]">Upload, review and create up to 100 certificates in one batch.</p></div>
+          </div>
+          <Link href="/dashboard/certificates/bulk" className="cv-primary text-sm">Import Excel →</Link>
+        </div>
         <IssuerBranding />
         {replacementId && <p className="mb-6 rounded border border-blue-200 bg-blue-50 p-4">This new certificate will be linked to the revoked original. The original remains revoked and its history is preserved.</p>}
         <form
           onSubmit={handleSubmit}
-          className="space-y-6 rounded-2xl bg-white p-8 shadow-sm"
+          className="cv-panel space-y-6 p-5 sm:p-8"
         >
           {/* Certificate Template */}
           <div>
@@ -216,7 +226,7 @@ export default function CertificatesPage() {
               }}
               disabled={loadingTemplates || saving}
               required
-              className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none focus:border-slate-500"
+              className="cv-field"
             >
               <option value="">
                 {loadingTemplates
@@ -247,7 +257,7 @@ export default function CertificatesPage() {
               value={certificateId}
               readOnly
               placeholder="Generated when certificate is saved"
-              className="w-full rounded-lg border border-slate-300 bg-slate-100 px-4 py-3 text-slate-700 outline-none"
+              className="cv-field !bg-[#f3f6fa] text-[#748399]"
             />
 
             <p className="mt-2 text-xs text-slate-500">
@@ -310,7 +320,7 @@ export default function CertificatesPage() {
               value={status}
               onChange={(e) => setStatus(e.target.value)}
               disabled={saving}
-              className="w-full rounded-lg border border-slate-300 px-4 py-3"
+              className="cv-field"
             >
               <option value="Active">Active</option>
               <option value="Inactive">Inactive</option>
@@ -334,7 +344,7 @@ export default function CertificatesPage() {
           <button
             type="submit"
             disabled={saving || loadingTemplates || Boolean(createdRecordId)}
-            className="rounded-lg bg-slate-900 px-6 py-3 font-medium text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+            className="cv-primary disabled:cursor-not-allowed disabled:opacity-50"
           >
             {saving ? "Saving..." : "Save Certificate"}
           </button>
