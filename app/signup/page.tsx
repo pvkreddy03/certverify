@@ -1,7 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { PortalNavigation } from "@/components/portal-navigation";
+import { useRef, useState } from "react";
+import { useEmailCooldown } from "@/lib/auth/email-cooldown";
+import { isValidEmail, INVALID_EMAIL_MESSAGE } from "@/lib/auth/email-validation";
 import { supabase } from "@/lib/supabase";
+import { explainEmailError } from "@/lib/auth/email-errors";
 
 export default function SignupPage() {
   const [name, setName] = useState("");
@@ -10,18 +14,27 @@ export default function SignupPage() {
 
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [awaitingConfirmation, setAwaitingConfirmation] = useState(false);
+  const cooldown = useEmailCooldown("signup-confirmation");
+  const signupLock = useRef(false);
+  const resendLock = useRef(false);
 
   async function handleSignup(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-
+    if (signupLock.current) return;
     setMessage("");
+    setAwaitingConfirmation(false);
+    if (!isValidEmail(email)) { setMessage(INVALID_EMAIL_MESSAGE); return; }
     if (name.trim().length < 2 || name.trim().length > 120 || password.length < 8) {
       setMessage("Enter a name of 2–120 characters and a password of at least 8 characters.");
       return;
     }
+    signupLock.current = true;
     setLoading(true);
-
-    const { error } = await supabase.auth.signUp({
+    let error;
+    try {
+      const result = await supabase.auth.signUp({
       email: email.trim().toLowerCase(),
       password,
       options: {
@@ -30,21 +43,51 @@ export default function SignupPage() {
           professional_name: name.trim(),
         },
       },
-    });
-
-    setLoading(false);
+      });
+      error = result.error;
+    } catch {
+      setMessage("Unable to create your account. Please retry.");
+      return;
+    } finally { signupLock.current = false; setLoading(false); }
 
     if (error) {
-      setMessage(error.message);
+      setMessage(explainEmailError(error, "signup"));
       return;
     }
 
+    setAwaitingConfirmation(true);
+    cooldown.start();
     setMessage(
       "Account created successfully. Please check your email to confirm your account."
     );
   }
 
+  async function handleResendConfirmation() {
+    if (resendLock.current || cooldown.disabled) return;
+    if (!isValidEmail(email)) { setMessage(INVALID_EMAIL_MESSAGE); return; }
+    resendLock.current = true;
+    setResending(true);
+    cooldown.start();
+    try {
+      const { error } = await supabase.auth.resend({
+        type: "signup",
+        email: email.trim().toLowerCase(),
+        options: { emailRedirectTo: `${window.location.origin}/confirm-email` },
+      });
+      setMessage(error
+        ? explainEmailError(error, "confirmation")
+        : "If confirmation is still needed, check your inbox and spam folder for the newest email.");
+    } catch {
+      setMessage("Unable to request confirmation. Please try again later.");
+    } finally {
+      resendLock.current = false;
+      setResending(false);
+    }
+  }
+
   return (
+    <>
+      <PortalNavigation />
     <main className="min-h-screen bg-slate-50">
       <div className="flex min-h-screen items-center justify-center px-6 py-12">
         <div className="w-full max-w-md">
@@ -65,7 +108,7 @@ export default function SignupPage() {
 
           <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
 
-            <form onSubmit={handleSignup} className="space-y-5">
+            <form onSubmit={handleSignup} noValidate className="space-y-5">
 
               <div>
                 <label
@@ -136,9 +179,15 @@ export default function SignupPage() {
             </form>
 
             {message && (
-              <div className="mt-5 rounded-lg bg-slate-100 p-4 text-sm text-slate-700">
+              <div role="status" className="mt-5 rounded-lg bg-slate-100 p-4 text-sm text-slate-700">
                 {message}
               </div>
+            )}
+            {awaitingConfirmation && (
+              <button type="button" onClick={handleResendConfirmation} disabled={resending || cooldown.disabled}
+                className="mt-3 w-full rounded-lg border border-blue-200 px-4 py-3 text-sm font-semibold text-blue-700 hover:bg-blue-50 disabled:opacity-60">
+                {resending ? "Requesting confirmation..." : cooldown.disabled ? `Resend confirmation in ${cooldown.remaining}s` : "Resend confirmation email"}
+              </button>
             )}
 
             <div className="my-6 flex items-center gap-3">
@@ -166,5 +215,6 @@ export default function SignupPage() {
         </div>
       </div>
     </main>
+    </>
   );
 }

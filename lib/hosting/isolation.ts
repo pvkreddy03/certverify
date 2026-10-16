@@ -40,9 +40,14 @@ export function previewOrigin(env: Record<string,string|undefined>) {
   if (!host || !/^certverify(?:-[a-z0-9-]+)?-pvkreddy03\.vercel\.app$/i.test(host))
     throw new Error("Preview requires the Vercel-provided deployment hostname.");
   const origin = `https://${host}`;
-  if (env.NEXT_PUBLIC_APP_URL && env.NEXT_PUBLIC_APP_URL.replace(/\/$/,"") !== origin)
-    throw new Error("Preview application origin must match this deployment; remove inherited Production origin settings.");
-  return origin;
+  // CertVerify's reviewed staging branch has its own public domain for QR
+  // verification and invitation links. All other origins, particularly an
+  // inherited Production domain or arbitrary attacker domain, remain rejected.
+  const publicStaging = "https://certverify-staging.vercel.app";
+  const configured = env.NEXT_PUBLIC_APP_URL?.replace(/\/$/,"");
+  if (configured && configured !== origin && configured !== publicStaging)
+    throw new Error("Preview application origin must match this deployment or the approved public staging domain.");
+  return configured === publicStaging ? publicStaging : origin;
 }
 export function assertPreviewIsolation(env: Record<string,string|undefined>) {
   if (env.VERCEL_ENV === "production" && env.CERTVERIFY_DEPLOYMENT_TARGET === "isolated_sandbox")
@@ -65,6 +70,9 @@ export function assertPreviewIsolation(env: Record<string,string|undefined>) {
     throw new Error("Live payment mode is prohibited.");
   if (env.CERTVERIFY_PAYMENT_MODE === "razorpay_test" && (!/^rzp_test_[A-Za-z0-9]+$/.test(env.RAZORPAY_TEST_KEY_ID ?? "") || !env.RAZORPAY_TEST_KEY_SECRET || !env.RAZORPAY_TEST_WEBHOOK_SECRET || (env.CERTVERIFY_RATE_LIMIT_SECRET?.length ?? 0)<32))
     throw new Error("Preview test-payment configuration is incomplete or uses a live key.");
+  if (env.NEXT_PUBLIC_VERIFICATION_ORIGIN &&
+      env.NEXT_PUBLIC_VERIFICATION_ORIGIN !== "https://certverify-staging.vercel.app")
+    throw new Error("Preview verification links must use the approved public staging origin.");
   previewOrigin(env);
 }
 export async function verifyPreviewCredentials(env: Record<string,string|undefined>, request: typeof fetch = fetch) {

@@ -1,6 +1,7 @@
-import { getSupabaseAdmin } from "@/lib/supabase/server";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { logoObjectStorage } from "@/lib/providers/logo-storage";
 import { authenticatedRequest, RequestError } from "@/lib/auth/request";
-import { LOGO_BUCKET, MAX_LOGO_BYTES } from "./types";
+import { MAX_LOGO_BYTES } from "./types";
 
 export async function platformBrandingContext(request: Request) {
   const context=await authenticatedRequest(request,false);
@@ -20,12 +21,15 @@ export async function boundedLogoForm(request: Request) {
   }
   return new Response(new Uint8Array(Buffer.concat(chunks)),{ headers:{ "content-type":request.headers.get("content-type") ?? "" } }).formData();
 }
-export async function logoResponse(path: string, publiclyVisible=false) {
+export async function logoResponse(path: string, publiclyVisible=false, viewer?: SupabaseClient) {
   // Never fetch a client URL or expose private signed URLs. Paths come from checked RPCs.
   if (!/^[0-9a-f-]{36}\/[0-9a-f-]{36}\.webp$/i.test(path)) throw new RequestError("Logo unavailable.",404);
-  const supabaseAdmin = await getSupabaseAdmin();
-  const { data,error }=await supabaseAdmin.storage.from(LOGO_BUCKET).download(path);
-  if (error || !data || data.size>MAX_LOGO_BYTES || data.type!=="image/webp") throw new RequestError("Logo unavailable.",404);
+  // The private Storage bucket authorizes authenticated owners via RLS and
+  // anonymous visitors only for logos published in issued certificate snapshots.
+  // Never expose a privileged storage key or make the entire bucket public.
+  if (!publiclyVisible && !viewer) throw new RequestError("Authentication required.",401);
+  const data = await logoObjectStorage(viewer).download(path);
+  if (!data || data.size>MAX_LOGO_BYTES || data.type!=="image/webp") throw new RequestError("Logo unavailable.",404);
   return new Response(await data.arrayBuffer(),{ headers:{ "Content-Type":"image/webp", "X-Content-Type-Options":"nosniff",
     "Content-Security-Policy":"default-src 'none'; sandbox", "Cache-Control":publiclyVisible ? "public, max-age=300" : "private, no-store" } });
 }

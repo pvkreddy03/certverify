@@ -32,6 +32,14 @@ test("Preview origin derives from provider hostname and rejects inherited Produc
   assert.equal(previewOrigin({...previewEnv,NEXT_PUBLIC_APP_URL:undefined}),previewEnv.NEXT_PUBLIC_APP_URL);
   for(const change of [{VERCEL_URL:'attacker.test'},{VERCEL_URL:'certverify.vercel.app/path'},{NEXT_PUBLIC_APP_URL:'https://production.example.test'}])assert.throws(()=>assertPreviewIsolation({...previewEnv,...change}));
 });
+test("only the pinned, public staging domain can replace a per-deployment preview hostname",()=>{
+  const allowed={...previewEnv,NEXT_PUBLIC_APP_URL:"https://certverify-staging.vercel.app"};
+  assert.equal(previewOrigin(allowed),"https://certverify-staging.vercel.app");
+  assert.doesNotThrow(()=>assertPreviewIsolation(allowed));
+  for(const host of ["https://certverify-beta.vercel.app","https://certverify-staging.vercel.app.attacker.test","https://lookalike.vercel.app","http://certverify-staging.vercel.app"])
+    assert.throws(()=>assertPreviewIsolation({...previewEnv,NEXT_PUBLIC_APP_URL:host}));
+});
+
 test("Preview credential verification checks only approved staging and never reads user payloads",async()=>{
   const paths:string[]=[];
   const mock:typeof fetch=async(input,init)=>{
@@ -109,4 +117,10 @@ test("privileged client can be imported without its key and invocation fails saf
     delete process.env.SUPABASE_SECRET_KEY;
     await assert.rejects(()=>getSupabaseAdmin(),e=>e instanceof Error && 'status' in e && e.status===503);
   } finally { if(original===undefined)delete process.env.SUPABASE_SECRET_KEY;else process.env.SUPABASE_SECRET_KEY=original; }
+});
+
+test("preview QR origin cannot point to an unreviewed production or third-party hostname",()=>{
+  assert.doesNotThrow(()=>assertPreviewIsolation({...previewEnv,NEXT_PUBLIC_VERIFICATION_ORIGIN:"https://certverify-staging.vercel.app"}));
+  for(const origin of ["https://other.example","https://certverify-beta.vercel.app","http://certverify-staging.vercel.app"])
+    assert.throws(()=>assertPreviewIsolation({...previewEnv,NEXT_PUBLIC_VERIFICATION_ORIGIN:origin}));
 });

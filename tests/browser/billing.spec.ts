@@ -13,7 +13,7 @@ async function login(page: Page, admin = false) {
     await expect(
       page.getByRole("heading", { name: "Platform MFA verification" }),
     ).toHaveCount(0);
-  } else await expect(page.getByLabel("Current account")).toBeVisible();
+  } else await expect(page.getByLabel("Workspace")).toBeVisible();
 }
 test.beforeEach(async ({ request }) => {
   await request.post("http://127.0.0.1:54329/test/reset");
