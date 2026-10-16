@@ -167,14 +167,46 @@ export default function BulkCertificatePage(){
     }catch(e){setError(e instanceof Error?e.message:"Could not download QR codes.");}
     finally{setBusy(false);}
   }
-  return <main className="mx-auto max-w-7xl space-y-7 px-4 py-8 text-slate-900">
-    <header className="space-y-2">
-      <Link href="/dashboard/certificates" className="text-sm font-semibold text-blue-700">← Create certificate manually</Link>
-      <h1 className="text-3xl font-bold">Bulk certificate generation</h1>
-      <p className="text-slate-600">Upload an Excel file with up to 100 certificates. Review and edit everything before generating IDs or using your organization&apos;s quota.</p>
+  return <main className="cv-page">
+    <div className="cv-shell space-y-7 cv-entrance">
+    <header className="cv-hero">
+      <div className="cv-hero__body flex flex-col justify-between gap-7 lg:flex-row lg:items-center">
+        <div className="max-w-[690px]">
+          <Link href="/dashboard/certificates" className="inline-flex items-center gap-2 text-sm font-semibold text-[#9ce4d6] hover:text-white">← Create certificate manually</Link>
+          <p className="cv-eyebrow mt-6">CERTIFICATE AUTOMATION</p>
+          <h1 className="mt-2 text-white">Bulk certificate generation</h1>
+          <p className="mt-4 max-w-xl text-sm sm:text-base">Upload Excel, map fields and review every record. Issue up to <strong className="text-white">100 unique certificates</strong> only after you confirm.</p>
+          <div className="mt-6 flex flex-wrap gap-2">
+            <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-bold text-[#b2f6e9]">✓ One QR per certificate</span>
+            <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-bold text-[#b2f6e9]">✓ No certificates before approval</span>
+          </div>
+        </div>
+        <div aria-hidden="true" className="hidden w-[180px] shrink-0 rounded-2xl border border-white/20 bg-white/10 p-4 shadow-xl backdrop-blur-sm lg:block">
+          <div className="rounded-xl bg-white px-3 py-3 shadow-lg">
+            <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
+              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#dff7ed] text-[#0c8878]">▦</span>
+              <div className="flex-1"><div className="h-1.5 w-16 rounded-full bg-slate-300"/><div className="mt-1 h-1 w-11 rounded-full bg-slate-200"/></div>
+            </div>
+            <div className="mt-3 grid grid-cols-3 gap-1">
+              {Array.from({length:18},(_,i)=><span key={i} className={"h-3 rounded-[3px] "+(i<3?"bg-[#b9eadd]":i%3===0?"bg-[#d7e8f2]":"bg-slate-100")}/>)}
+            </div>
+            <div className="mt-3 rounded-lg bg-[#e6faf1] px-2 py-1.5 text-center text-xs font-extrabold text-[#0b8469]">100 rows · Ready</div>
+          </div>
+        </div>
+      </div>
     </header>
-    {error&&<p role="alert" className="rounded-xl border border-red-200 bg-red-50 p-4 text-red-800">{error}</p>}
-    {result&&<section className="space-y-4 rounded-xl border border-green-300 bg-green-50 p-6">
+    <div className="grid gap-3 sm:grid-cols-3" aria-label="Bulk import progress">
+      {[
+        {number:"01",title:"Upload",subtitle:"Select template & Excel",active:!sheet&&!result},
+        {number:"02",title:"Review",subtitle:"Map, correct & validate",active:Boolean(sheet)&&!result},
+        {number:"03",title:"Generate",subtitle:"Confirm & download QRs",active:Boolean(result)},
+      ].map(step=><div key={step.number} className={"cv-card flex items-center gap-3 px-4 py-4 "+(step.active?"!border-[#8fd2ca] !bg-[#effaf7] ring-1 ring-[#b3e8db]":"")}>
+        <span className={"cv-step "+(step.active?"!bg-[#129f91] !text-white":"")}>{step.number}</span>
+        <div><p className="text-sm font-extrabold text-[#1c3049]">{step.title}</p><p className="mt-1 text-xs text-[#72839b]">{step.subtitle}</p></div>
+      </div>)}
+    </div>
+    {error&&<p role="alert" className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-800">⚠ {error}</p>}
+    {result&&<section className="cv-panel space-y-4 !border-[#a9d9ca] !bg-[#f0fbf6] p-6">
       <h2 className="text-xl font-bold">Batch confirmed — {result.items.length} certificates created</h2>
       <p>Each certificate has its own ID and public QR link. All are grouped under {result.name}.</p>
       <div className="flex flex-wrap gap-3">
@@ -183,11 +215,13 @@ export default function BulkCertificatePage(){
         <button disabled={busy} onClick={()=>void downloadZip(result.id,"png")} className="rounded border bg-white px-4 py-2 font-semibold">PNG ZIP</button>
       </div>
     </section>}
-    {!result&&<section className="space-y-5 rounded-2xl border bg-white p-6 shadow-sm">
-      <h2 className="text-xl font-bold">1. Select template and upload Excel</h2>
+    {!result&&<section className="cv-panel space-y-6 p-6 sm:p-8">
+      <div className="flex items-center gap-3">
+        <span className="cv-step">01</span><div><h2 className="cv-section-title">Select template and upload Excel</h2><p className="cv-section-description">Start with a saved layout or build a new certificate template.</p></div>
+      </div>
       <label className="block max-w-xl space-y-1">
-        <span className="font-semibold">Certificate template</span>
-        <select className="w-full rounded border px-3 py-2" value={selected} onChange={e=>{
+        <span className="text-sm font-bold text-[#273c55]">Certificate template</span>
+        <select className="cv-field" value={selected} onChange={e=>{
             if(e.target.value==="__create__"){
               window.location.assign("/dashboard/templates?create=1&from=bulk");
               return;
@@ -201,36 +235,38 @@ export default function BulkCertificatePage(){
         <Link href="/dashboard/templates?create=1&from=bulk" className="mt-2 inline-flex text-sm font-semibold text-teal-700 hover:text-teal-900 hover:underline">+ Create and configure a new template →</Link>
       </label>
       {selected&&<div className="flex flex-wrap items-center gap-3">
-        <button type="button" disabled={!fields.length||busy} onClick={()=>void downloadTemplate()} className="rounded border border-blue-200 bg-blue-50 px-4 py-2 font-semibold text-blue-700 disabled:opacity-50">Download Excel template</button>
+        <button type="button" disabled={!fields.length||busy} onClick={()=>void downloadTemplate()} className="cv-secondary text-sm disabled:opacity-50">Download Excel template</button>
         <span className="text-sm text-slate-500">Or upload your own .xlsx and map the columns. Dates should be YYYY-MM-DD text, without formulas.</span>
       </div>}
-      <label className="block max-w-xl space-y-1">
-        <span className="font-semibold">Excel file (.xlsx, maximum 1 MB)</span>
+      <label className="cv-dropzone block max-w-2xl space-y-3">
+        <span className="cv-glow-icon !h-12 !w-12" aria-hidden="true"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M12 16V3m0 0L7 8m5-5 5 5M4 16v4h16v-4"/></svg></span>
+        <span className="block text-base font-extrabold text-[#1e384a]">Upload your Excel workbook</span>
+        <span className="block text-xs text-[#718399]">Excel .xlsx · 1 MB maximum · 100 certificates per batch</span>
         <input aria-label="Excel file" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
           disabled={busy||!fields.length} onChange={e=>void upload(e.target.files?.[0]||null)}
-          className="block w-full rounded border p-3 text-sm"/>
+          className="block w-full rounded-xl border border-[#d3e5e2] bg-white p-3 text-sm"/>
       </label>
     </section>}
-    {sheet&&!result&&<section className="space-y-5 rounded-xl border bg-white p-5 shadow-sm">
-      <h2 className="text-xl font-bold">2. Match columns and edit the preview</h2>
+    {sheet&&!result&&<section className="cv-panel space-y-5 p-5 sm:p-8">
+      <div className="flex items-center gap-3"><span className="cv-step">02</span><div><h2 className="cv-section-title">Match columns and edit the preview</h2><p className="cv-section-description">Review before issuing; every correction updates the final data.</p></div></div>
       <p className="text-sm text-slate-600">{sheet.rows.length} filled rows found. Certificate IDs and QR codes are not generated yet.{remaining!==null?" Available organization quota: "+remaining+" certificates.":""}</p>
       <label className="block max-w-xl space-y-1"><span className="font-semibold">Batch name</span>
         <input value={batchName} onChange={e=>setBatchName(e.target.value.slice(0,120))}
-          className="w-full rounded border p-2" placeholder="e.g., October valuation reports"/>
+          className="cv-field" placeholder="e.g., October valuation reports"/>
       </label>
       <div className="grid gap-3 md:grid-cols-3">
         {fields.map(f=><label className="block space-y-1 text-sm" key={f.id}>
           <span className="font-semibold">{f.field_name} {f.is_required?"*":""}</span>
-          <select aria-label={"Column for "+f.field_name} className="w-full rounded border p-2"
+          <select aria-label={"Column for "+f.field_name} className="cv-field"
             value={mapping[f.id]??-1} onChange={e=>{setMapping(old=>({...old,[f.id]:Number(e.target.value)}));key.current=crypto.randomUUID();}}>
             <option value={-1}>Select Excel column</option>
             {sheet.headers.map((name,i)=><option key={i} value={i}>{name}</option>)}
           </select>
         </label>)}
       </div>
-      <div className="overflow-x-auto rounded border">
-        <table className="min-w-full border-collapse text-sm">
-          <thead className="bg-slate-100"><tr>
+      <div className="overflow-x-auto rounded-xl border border-[#e6ebf2]">
+        <table className="cv-table min-w-full">
+          <thead className="bg-[#f2f7f9]"><tr>
             <th className="sticky left-0 border bg-slate-100 px-2 py-3 text-left">Row</th>
             {fields.map(f=><th key={f.id} className="min-w-44 border px-2 py-3 text-left">{f.field_name}</th>)}
             <th className="border px-2 py-3">Action</th>
@@ -239,7 +275,7 @@ export default function BulkCertificatePage(){
             <td className="sticky left-0 border bg-white px-2">{i+2}</td>
             {fields.map(f=><td key={f.id} className="border p-1">
               <input aria-label={"Row "+(i+2)+" "+f.field_name}
-                className="w-full rounded border border-slate-200 p-2" value={row[mapping[f.id]]??""}
+                className="cv-field !rounded-lg !px-2.5 !py-2 !text-sm" value={row[mapping[f.id]]??""}
                 disabled={mapping[f.id]===-1||mapping[f.id]===undefined}
                 onChange={e=>edit(i,mapping[f.id],e.target.value)}/>
             </td>)}
@@ -255,16 +291,16 @@ export default function BulkCertificatePage(){
       </div>}
       <div className="flex flex-wrap items-center gap-4 border-t pt-5">
         <button disabled={busy||errors.length>0||!sheet.rows.length||!batchName.trim()}
-          onClick={()=>void confirm()} className="rounded-lg bg-blue-700 px-5 py-3 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40">
+          onClick={()=>void confirm()} className="cv-primary disabled:cursor-not-allowed disabled:opacity-40">
           {busy?"Creating batch…":"Confirm & generate "+sheet.rows.length+" certificates"}
         </button>
         <p className="text-sm text-slate-600">Final confirmation uses {sheet.rows.length} organization certificate quota units.</p>
       </div>
     </section>}
-    <section className="space-y-3">
-      <h2 className="text-xl font-bold">Previous bulk imports</h2>
-      {!batches.length?<p className="text-slate-600">No bulk imports yet.</p>:<div className="overflow-x-auto rounded-xl border bg-white">
-        <table className="w-full text-left text-sm">
+    <section className="space-y-4">
+      <div className="flex items-center gap-3"><span className="cv-step">↗</span><div><h2 className="cv-section-title">Previous bulk imports</h2><p className="cv-section-description">Open a batch anytime to view each certificate and download QR codes.</p></div></div>
+      {!batches.length?<p className="text-slate-600">No bulk imports yet.</p>:<div className="cv-panel overflow-x-auto">
+        <table className="cv-table">
           <thead className="bg-slate-50"><tr><th className="p-3">Batch</th><th className="p-3">Certificates</th><th className="p-3">Created</th><th className="p-3">Details</th></tr></thead>
           <tbody>{batches.map(b=><tr key={b.id} className="border-t">
             <td className="p-3">{b.name}<p className="text-xs text-slate-500">{b.sourceName}</p></td>
@@ -275,5 +311,6 @@ export default function BulkCertificatePage(){
         </table>
       </div>}
     </section>
+    </div>
   </main>;
 }
