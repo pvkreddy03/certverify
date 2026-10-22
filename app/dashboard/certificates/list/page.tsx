@@ -127,13 +127,6 @@ export default function CertificateListPage() {
         <div className="cv-hero mb-7">
           <div className="cv-hero__body flex flex-wrap items-center justify-between gap-5">
           <div>
-            <Link
-              href="/dashboard"
-              className="mb-3 inline-block text-sm font-bold text-[#a4ebdc] hover:text-white"
-            >
-              ← Back to Dashboard
-            </Link>
-
             <p className="cv-eyebrow mb-3">VERIFICATION LIBRARY</p>
             <h1 className="text-3xl font-bold !text-white">
               My Certificates
