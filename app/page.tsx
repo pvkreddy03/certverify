@@ -22,6 +22,7 @@ export default function Home(){
           <a href="#professionals" className="hidden text-[#53687f] hover:text-[#0b827b] md:inline">For Professionals</a>
           <a href="#verify" className="text-[#53687f] hover:text-[#0b827b]">Verify</a>
           <Link href="/login" className="cv-secondary !px-4 !py-2.5 text-sm">Login</Link>
+          <Link href="/platform-login" className="hidden text-sm font-semibold text-slate-600 hover:text-teal-700 lg:inline">Admin sign in</Link>
           <Link href="/signup" className="cv-primary !px-4 !py-2.5 text-sm">Get Started <span aria-hidden="true">↗</span></Link>
         </nav>
       </div>
