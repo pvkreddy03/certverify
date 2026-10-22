@@ -60,31 +60,9 @@ function xml(files:Map<string,Buffer>,name:string){
   return contents;
 }
 export type ImportedSheet={headers:string[];rows:string[][]};
-export function readXlsx(file:Buffer):ImportedSheet{
-  const files=zipRead(file);
-  if(!files.has("[Content_Types].xml"))return invalid("Select an actual .xlsx file.");
-  const workbook=xml(files,"xl/workbook.xml"),rels=xml(files,"xl/_rels/workbook.xml.rels");
-  const sheet=workbook.match(/<sheet(?=[\s>])[^>]*\/?>/i);
-  const rid=sheet?attribute(sheet[0],"r:id"):"";
-  if(!rid)return invalid("Excel workbook has no worksheet.");
-  let path="";
-  for(const match of rels.matchAll(/<Relationship(?=[\s>])[^>]*\/?>/g)){
-    if(attribute(match[0],"Id")===rid){
-      const dest=attribute(match[0],"Target"),kind=attribute(match[0],"Type");
-      if(!kind.endsWith("/worksheet")||attribute(match[0],"TargetMode")==="External")return invalid("Unsupported Excel worksheet.");
-      path=dest.startsWith("/")?dest.slice(1):dest.startsWith("xl/")?dest:"xl/"+dest;
-      break;
-    }
-  }
-  if(!safe(path))return invalid("Missing or unsafe worksheet.");
+export type NamedImportedSheet=ImportedSheet & {name:string};
+function parseWorksheet(files:Map<string,Buffer>,path:string,shared:string[],name:string):NamedImportedSheet{
   const worksheet=xml(files,path);
-  const shared:string[]=[];
-  if(files.has("xl/sharedStrings.xml")){
-    for(const si of xml(files,"xl/sharedStrings.xml").matchAll(/<si(?:\s[^>]*)?>([\s\S]*?)<\/si>/g)){
-      shared.push(Array.from(si[1].matchAll(/<t(?:\s[^>]*)?>([\s\S]*?)<\/t>/g),m=>decode(m[1])).join(""));
-    }
-    if(shared.length>12000)return invalid("Too many Excel shared strings.");
-  }
   const rowMap=new Map<number,Map<number,string>>();
   for(const row of worksheet.matchAll(/<row(?=[\s>])([^>]*)>([\s\S]*?)<\/row>/g)){
     const rowNum=Number(attribute(row[0].slice(0,row[0].indexOf(">")+1),"r"));
@@ -112,14 +90,52 @@ export function readXlsx(file:Buffer):ImportedSheet{
     if(rowMap.size>105)return invalid("Maximum 100 certificates per upload.");
   }
   const heading=rowMap.get(1);
-  if(!heading?.size)return invalid("First Excel row must contain column names.");
+  if(!heading?.size)return {name,headers:[],rows:[]};
   const headers=Array.from({length:Math.max(...heading.keys())+1},(_,i)=>(heading.get(i)||"").trim());
   if(headers.some(x=>!x)||new Set(headers.map(x=>x.toLowerCase())).size!==headers.length)
     return invalid("Excel column names must be unique and nonempty.");
   const rows=Array.from(rowMap.entries()).filter(([i])=>i>1).sort((a,b)=>a[0]-b[0])
     .map(([,cells])=>headers.map((_,i)=>cells.get(i)||"")).filter(row=>row.some(x=>x.trim()!==""));
-  if(!rows.length||rows.length>100)return invalid("Upload must contain 1 to 100 filled certificate rows.");
-  return {headers,rows};
+  if(rows.length>100)return invalid("Maximum 100 certificate rows per sheet.");
+  return {name,headers,rows};
+}
+export function readXlsxSheets(file:Buffer):NamedImportedSheet[]{
+  const files=zipRead(file);
+  if(!files.has("[Content_Types].xml"))return invalid("Select an actual .xlsx file.");
+  const workbook=xml(files,"xl/workbook.xml"),rels=xml(files,"xl/_rels/workbook.xml.rels");
+  const sheetTags=Array.from(workbook.matchAll(/<sheet(?=[\s>])[^>]*\/?>/gi),m=>m[0]);
+  if(sheetTags.length===0)return invalid("Excel workbook has no worksheet.");
+  if(sheetTags.length>30)return invalid("Excel workbook has too many worksheets (maximum 30).");
+  const relationMap=new Map<string,string>();
+  for(const match of rels.matchAll(/<Relationship(?=[\s>])[^>]*\/?>/g)){
+    const id=attribute(match[0],"Id"),dest=attribute(match[0],"Target"),kind=attribute(match[0],"Type");
+    if(!id||!kind.endsWith("/worksheet")||attribute(match[0],"TargetMode")==="External")continue;
+    const path=dest.startsWith("/")?dest.slice(1):dest.startsWith("xl/")?dest:"xl/"+dest;
+    if(!safe(path)||!path.startsWith("xl/"))return invalid("Missing or unsafe worksheet.");
+    relationMap.set(id,path);
+  }
+  const shared:string[]=[];
+  if(files.has("xl/sharedStrings.xml")){
+    for(const si of xml(files,"xl/sharedStrings.xml").matchAll(/<si(?:\s[^>]*)?>([\s\S]*?)<\/si>/g)){
+      shared.push(Array.from(si[1].matchAll(/<t(?:\s[^>]*)?>([\s\S]*?)<\/t>/g),m=>decode(m[1])).join(""));
+    }
+    if(shared.length>12000)return invalid("Too many Excel shared strings.");
+  }
+  const usedNames=new Set<string>(),usedIds=new Set<string>();
+  return sheetTags.map(tag=>{
+    const name=attribute(tag,"name"),rid=attribute(tag,"r:id");
+    if(!name||name.length>31||usedNames.has(name.toLowerCase())||!rid||usedIds.has(rid))return invalid("Workbook contains invalid or duplicated worksheet names.");
+    usedNames.add(name.toLowerCase());usedIds.add(rid);
+    const path=relationMap.get(rid);
+    if(!path)return invalid("Workbook contains an unavailable worksheet.");
+    return parseWorksheet(files,path,shared,name);
+  });
+}
+/** Original single-sheet interface retained for callers and existing workbooks. */
+export function readXlsx(file:Buffer):ImportedSheet{
+  const first=readXlsxSheets(file)[0];
+  if(!first?.rows.length)return invalid("Upload must contain 1 to 100 filled certificate rows.");
+  return {headers:first.headers,rows:first.rows};
 }
 function crc32(bytes:Buffer){let x=0xffffffff;for(const n of bytes){x^=n;for(let j=0;j<8;j++)x=(x>>>1)^((x&1)?0xedb88320:0);}return (x^0xffffffff)>>>0;}
 export function zipFiles(entries:ZipEntry[]):Buffer{
@@ -143,27 +159,46 @@ export function zipFiles(entries:ZipEntry[]):Buffer{
   return Buffer.concat([...localParts,centrals,end]);
 }
 function column(i:number){let n=i+1,r="";while(n){n--;r=String.fromCharCode(65+n%26)+r;n=Math.floor(n/26);}return r;}
-export function createXlsxTemplate(headers:string[],exampleRows:string[][]=[]):Buffer{
-  if(!headers.length||headers.length>100)return invalid("Template must have 1 to 100 columns.");
-  const worksheet='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
-    '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData><row r="1">'+
-    headers.map((h,i)=>'<c r="'+column(i)+'1" s="1" t="inlineStr"><is><t>'+textSafe(h)+'</t></is></c>').join("")+
-    '</row>'+exampleRows.map((row,rowIndex)=>'<row r="'+(rowIndex+2)+'">'+row.map((value,i)=>
-      '<c r="'+column(i)+(rowIndex+2)+'" s="1" t="inlineStr"><is><t>'+textSafe(value)+'</t></is></c>'
-    ).join("")+'</row>').join("")+'</sheetData></worksheet>';
+export function createXlsxWorkbook(sheets:{name:string;headers:string[];rows:string[][]}[]):Buffer{
+  if(!sheets.length||sheets.length>30)return invalid("Workbook must contain 1 to 30 sheets.");
+  const seen=new Set<string>();
+  const sheetFiles=sheets.map((sheet,index)=>{
+    if(!sheet.name||sheet.name.length>31||/[\\/:*?\[\]]/.test(sheet.name)||seen.has(sheet.name.toLowerCase()))
+      return invalid("Invalid or duplicate sheet name.");
+    seen.add(sheet.name.toLowerCase());
+    if(!sheet.headers.length||sheet.headers.length>100||sheet.rows.length>100)
+      return invalid("Each worksheet must have 1 to 100 columns and at most 100 rows.");
+    const worksheet='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
+      '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData><row r="1">'+
+      sheet.headers.map((h,i)=>'<c r="'+column(i)+'1" s="1" t="inlineStr"><is><t>'+textSafe(h)+'</t></is></c>').join("")+
+      '</row>'+sheet.rows.map((row,rowIndex)=>'<row r="'+(rowIndex+2)+'">'+
+      row.map((value,i)=>'<c r="'+column(i)+(rowIndex+2)+'" s="1" t="inlineStr"><is><t>'+textSafe(value)+'</t></is></c>').join("")+
+      '</row>').join("")+'</sheetData></worksheet>';
+    return {name:"xl/worksheets/sheet"+(index+1)+".xml",bytes:Buffer.from(worksheet)};
+  });
   const wb='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
-    '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Certificates" sheetId="1" r:id="rId1"/></sheets></workbook>';
+    '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>'+
+    sheets.map((s,i)=>'<sheet name="'+textSafe(s.name)+'" sheetId="'+(i+1)+'" r:id="rId'+(i+1)+'"/>').join("")+
+    '</sheets></workbook>';
   const rels='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
-    '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>';
+    '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'+
+    sheets.map((_,i)=>'<Relationship Id="rId'+(i+1)+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet'+(i+1)+'.xml"/>').join("")+
+    '</Relationships>';
   const root='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
     '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>';
   const styles='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
     '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="1"><font><sz val="11"/><name val="Calibri"/></font></fonts><fills count="1"><fill><patternFill patternType="none"/></fill></fills><borders count="1"><border/></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="2"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="49" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/></cellXfs></styleSheet>';
   const types='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
-    '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>';
+    '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/>'+
+    '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>'+
+    sheets.map((_,i)=>'<Override PartName="/xl/worksheets/sheet'+(i+1)+'.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>').join("")+
+    '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>';
   return zipFiles([
     {name:"[Content_Types].xml",bytes:Buffer.from(types)},{name:"_rels/.rels",bytes:Buffer.from(root)},
     {name:"xl/workbook.xml",bytes:Buffer.from(wb)},{name:"xl/_rels/workbook.xml.rels",bytes:Buffer.from(rels)},
-    {name:"xl/styles.xml",bytes:Buffer.from(styles)},{name:"xl/worksheets/sheet1.xml",bytes:Buffer.from(worksheet)},
+    {name:"xl/styles.xml",bytes:Buffer.from(styles)},...sheetFiles,
   ]);
+}
+export function createXlsxTemplate(headers:string[],exampleRows:string[][]=[]):Buffer{
+  return createXlsxWorkbook([{name:"Certificates",headers,rows:exampleRows}]);
 }
