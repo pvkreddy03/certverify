@@ -19,14 +19,14 @@ test("the template selector opens creation, with dashboard ribbon always accessi
   await signIn(page);
   await page.goto("/dashboard/certificates");
   await expect(page.getByRole("navigation", { name: "Customer dashboard pages" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "← Dashboard" })).toBeVisible();
+  await expect(page.getByRole("navigation", { name: "Customer dashboard pages" }).getByRole("link", { name: "Dashboard", exact: true })).toBeVisible();
   await page.getByRole("combobox", { name: "Certificate Template" }).selectOption("__create__");
   await expect(page).toHaveURL(/\/dashboard\/templates\?create=1&from=certificate/);
-  await expect(page.getByRole("heading", { name: "Create Template" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Create a new template" })).toBeVisible();
   await page.goto("/dashboard/team");
   await expect(page.getByRole("navigation", { name: "Customer dashboard pages" })).toBeVisible();
   await page.goto("/dashboard/settings");
-  await expect(page.getByRole("link", { name: "← Dashboard" })).toBeVisible();
+  await expect(page.getByRole("navigation", { name: "Customer dashboard pages" }).getByRole("link", { name: "Dashboard", exact: true })).toBeVisible();
 });
 
 test("saving once opens the certificate and automatically shows downloadable QR", async ({ page }) => {
