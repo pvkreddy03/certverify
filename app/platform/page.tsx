@@ -32,7 +32,7 @@ function Overview() {
     ["Registered accounts", report.accounts],
     ["Active certificates", report.active_certificates],
     ["Certificates issued", report.certificates],
-    ["Registered users", report.users],
+    ["Total registered users", report.users],
     ["Organization accounts", report.organization_accounts],
     ["Individual accounts", report.individual_accounts],
     ["Inactive certificates", report.inactive_certificates],
@@ -43,7 +43,7 @@ function Overview() {
   return <div className="space-y-8">
     <section aria-label="Platform key statistics" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
       {metrics.map(([label,value]) => <article key={label} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <p className="text-sm font-medium text-slate-500">{label}</p>
+        <h2 className="text-sm font-medium text-slate-500">{label}</h2>
         <p className="mt-2 text-3xl font-extrabold tracking-tight text-[#17344c]">{Number(value).toLocaleString("en-IN")}</p>
       </article>)}
     </section>
@@ -53,7 +53,7 @@ function Overview() {
         <p className="mt-1 text-sm text-slate-500">Choose a status to review the matching accounts.</p>
         <div className="mt-5 flex flex-wrap gap-2">
           {Object.entries(report.access_statuses ?? {}).map(([status,count]) =>
-            <Link key={status} className="rounded-full border border-teal-200 bg-teal-50 px-4 py-2 text-sm font-semibold text-teal-800 hover:bg-teal-100" href={`/platform/accounts?status=${encodeURIComponent(status)}`}>{status.replaceAll("_"," ")} · {count}</Link>)}
+            <Link key={status} className="rounded-full border border-teal-200 bg-teal-50 px-4 py-2 text-sm font-semibold text-teal-800 hover:bg-teal-100" href={`/platform/accounts?status=${encodeURIComponent(status)}`}>{status.replaceAll("_"," ")}: {count}</Link>)}
         </div>
       </div>
       <div className="rounded-2xl border border-slate-200 bg-white p-6">
@@ -61,7 +61,7 @@ function Overview() {
         <p className="mt-1 text-sm text-slate-500">Unknown means no confirmed record. A displayed status does not activate payments.</p>
         <div className="mt-5 flex flex-wrap gap-2">
           {Object.entries(report.subscription_statuses ?? {}).map(([status,count]) =>
-            <Link key={status} className="rounded-full border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-800 hover:bg-blue-100" href={`/platform/accounts?subscription=${encodeURIComponent(status)}`}>{status.replaceAll("_"," ")} · {count}</Link>)}
+            <Link key={status} className="rounded-full border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-800 hover:bg-blue-100" href={`/platform/accounts?subscription=${encodeURIComponent(status)}`}>{status.replaceAll("_"," ")}: {count}</Link>)}
         </div>
       </div>
     </section>
