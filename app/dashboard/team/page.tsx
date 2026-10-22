@@ -14,6 +14,7 @@ type TeamMember = {
   role: string;
   status: string;
   joined_at: string;
+  can_manage_templates?: boolean;
 };
 
 type Account = {
@@ -149,7 +150,23 @@ export default function TeamPage() {
       status: membershipData.status,
     });
 
-    setMembers(memberData ?? []);
+    // Read the per-member permission separately from the existing directory RPC.
+    // Organization RLS limits these records to the selected account.
+    const { data: permissionRows, error: permissionError } = await supabase
+      .from("account_members")
+      .select("id, can_manage_templates")
+      .eq("account_id", membershipData.account_id);
+    if (permissionError) {
+      setErrorMessage("Could not load member permissions: " + permissionError.message);
+      setLoading(false);
+      return;
+    }
+    const visiblePermissions = Array.isArray(permissionRows) ? permissionRows : (permissionRows ? [permissionRows] : []);
+    const permissionById = new Map(visiblePermissions.map(row => [row.id, row.can_manage_templates]));
+    setMembers(((memberData ?? []) as TeamMember[]).map(member => ({
+      ...member,
+      can_manage_templates: permissionById.get(member.id) === true,
+    })));
     setLoading(false);
     // This function declaration is hoisted; load invitations after the team fetch.
     // eslint-disable-next-line react-hooks/immutability
@@ -508,7 +525,7 @@ export default function TeamPage() {
                       >
                         {formatStatus(member.status)}
                       </span>
-                      <MemberActions memberId={member.id} role={member.role} actorRole={membership?.role} active={member.status === "active"} onChanged={loadTeam} />
+                      <MemberActions memberId={member.id} role={member.role} actorRole={membership?.role} active={member.status === "active"} canManageTemplates={member.can_manage_templates === true} onChanged={loadTeam} />
 
                     </div>
 
