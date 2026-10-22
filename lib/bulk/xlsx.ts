@@ -166,8 +166,8 @@ export function createXlsxWorkbook(sheets:{name:string;headers:string[];rows:str
     if(!sheet.name||sheet.name.length>31||/[\\/:*?\[\]]/.test(sheet.name)||seen.has(sheet.name.toLowerCase()))
       return invalid("Invalid or duplicate sheet name.");
     seen.add(sheet.name.toLowerCase());
-    if(!sheet.headers.length||sheet.headers.length>100||sheet.rows.length>100)
-      return invalid("Each worksheet must have 1 to 100 columns and at most 100 rows.");
+    if(!sheet.headers.length||sheet.headers.length>100)
+      return invalid("Each worksheet must have 1 to 100 columns.");
     const worksheet='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
       '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData><row r="1">'+
       sheet.headers.map((h,i)=>'<c r="'+column(i)+'1" s="1" t="inlineStr"><is><t>'+textSafe(h)+'</t></is></c>').join("")+
