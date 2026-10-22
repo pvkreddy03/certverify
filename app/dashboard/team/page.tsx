@@ -161,7 +161,8 @@ export default function TeamPage() {
       setLoading(false);
       return;
     }
-    const permissionById = new Map((permissionRows ?? []).map(row => [row.id, row.can_manage_templates]));
+    const visiblePermissions = Array.isArray(permissionRows) ? permissionRows : (permissionRows ? [permissionRows] : []);
+    const permissionById = new Map(visiblePermissions.map(row => [row.id, row.can_manage_templates]));
     setMembers(((memberData ?? []) as TeamMember[]).map(member => ({
       ...member,
       can_manage_templates: permissionById.get(member.id) === true,
