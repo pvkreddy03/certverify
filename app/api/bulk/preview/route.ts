@@ -1,5 +1,5 @@
 import { authenticatedRequest, requestErrorResponse, RequestError } from "@/lib/auth/request";
-import { readXlsx, WorkbookError } from "@/lib/bulk/xlsx";
+import { readXlsxSheets, WorkbookError } from "@/lib/bulk/xlsx";
 export const runtime="nodejs";
 export async function POST(request:Request){
  try {
@@ -15,8 +15,8 @@ export async function POST(request:Request){
   const file=form.get("file");
   if(!(file instanceof File)||!file.name.toLowerCase().endsWith(".xlsx")||file.size>1024*1024)
     throw new RequestError("Choose an XLSX file up to 1 MB.",400);
-  const sheet=readXlsx(Buffer.from(await file.arrayBuffer()));
-  return Response.json(sheet,{headers:{"Cache-Control":"private, no-store"}});
+  const sheets=readXlsxSheets(Buffer.from(await file.arrayBuffer()));
+  return Response.json({sheets},{headers:{"Cache-Control":"private, no-store"}});
  }catch(error){
   if(error instanceof WorkbookError)return Response.json({error:error.message},{status:400});
   return requestErrorResponse(error);
