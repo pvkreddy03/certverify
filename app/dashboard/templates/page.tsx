@@ -25,6 +25,7 @@ export default function TemplatesPage() {
   const [message, setMessage] = useState("");
   const [fromCertificate, setFromCertificate] = useState(false);
   const [fromBulk, setFromBulk] = useState(false);
+  const [canManageTemplates, setCanManageTemplates] = useState(false);
 
   useEffect(() => {
     const query = new URLSearchParams(window.location.search);
@@ -46,6 +47,17 @@ export default function TemplatesPage() {
       return;
     }
 
+    const { data: member, error: memberError } = await supabase
+      .from("account_members")
+      .select("role, can_manage_templates")
+      .eq("account_id", requireSelectedAccountId())
+      .eq("user_id", user.id)
+      .eq("status", "active")
+      .maybeSingle();
+    const permitted = !memberError && !!member &&
+      (member.role === "owner" || member.role === "admin" || member.can_manage_templates === true);
+    setCanManageTemplates(permitted);
+
     const { data, error } = await supabase
       .from("certificate_templates")
       .select("id, name, description, created_at")
@@ -66,6 +78,11 @@ export default function TemplatesPage() {
 
   async function handleCreateTemplate(e: React.FormEvent) {
     e.preventDefault();
+
+    if (!canManageTemplates) {
+      setMessage("Ask your organization administrator to create this template, or grant you template creation access from Team → Members.");
+      return;
+    }
 
     if (!name.trim()) {
       setMessage("Template name is required.");
@@ -97,7 +114,7 @@ export default function TemplatesPage() {
       .single();
 
     if (error) {
-      setMessage("Could not create template: " + error.message);
+      setMessage(error.code === "42501" ? "Ask your organization administrator to grant template creation access under Team → Members." : "Could not create template: " + error.message);
       setSaving(false);
       return;
     }
@@ -118,14 +135,6 @@ export default function TemplatesPage() {
         <div className="cv-hero">
           <div className="cv-hero__body flex flex-col items-start justify-between gap-6 sm:flex-row sm:items-center">
           <div>
-            <button
-              type="button"
-              onClick={() => router.push("/dashboard")}
-              className="mb-4 text-sm font-semibold text-[#9ee4d6] hover:text-white"
-            >
-              ← Back to Dashboard
-            </button>
-
             <p className="cv-eyebrow mb-2">REUSABLE RECORD LAYOUTS</p><h1 className="text-3xl font-bold !text-white">
               Templates
             </h1>
@@ -135,7 +144,7 @@ export default function TemplatesPage() {
             </p>
           </div>
 
-          <button
+          {canManageTemplates && <button
             type="button"
             onClick={() => {
               setShowCreateForm(!showCreateForm);
@@ -144,9 +153,11 @@ export default function TemplatesPage() {
             className="cv-primary shrink-0 !border-[#35bea9] !bg-[#47d5c2] !text-[#082b35]"
           >
             + Create Template
-          </button>
+          </button>}
           </div>
         </div>
+
+        {!loading && !canManageTemplates && <div role="status" className="rounded-xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-950"><strong>Template creation requires permission.</strong> Ask your organization administrator to create a template for you, or grant you template creation access in Team → Members. You can still use existing templates to issue certificates.</div>}
 
         {message && (
           <div className="mt-6 rounded-lg border border-slate-200 bg-white p-4 text-sm text-slate-700">
@@ -154,7 +165,7 @@ export default function TemplatesPage() {
           </div>
         )}
 
-        {showCreateForm && (
+        {showCreateForm && canManageTemplates && (
           <form
             onSubmit={handleCreateTemplate}
             className="cv-panel mt-6 p-6 sm:p-8"
@@ -227,7 +238,7 @@ export default function TemplatesPage() {
               </h2>
 
               <p className="mt-2 text-slate-500">
-                Create your first certificate template to get started.
+                {canManageTemplates ? "Create your first certificate template to get started." : "No templates are available yet. Ask your organization administrator to create one or grant you template creation access."}
               </p>
             </div>
           ) : (
