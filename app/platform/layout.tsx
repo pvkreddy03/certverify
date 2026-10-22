@@ -4,10 +4,10 @@ import { serverSession } from "@/lib/auth/server-session";
 
 const adminLinks = [
   { href: "/platform", label: "Overview" },
-  { href: "/platform/accounts", label: "Customer accounts" },
+  { href: "/platform/accounts", label: "Accounts" },
   { href: "/platform/subscriptions", label: "Subscriptions" },
   { href: "/platform/payments", label: "Payments" },
-  { href: "/platform/pricing", label: "Pricing & offers" },
+  { href: "/platform/pricing", label: "Pricing and offers" },
   { href: "/platform/branding", label: "Brand approvals" },
   { href: "/platform/contact", label: "Support details" },
   { href: "/platform/audit", label: "Audit history" },
