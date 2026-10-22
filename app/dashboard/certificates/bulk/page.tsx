@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase";
 import { accountHeaders } from "@/lib/accounts/context";
 import { getCertificateTemplates, type CertificateTemplate } from "@/lib/repositories/templates";
 import { getCertificateFields, type CertificateField } from "@/lib/repositories/certificate-fields";
+import { normalizeBulkDate, displayBulkDate } from "@/lib/bulk/date";
 
 type Sheet={headers:string[];rows:string[][]};
 type Item={id:string;certificateId:string;publicReference:string;sourceRow:number;status:string};
@@ -25,11 +26,8 @@ function validate(fields:CertificateField[],mapping:Record<string,number>,rows:s
     if(val.length>1500)errors.push("Row "+(index+2)+": "+field.field_name+" is too long.");
     if(val.trim()&&field.field_type==="number"&&!/^-?\d+(\.\d+)?$/.test(val.trim()))
       errors.push("Row "+(index+2)+": "+field.field_name+" must be numeric.");
-    if(val.trim()&&field.field_type==="date"){
-      if(!/^\d{4}-\d\d-\d\d$/.test(val.trim())||Number.isNaN(Date.parse(val.trim()))||
-         new Date(val.trim()).toISOString().slice(0,10)!==val.trim())
-        errors.push("Row "+(index+2)+": "+field.field_name+" needs YYYY-MM-DD (as text in Excel).");
-    }
+    if(val.trim()&&field.field_type==="date"&&!normalizeBulkDate(val))
+      errors.push("Row "+(index+2)+": "+field.field_name+" needs a valid DD/MM/YYYY date (Excel date cells also work).");
   }));
   return errors;
 }
@@ -141,7 +139,10 @@ export default function BulkCertificatePage(){
     if(!key.current)key.current=crypto.randomUUID();
     const currentKey=key.current;
     try{
-      const rows=sheet.rows.map(row=>Object.fromEntries(fields.map(f=>[f.id,(row[mapping[f.id]]??"").trim()])));
+      const rows=sheet.rows.map(row=>Object.fromEntries(fields.map(f=>{
+        const raw=(row[mapping[f.id]]??"").trim();
+        return [f.id,f.field_type==="date"&&raw?normalizeBulkDate(raw):raw];
+      })));
       const {data,error:failure}=await supabase.rpc("cv_create_certificate_batch",{
         p_template:selected,p_rows:rows,p_idempotency:currentKey,
         p_filename:fileName,p_label:batchName,
@@ -236,7 +237,7 @@ export default function BulkCertificatePage(){
       </label>
       {selected&&<div className="flex flex-wrap items-center gap-3">
         <button type="button" disabled={!fields.length||busy} onClick={()=>void downloadTemplate()} className="cv-secondary text-sm disabled:opacity-50">Download Excel template</button>
-        <span className="text-sm text-slate-500">Or upload your own .xlsx and map the columns. Dates should be YYYY-MM-DD text, without formulas.</span>
+        <span className="text-sm text-slate-500">Or upload your own .xlsx and map the columns. Dates: DD/MM/YYYY (text or Excel date cells); formulas are not supported.</span>
       </div>}
       <label className="cv-dropzone block max-w-2xl space-y-3">
         <span className="cv-glow-icon !h-12 !w-12" aria-hidden="true"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M12 16V3m0 0L7 8m5-5 5 5M4 16v4h16v-4"/></svg></span>
@@ -275,7 +276,7 @@ export default function BulkCertificatePage(){
             <td className="sticky left-0 border bg-white px-2">{i+2}</td>
             {fields.map(f=><td key={f.id} className="border p-1">
               <input aria-label={"Row "+(i+2)+" "+f.field_name}
-                className="cv-field !rounded-lg !px-2.5 !py-2 !text-sm" value={row[mapping[f.id]]??""}
+                className="cv-field !rounded-lg !px-2.5 !py-2 !text-sm" value={f.field_type==="date"?displayBulkDate(row[mapping[f.id]]??""):(row[mapping[f.id]]??"")}
                 disabled={mapping[f.id]===-1||mapping[f.id]===undefined}
                 onChange={e=>edit(i,mapping[f.id],e.target.value)}/>
             </td>)}
