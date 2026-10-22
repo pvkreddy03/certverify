@@ -7,6 +7,8 @@ import { accountHeaders } from "@/lib/accounts/context";
 import { getCertificateTemplates, type CertificateTemplate } from "@/lib/repositories/templates";
 import { getCertificateFields, type CertificateField } from "@/lib/repositories/certificate-fields";
 import { normalizeBulkDate, displayBulkDate } from "@/lib/bulk/date";
+import { combineSelectedSheets, type ImportedSource } from "@/lib/bulk/sheet-selection";
+import type { NamedImportedSheet } from "@/lib/bulk/xlsx";
 
 type Sheet={headers:string[];rows:string[][]};
 type Item={id:string;certificateId:string;publicReference:string;sourceRow:number;status:string};
@@ -57,6 +59,10 @@ export default function BulkCertificatePage(){
   const [fileName,setFileName]=useState("");
   const [batchName,setBatchName]=useState("");
   const [sheet,setSheet]=useState<Sheet|null>(null);
+  const [workbookSheets,setWorkbookSheets]=useState<NamedImportedSheet[]>([]);
+  const [selectedSheetNames,setSelectedSheetNames]=useState<string[]>([]);
+  const [selectionIssues,setSelectionIssues]=useState<string[]>([]);
+  const [sheetSources,setSheetSources]=useState<ImportedSource[]>([]);
   const [mapping,setMapping]=useState<Record<string,number>>({});
   const [batches,setBatches]=useState<Summary[]>([]);
   const [result,setResult]=useState<Batch|null>(null);
@@ -94,6 +100,21 @@ export default function BulkCertificatePage(){
     if(sheet&&remaining!==null&&sheet.rows.length>remaining)found.push("The organization has only "+remaining+" certificate quota units remaining. Remove rows or ask the owner to renew.");
     return found;
   },[fields,mapping,sheet,remaining]);
+  function chooseWorksheets(names:string[],available=workbookSheets) {
+    const selection=combineSelectedSheets(available,names);
+    setSelectedSheetNames(names);
+    setSheet(selection.sheet);
+    setSelectionIssues(selection.issues);
+    setSheetSources(selection.sources);
+    const inferred:Record<string,number>={};
+    fields.forEach(field=>{
+      inferred[field.id]=selection.sheet?.headers.findIndex(h=>
+        h.trim().toLowerCase()===field.field_name.trim().toLowerCase()) ?? -1;
+    });
+    setMapping(inferred);
+    // Changing the selected sheets restarts the preview. Previously issued batches are unaffected.
+    key.current=crypto.randomUUID();
+  }
   async function downloadTemplate(){
     try{
       setError("");
@@ -104,6 +125,7 @@ export default function BulkCertificatePage(){
   async function upload(file:File|null){
     if(!file)return;
     setError("");setResult(null);setSheet(null);setFileName("");key.current=null;
+    setWorkbookSheets([]);setSelectedSheetNames([]);setSelectionIssues([]);setSheetSources([]);
     if(!selected){setError("Select a certificate template first.");return;}
     if(file.size>1024*1024||!file.name.toLowerCase().endsWith(".xlsx")){
       setError("Choose a genuine .xlsx workbook smaller than 1 MB.");return;
@@ -112,12 +134,12 @@ export default function BulkCertificatePage(){
     try{
       const form=new FormData();form.append("file",file);
       const res=await authorizedFetch("/api/bulk/preview",{method:"POST",body:form});
-      const parsed=await res.json() as Sheet;
-      const inferred:Record<string,number>={};
-      fields.forEach(f=>{
-        inferred[f.id]=parsed.headers.findIndex(h=>h.trim().toLowerCase()===f.field_name.trim().toLowerCase());
-      });
-      setMapping(inferred);setSheet(parsed);setFileName(file.name);
+      const parsed=await res.json() as {sheets:NamedImportedSheet[]};
+      if(!Array.isArray(parsed.sheets)||!parsed.sheets.length)throw new Error("Excel workbook has no readable worksheets.");
+      setWorkbookSheets(parsed.sheets);
+      if(parsed.sheets.length===1)chooseWorksheets([parsed.sheets[0].name],parsed.sheets);
+      else chooseWorksheets([],parsed.sheets);
+      setFileName(file.name);
       setBatchName(file.name.replace(/\.xlsx$/i,"").slice(0,120));
       key.current=crypto.randomUUID();
     }catch(e){setError(e instanceof Error?e.message:"Could not read the Excel file.");}
@@ -131,10 +153,11 @@ export default function BulkCertificatePage(){
   }
   function removeRow(rowIndex:number){
     setSheet(previous=>previous?{...previous,rows:previous.rows.filter((_,i)=>i!==rowIndex)}:previous);
+    setSheetSources(previous=>previous.filter((_,i)=>i!==rowIndex));
     key.current=crypto.randomUUID();
   }
   async function confirm(){
-    if(lock.current||!sheet||!selected||errors.length||sheet.rows.length===0)return;
+    if(lock.current||!sheet||!selected||selectionIssues.length||errors.length||sheet.rows.length===0)return;
     lock.current=true;setBusy(true);setError("");
     if(!key.current)key.current=crypto.randomUUID();
     const currentKey=key.current;
@@ -228,6 +251,7 @@ export default function BulkCertificatePage(){
               return;
             }
             setSelected(e.target.value);setFields([]);setSheet(null);setResult(null);setMapping({});setFileName("");setBatchName("");key.current=null;
+            setWorkbookSheets([]);setSelectedSheetNames([]);setSelectionIssues([]);setSheetSources([]);
           }} disabled={busy}>
           <option value="">Select existing template</option>
           {templates.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}
@@ -248,9 +272,33 @@ export default function BulkCertificatePage(){
           className="block w-full rounded-xl border border-[#d3e5e2] bg-white p-3 text-sm"/>
       </label>
     </section>}
+    {workbookSheets.length>1&&!result&&<section className="cv-panel space-y-4 p-5 sm:p-8" aria-label="Excel worksheet selection">
+      <div>
+        <h2 className="cv-section-title">Choose Excel sheets to import</h2>
+        <p className="cv-section-description">This workbook contains {workbookSheets.length} sheets. Import one sheet, choose several, or use them all. Selected sheets must have matching columns. Changing your selection resets any edits in the preview.</p>
+      </div>
+      <div className="flex flex-wrap gap-3">
+        <button type="button" className="cv-secondary text-sm" disabled={busy} onClick={()=>chooseWorksheets(workbookSheets.map(s=>s.name))}>Select all sheets</button>
+        <button type="button" className="cv-secondary text-sm" disabled={busy} onClick={()=>chooseWorksheets([])}>Clear selection</button>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {workbookSheets.map(s=><label key={s.name} className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-white p-4">
+          <input type="checkbox" aria-label={"Import sheet "+s.name} checked={selectedSheetNames.includes(s.name)} disabled={busy}
+            className="mt-1 h-4 w-4" onChange={e=>chooseWorksheets(e.target.checked
+              ? [...selectedSheetNames,s.name].sort((a,b)=>workbookSheets.findIndex(s=>s.name===a)-workbookSheets.findIndex(s=>s.name===b))
+              : selectedSheetNames.filter(name=>name!==s.name))}/>
+          <span className="min-w-0"><span className="block break-words font-bold text-slate-900">{s.name}</span>
+            <span className="block text-sm text-slate-500">{s.rows.length} records · {s.headers.length} columns</span></span>
+        </label>)}
+      </div>
+      <p className="text-sm font-semibold text-teal-800">{selectedSheetNames.length} of {workbookSheets.length} sheets selected.</p>
+      {selectionIssues.length>0&&<div role="alert" className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm font-semibold text-amber-900">
+        {selectionIssues.map((issue,i)=><p key={i}>⚠ {issue}</p>)} No certificates can be generated until these issues are resolved.
+      </div>}
+    </section>}
     {sheet&&!result&&<section className="cv-panel space-y-5 p-5 sm:p-8">
       <div className="flex items-center gap-3"><span className="cv-step">02</span><div><h2 className="cv-section-title">Match columns and edit the preview</h2><p className="cv-section-description">Review before issuing; every correction updates the final data.</p></div></div>
-      <p className="text-sm text-slate-600">{sheet.rows.length} filled rows found. Certificate IDs and QR codes are not generated yet.{remaining!==null?" Available organization quota: "+remaining+" certificates.":""}</p>
+      <p className="text-sm text-slate-600">{sheet.rows.length} filled rows found.{selectedSheetNames.length>1?" Combined from "+selectedSheetNames.length+" matching sheets.":""} Certificate IDs and QR codes are not generated yet.{remaining!==null?" Available organization quota: "+remaining+" certificates.":""}</p>
       <label className="block max-w-xl space-y-1"><span className="font-semibold">Batch name</span>
         <input value={batchName} onChange={e=>setBatchName(e.target.value.slice(0,120))}
           className="cv-field" placeholder="e.g., October valuation reports"/>
@@ -273,7 +321,9 @@ export default function BulkCertificatePage(){
             <th className="border px-2 py-3">Action</th>
           </tr></thead>
           <tbody>{sheet.rows.map((row,i)=><tr key={i}>
-            <td className="sticky left-0 border bg-white px-2">{i+2}</td>
+            <td className="sticky left-0 border bg-white px-2">
+              {workbookSheets.length>1 ? <span><strong>{i+1}</strong><span className="block text-xs text-slate-500">{sheetSources[i]?.name} · record {sheetSources[i]?.position}</span></span> : i+2}
+            </td>
             {fields.map(f=><td key={f.id} className="border p-1">
               <input aria-label={"Row "+(i+2)+" "+f.field_name}
                 className="cv-field !rounded-lg !px-2.5 !py-2 !text-sm" value={f.field_type==="date"?displayBulkDate(row[mapping[f.id]]??""):(row[mapping[f.id]]??"")}
