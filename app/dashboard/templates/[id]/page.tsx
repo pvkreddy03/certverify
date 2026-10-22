@@ -9,6 +9,7 @@ type Template = {
   id: string;
   name: string;
   description: string | null;
+  user_id: string;
   created_at: string;
 };
 
@@ -75,14 +76,16 @@ export default function TemplatePage() {
       .eq("user_id", user.id)
       .eq("status", "active")
       .maybeSingle();
-    setCanManageTemplates(!!member && (member.role === "owner" || member.role === "admin" || member.can_manage_templates === true));
-
     const { data, error } = await supabase
       .from("certificate_templates")
-      .select("id, name, description, created_at")
+      .select("id, name, description, created_at, user_id")
       .eq("id", templateId)
       .single();
 
+    setCanManageTemplates(!!member && (
+      member.role === "owner" || member.role === "admin" ||
+      (member.can_manage_templates === true && data?.user_id === user.id)
+    ));
     if (error) {
       setMessage("Could not load template: " + error.message);
     } else {
