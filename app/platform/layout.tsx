@@ -8,7 +8,7 @@ const adminLinks = [
   { href: "/platform/subscriptions", label: "Subscriptions" },
   { href: "/platform/payments", label: "Payments" },
   { href: "/platform/pricing", label: "Pricing and offers" },
-  { href: "/platform/branding", label: "Brand approvals" },
+  { href: "/platform/branding", label: "Branding approvals" },
   { href: "/platform/contact", label: "Support details" },
   { href: "/platform/audit", label: "Audit history" },
 ];
