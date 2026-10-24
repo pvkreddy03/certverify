@@ -416,6 +416,9 @@ function Pricing() {
             max={365}
             required
           />
+          <details className="sm:col-span-2 rounded-xl border border-slate-200 bg-slate-50 p-4">
+            <summary className="cursor-pointer font-semibold text-slate-900">Advanced: publishing schedule and customer-facing details</summary>
+            <div className="mt-4 grid gap-4 sm:grid-cols-2">
           <Input
             label="Plan starts (your local time)"
             name="starts_at"
@@ -440,9 +443,11 @@ function Pricing() {
               className="mt-1 block w-full border p-2"
             />
           </label>
+            </div>
+          </details>
           <button
             disabled={busy}
-            className="rounded bg-blue-700 px-4 py-2 text-white"
+            className="rounded bg-teal-700 px-4 py-3 font-bold text-white"
           >
             Save plan draft/version
           </button>
@@ -587,7 +592,7 @@ function Pricing() {
           name="trial_days"
           type="number"
           value={ot?.trial_days ?? 0}
-          min={0}
+          min={offerKind==="free_trial"?1:0}
           max={365}
           disabled={offerKind!=="free_trial"}
           required={offerKind==="free_trial"}
