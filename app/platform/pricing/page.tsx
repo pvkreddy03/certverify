@@ -60,7 +60,7 @@ function Input({
         step={step}
         className="mt-1 block w-full rounded-lg border border-slate-300 bg-white p-3 text-slate-900 focus:border-teal-600 focus:ring-2 focus:ring-teal-100 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
       />
-      {hint && <span className="mt-1 block text-xs text-slate-500">{hint}</span>}
+      {hint && <span aria-hidden="true" className="mt-1 block text-xs text-slate-500">{hint}</span>}
     </label>
   );
 }
@@ -365,7 +365,7 @@ function Pricing() {
               {currencyChoices.map(code=><option key={code} value={code}>{code}{code==="INR"?" — Indian rupees":""}</option>)}
               {!currencyChoices.includes(currency as (typeof currencyChoices)[number]) && <option value={currency}>{currency}</option>}
             </select>
-            <span className="mt-1 block text-xs text-slate-500">Enter ordinary prices (for example ₹999.00). Decimal precision is automatic.</span>
+            <span aria-hidden="true" className="mt-1 block text-xs text-slate-500">Enter ordinary prices (for example ₹999.00). Decimal precision is automatic.</span>
           </label>
           <Input label="Subscription price" name="price" type="number" min={0} step={priceDigits===0 ? "1":"0.01"}
             value={t.price_minor / 10 ** t.currency_exponent} required hint="Charged for the first paid period, before promotions." />
@@ -568,7 +568,7 @@ function Pricing() {
             {currencyChoices.map(code=><option key={code} value={code}>{code}</option>)}
             {!currencyChoices.includes(offerCurrency as (typeof currencyChoices)[number]) && <option value={offerCurrency}>{offerCurrency}</option>}
           </select>
-          <span className="mt-1 block text-xs text-slate-500">{offerMoney?"Only used for monetary discounts.":"Not applicable to a percentage or free trial."}</span>
+          <span aria-hidden="true" className="mt-1 block text-xs text-slate-500">{offerMoney?"Only used for monetary discounts.":"Not applicable to a percentage or free trial."}</span>
         </label>
         <Input
           label="Introductory billing cycles"
