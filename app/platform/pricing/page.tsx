@@ -51,6 +51,7 @@ function Input({
     <label className="block">
       {label}
       <input
+        aria-label={label}
         name={name}
         type={type}
         defaultValue={value ?? ""}
@@ -362,7 +363,7 @@ function Pricing() {
             min={1} max={3660} required={period==="custom"} disabled={period!=="custom"}
             hint={period==="custom" ? "Number of days per subscription period." : "Not applicable to monthly or yearly plans."} />
           <label className="block">Currency
-            <select name="currency" value={currency} onChange={(e)=>setCurrency(e.target.value)} className="mt-1 block w-full rounded-lg border border-slate-300 bg-white p-3">
+            <select aria-label="Currency" name="currency" value={currency} onChange={(e)=>setCurrency(e.target.value)} className="mt-1 block w-full rounded-lg border border-slate-300 bg-white p-3">
               {currencyChoices.map(code=><option key={code} value={code}>{code}{code==="INR"?" — Indian rupees":""}</option>)}
               {!currencyChoices.includes(currency as (typeof currencyChoices)[number]) && <option value={currency}>{currency}</option>}
             </select>
@@ -570,7 +571,7 @@ function Pricing() {
           hint={offerKind==="free_trial"?"Use the trial duration instead.":offerKind==="percentage"?"Enter a percentage, not a money amount.":"Enter a regular currency amount."}
         />
         <label>Discount currency
-          <select name="currency" value={offerCurrency} onChange={(e)=>setOfferCurrency(e.target.value)} disabled={!offerMoney} className="mt-1 block w-full rounded-lg border border-slate-300 bg-white p-3 disabled:bg-slate-100">
+          <select aria-label="Discount currency" name="currency" value={offerCurrency} onChange={(e)=>setOfferCurrency(e.target.value)} disabled={!offerMoney} className="mt-1 block w-full rounded-lg border border-slate-300 bg-white p-3 disabled:bg-slate-100">
             {currencyChoices.map(code=><option key={code} value={code}>{code}</option>)}
             {!currencyChoices.includes(offerCurrency as (typeof currencyChoices)[number]) && <option value={offerCurrency}>{offerCurrency}</option>}
           </select>
