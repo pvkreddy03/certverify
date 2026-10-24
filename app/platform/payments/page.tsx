@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { PlatformAdminGuide } from "@/components/platform-admin-guide";
 import { platformFetch } from "@/lib/platform/client";
 type Attempt = {
   id: string;
@@ -66,7 +67,8 @@ export default function Payments() {
     }
   }
   return (
-    <main className="space-y-5">
+    <main className="mx-auto max-w-7xl space-y-6 px-4 py-8 sm:px-6">
+      <PlatformAdminGuide section="payments" />
       <h1 className="text-3xl font-bold">
         Payment monitoring and reconciliation
       </h1>
