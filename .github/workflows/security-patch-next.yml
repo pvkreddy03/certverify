@@ -1,0 +1,53 @@
+name: Patch Next.js Security Lockfile
+
+on:
+  push:
+    branches:
+      - fix/20261024-payment-sandbox-readiness
+    paths:
+      - .github/workflows/security-patch-next.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    name: Generate reviewed Next.js 16.4.3 lockfile
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out isolated fix branch without stored credentials
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Update manifest and lockfile without package scripts
+        run: npm install --package-lock-only --ignore-scripts --save-exact next@16.4.3 eslint-config-next@16.4.3
+      - name: Audit updated production dependencies
+        run: npm audit --omit=dev --audit-level=high
+      - name: Commit vetted manifest and lockfile only to isolated fix branch
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          git diff --check
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json
+          if git diff --cached --quiet; then
+            echo "Manifest already up to date"
+            exit 0
+          fi
+          git commit -m "security: update vulnerable Next.js to patched 16.4.3"
+          cat > "$RUNNER_TEMP/certverify-askpass.sh" <<'EOF'
+          #!/bin/sh
+          case "$1" in
+            *Username*) printf '%s\n' 'x-access-token' ;;
+            *Password*) printf '%s\n' "$GH_TOKEN" ;;
+          esac
+          EOF
+          chmod 700 "$RUNNER_TEMP/certverify-askpass.sh"
+          GIT_TERMINAL_PROMPT=0 GIT_ASKPASS="$RUNNER_TEMP/certverify-askpass.sh" git push origin HEAD:fix/20261024-payment-sandbox-readiness
