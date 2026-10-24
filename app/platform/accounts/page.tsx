@@ -12,7 +12,9 @@ function Accounts() {
   const [error,setError]=useState("");const [busy,setBusy]=useState(false);const latestRequest=useRef(0);
   useEffect(()=>{ let active=true;const ticket=++latestRequest.current;const params=new URLSearchParams(window.location.search);
     const requestedStatus=params.get("status") ?? "";const requestedSubscription=params.get("subscription") ?? "";
-    void platformFetch<Report>(`/api/platform/accounts?${params}`).then((data)=>{ if(active && ticket===latestRequest.current) { setReport(data);setSearch(params.get("search")??"");setType(params.get("type")??"");setStatus(requestedStatus);setSubscription(requestedSubscription); } }).catch((failure)=>{if(active && ticket===latestRequest.current) setError(failure.message);});return()=>{active=false;};
+    // Initialise URL filters before fetching. A slower initial response must never clear filters being typed by the administrator.
+    setSearch(params.get("search")??"");setType(params.get("type")??"");setStatus(requestedStatus);setSubscription(requestedSubscription);
+    void platformFetch<Report>(`/api/platform/accounts?${params}`).then((data)=>{ if(active && ticket===latestRequest.current) setReport(data); }).catch((failure)=>{if(active && ticket===latestRequest.current) setError(failure.message);});return()=>{active=false;};
   },[]);
   async function load(page=1, reset=false) {
     const ticket=++latestRequest.current;
