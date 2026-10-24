@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { PlatformAdminGuide } from "@/components/platform-admin-guide";
 import Link from "next/link";
 import { PlatformMfa } from "@/components/platform-mfa";
 import { platformFetch } from "@/lib/platform/client";
@@ -380,6 +381,7 @@ export default function SubscriptionAdminPage() {
   return (
     <main className="mx-auto max-w-6xl space-y-6 px-6 py-8">
       <h1 className="text-3xl font-bold">Subscription administration</h1>
+      <PlatformAdminGuide section="subscriptions" />
       <PlatformMfa>
         <Subscriptions />
       </PlatformMfa>
