@@ -322,6 +322,7 @@ function Pricing() {
           <label>
             Billing period
             <select
+              aria-label="Billing period"
               name="billing_period"
               value={period}
               onChange={(e)=>setPeriod(e.target.value as PlanTerms["billing_period"])}
@@ -335,6 +336,7 @@ function Pricing() {
           <label>
             Plan audience
             <select
+              aria-label="Plan audience"
               name="audience"
               defaultValue={t.audience}
               className="mt-1 block border p-2"
@@ -529,6 +531,7 @@ function Pricing() {
         <label>
           Offer type
           <select
+            aria-label="Offer type"
             name="kind"
             value={offerKind}
             onChange={(e)=>setOfferKind(e.target.value as OfferTerms["kind"])}
@@ -543,6 +546,7 @@ function Pricing() {
         <label>
           Offer eligibility
           <select
+            aria-label="Offer eligibility"
             name="audience"
             value={offerAudience}
             onChange={(e)=>setOfferAudience(e.target.value as OfferTerms["audience"])}
