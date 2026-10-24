@@ -134,6 +134,10 @@ function Subscriptions() {
       setBusy(false);
     }
   }
+  const selectedPlan=catalog.plans.find(p=>p.id===plan);
+  const selectedAccount=report?.accounts.find(a=>a.id===account);
+  const activeCount=report?.accounts.filter(a=>["active","trial","non_renewing"].includes(a.status)).length??0;
+  const pendingCount=report?.accounts.filter(a=>a.requests.some(r=>r.status==="awaiting_payment")).length??0;
   return (
     <div className="space-y-6">
       {message && (
@@ -141,18 +145,16 @@ function Subscriptions() {
           {message}
         </p>
       )}
-      <p>
-        Subscriptions use immutable agreed plan versions and billing periods.
-        Paid selections remain pending until Stage 6 verifies payment. No real
-        checkout, settlement or recurring charge is enabled.
-      </p>
+      <p className="text-sm leading-6 text-slate-600">Subscription access is based on agreed, versioned plan terms. Paid selections require independent verification of a captured Razorpay payment. Only simulated Razorpay checkout is enabled on staging; automatic recurring charges remain unavailable.</p>
+      <section className="grid gap-3 sm:grid-cols-3" aria-label="Subscription overview">
+        {([["Accounts on this page",report?.accounts.length??0],["Active or trial",activeCount],["Awaiting payment",pendingCount]] as const).map(([label,value])=><div key={label} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"><p className="text-sm text-slate-500">{label}</p><p className="mt-2 text-2xl font-bold text-slate-900">{value}</p></div>)}
+      </section>
+      <p className="text-xs text-slate-500">Totals here describe the displayed page, not the entire customer base.</p>
       {report && (
         <>
-          <p>
-            {report.total} accounts · Page {report.page}
-          </p>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
+          <p className="font-semibold text-slate-700">{report.total} total matching accounts · Page {report.page}</p>
+          <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+            <table className="w-full text-left text-sm">
               <thead>
                 <tr>
                   {[
@@ -174,9 +176,9 @@ function Subscriptions() {
                     <td className="border-b p-3">
                       <Link
                         className="text-blue-700"
-                        href={`/platform/subscriptions?account=${a.id}`}
+                        href={`/platform/accounts/${a.id}`}
                       >
-                        {a.name}
+                        {a.name} →
                       </Link>
                       <p>{a.period?.plan_snapshot.name}</p>
                     </td>
@@ -202,6 +204,7 @@ function Subscriptions() {
                 ))}
               </tbody>
             </table>
+            {!report.accounts.length && <p className="p-6 text-sm text-slate-600">No matching customer subscriptions.</p>}
           </div>
           <div className="flex gap-4">
             <button
@@ -224,7 +227,7 @@ function Subscriptions() {
         </>
       )}
       <form
-        className="space-y-4 rounded border bg-white p-6"
+        className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
         onSubmit={(e) => {
           e.preventDefault();
           if (!reason.trim()) {
@@ -234,12 +237,8 @@ function Subscriptions() {
           setConfirm(true);
         }}
       >
-        <h2 className="text-xl font-semibold">Audited complimentary access</h2>
-        <p>
-          Explicitly waive a period for an approved customer. This never marks
-          an unverified payment as paid. Changes during an active period are
-          scheduled, preserving consumed quota.
-        </p>
+        <h2 className="text-xl font-bold">Complimentary access · Administrator override</h2>
+        <p className="text-sm text-slate-600">Use only for authorized trials, pilots or support adjustments; do not use it as a substitute for testing Razorpay checkout. Each waiver requires a recorded reason and never marks an unverified payment as paid. An active paid period remains intact until its boundary.</p>
         <label className="block">
           Customer account
           <select
@@ -283,6 +282,7 @@ function Subscriptions() {
               ))}
           </select>
         </label>
+        {selectedPlan && <div className="rounded-lg bg-slate-50 p-4 text-sm text-slate-700"><p className="font-semibold">{selectedPlan.terms.name}</p><p>{formatMoney(selectedPlan.terms.price_minor,selectedPlan.terms.currency,selectedPlan.terms.currency_exponent)} / {selectedPlan.terms.billing_period} · {selectedPlan.terms.certificate_limit===null?"Unlimited certificates":`${selectedPlan.terms.certificate_limit} certificates per period`} · {selectedPlan.terms.included_seats} included users</p><p className="mt-1 text-xs text-slate-500">Complimentary grants waive the charge; they do not process a payment.</p></div>}
         <label className="block">
           Granted licensed seats
           <input
@@ -315,14 +315,14 @@ function Subscriptions() {
           </button>
         ) : (
           <div>
-            <p>Confirm waived access for the selected account and plan?</p>
+            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm"><p className="font-bold text-amber-950">Review before granting access</p><p>Customer: {selectedAccount?.name ?? account}</p><p>Plan: {selectedPlan?.terms.name ?? plan}</p><p>Licensed users: {seats} · Fee waived · Reason: {reason}</p><p className="mt-2 text-amber-900">This is an audited administrative grant, not a Razorpay payment.</p></div>
             <button
               type="button"
               disabled={busy}
               onClick={() => {
                 void grant();
               }}
-              className="mt-3 rounded bg-blue-700 px-4 py-2 text-white"
+              className="mt-3 rounded bg-teal-700 px-4 py-2 font-bold text-white"
             >
               Confirm complimentary grant
             </button>
