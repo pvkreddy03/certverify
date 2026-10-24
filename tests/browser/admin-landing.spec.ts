@@ -14,7 +14,7 @@ test("verified Super Admin uses server landing then enters platform with MFA", a
   // Login cookies are scoped to the original host; never redirect to localhost.
   await expect(page).toHaveURL("http://127.0.0.1:3100/platform");
   await expect(page.getByRole("link", { name: "Pricing and offers" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Branding approvals" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Branding approvals", exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Platform MFA verification" })).toBeVisible();
   await page.getByLabel("Authenticator code").fill("123456");
   await page.getByRole("button", { name: "Verify MFA" }).click();
