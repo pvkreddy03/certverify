@@ -17,6 +17,6 @@ export async function GET(request: Request,{ params }: { params:Promise<{ assetI
     }
     const { data,error }=await client.rpc("cv_logo_access",{ p_asset:assetId });
     if (error || typeof data!=="string") throw new RequestError("Logo unavailable.",404);
-    return await logoResponse(data);
+    return await logoResponse(data,false,client);
   } catch(error) { return requestErrorResponse(error); }
 }

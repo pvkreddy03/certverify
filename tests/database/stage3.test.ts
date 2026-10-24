@@ -181,3 +181,20 @@ test("finalization rechecks uploader membership and rolling upload limits",()=>{
   assert.notEqual(sql(as(ids.owner,ids.a,"select public.cv_reserve_logo()"),false).status,0);
   assert.equal(sql(`select state from public.cv_logo_assets where id='${asset.id}'`).out,"reserved");
 });
+
+test("approved logo is shared by past and new certificates while issuer snapshots stay immutable",()=>{
+  sql(readFileSync("supabase/proposals/20261015_current_shared_logo_presentation.sql","utf8"));
+  assert.equal(sql("set role anon;select public.cv_public_logo_path('brand-new')").out,"");
+  const approval=request("Reviewed Current Logo",ids.a,approvedLogo.id);
+  approve(approval);
+  const old=JSON.parse(sql("set role anon;select public.cv_public_certificate('brand-original')").out);
+  assert.equal(old.issuer_name,"Account A");
+  assert.equal(old.logo_available,true);
+  assert.equal(sql("set role anon;select public.cv_public_logo_path('brand-original')").out,approvedLogo.path);
+  const fresh=JSON.parse(sql("set role anon;select public.cv_public_certificate('brand-new')").out);
+  assert.equal(fresh.issuer_name,"Approved Company");
+  assert.equal(sql("set role anon;select public.cv_public_logo_path('brand-new')").out,approvedLogo.path);
+  assert.equal(sql("set role anon;select public.cv_storage_public_logo_read('other/forged.webp')").out,"f");
+  assert.equal(sql("set role anon;select public.cv_storage_public_logo_read(" + quote(approvedLogo.path) + ")").out,"t");
+  assert.equal(sql("select count(*) from storage.objects where bucket_id='certverify-branding'").out,"2");
+});

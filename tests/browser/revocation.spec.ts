@@ -10,7 +10,7 @@ test("administrator revokes with separate private/public reasons and QR record s
   await page.getByLabel("Email address").fill("existing@example.test");
   await page.getByLabel("Password",{ exact:true }).fill("existing-password");
   await page.getByRole("button",{ name:"Sign in",exact:true }).click();
-  await expect(page.getByLabel("Current account")).toBeVisible();
+  await expect(page.getByLabel("Workspace")).toBeVisible();
   await page.goto(`/dashboard/certificates/${id}`);
   await page.getByRole("button",{ name:"Revoke certificate",exact:true }).click();
   await page.getByLabel("Revocation reason (internal)").fill("   ");
@@ -33,7 +33,7 @@ test("administrators can mark inactive and restore Active before revocation",asy
   await page.getByLabel("Email address").fill("existing@example.test");
   await page.getByLabel("Password",{ exact:true }).fill("existing-password");
   await page.getByRole("button",{ name:"Sign in",exact:true }).click();
-  await expect(page.getByLabel("Current account")).toBeVisible();
+  await expect(page.getByLabel("Workspace")).toBeVisible();
   await page.goto(`/dashboard/certificates/${id}`);
   await page.getByRole("button",{ name:"Mark inactive" }).click();
   await page.getByRole("button",{ name:"Confirm status change" }).click();
@@ -48,7 +48,7 @@ test("members do not receive administrative status controls",async ({ page }) =>
   await page.getByLabel("Email address").fill("new@example.test");
   await page.getByLabel("Password",{ exact:true }).fill("member-password");
   await page.getByRole("button",{ name:"Sign in",exact:true }).click();
-  await expect(page.getByLabel("Current account")).toBeVisible();
+  await expect(page.getByLabel("Workspace")).toBeVisible();
   await page.goto(`/dashboard/certificates/${id}`);
   await expect(page.getByRole("heading",{ name:"Certificate Details",exact:true,level:1 })).toBeVisible();
   await expect(page.getByRole("button",{ name:"Revoke certificate",exact:true })).toHaveCount(0);
@@ -73,7 +73,7 @@ test("QR downloads produce PNG and JPEG files linked to the canonical public rec
   await page.getByLabel("Email address").fill("existing@example.test");
   await page.getByLabel("Password",{ exact:true }).fill("existing-password");
   await page.getByRole("button",{ name:"Sign in",exact:true }).click();
-  await expect(page.getByLabel("Current account")).toBeVisible();
+  await expect(page.getByLabel("Workspace")).toBeVisible();
   await page.goto(`/dashboard/certificates/${id}`);
   await page.getByRole("button",{ name:"Generate QR",exact:true }).click();
   await expect(page.getByText(`http://127.0.0.1:3100/verify/${publicId}`,{ exact:true })).toBeVisible();

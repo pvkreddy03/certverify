@@ -10,6 +10,7 @@ import type {
   SubscriptionStatus,
 } from "@/lib/billing/types";
 type Report = { subscription: SubscriptionStatus; plans: CatalogPlan[] };
+type TestCheckoutStatus = { mode: "disabled" | "incomplete" | "razorpay_test"; configured: boolean; testOnly: true; livePaymentsEnabled: false; message: string };
 export default function SubscriptionPage() {
   const [report, setReport] = useState<Report | null>(null);
   const [planId, setPlanId] = useState("");
@@ -19,6 +20,7 @@ export default function SubscriptionPage() {
   const [quoteNonce, setQuoteNonce] = useState("");
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  const [checkoutStatus, setCheckoutStatus] = useState<TestCheckoutStatus | null>(null);
   useEffect(() => {
     let active = true;
     void brandingFetch("/api/billing")
@@ -44,6 +46,13 @@ export default function SubscriptionPage() {
       active = false;
     };
   }, []);
+  useEffect(() => {
+    let active = true;
+    void brandingFetch("/api/payments/status")
+      .then((status: TestCheckoutStatus) => { if(active) setCheckoutStatus(status); })
+      .catch(() => { /* A status check must not block subscription management. */ });
+    return () => { active = false; };
+  }, []);
   async function act(body: Record<string, unknown>) {
     setBusy(true);
     setMessage("");
@@ -62,7 +71,9 @@ export default function SubscriptionPage() {
         setReport(await brandingFetch("/api/billing"));
         setMessage(
           data.status === "awaiting_payment"
-            ? "Selection saved awaiting verified payment. Payment collection is not enabled; no charge or paid access activation occurred."
+            ? checkoutStatus?.configured
+              ? "Subscription request saved. Open the test checkout from Payment intent history below. Access activates only after captured payment is independently verified."
+              : "Selection saved awaiting verified payment. Payment collection is not enabled; no charge or paid access activation occurred."
             : data.status === "scheduled"
               ? "Change scheduled for the next billing period. Current quota is preserved."
               : "Subscription action completed and audited.",
@@ -78,14 +89,19 @@ export default function SubscriptionPage() {
   }
   const s = report?.subscription;
   return (
-    <main className="mx-auto max-w-5xl space-y-6 px-6 py-8">
-      <h1 className="text-3xl font-bold">Subscription and renewal</h1>
+    <main className="cv-page min-h-screen"><div className="mx-auto max-w-5xl space-y-6 px-4 py-9 sm:px-6">
+      <p className="cv-eyebrow mb-2">ACCOUNT PLAN</p><h1 className="text-3xl font-extrabold tracking-tight text-[#1e314b]">Subscription and renewal</h1>
       <p className="text-sm text-slate-600">Cancellation stops further renewal. Already-paid periods stay scheduled; cancelling paid access requires reviewed refund handling.</p>
       {message && (
         <p role="status" className="rounded border p-4">
           {message}
         </p>
       )}
+      {checkoutStatus && <section className="rounded-xl border border-teal-200 bg-teal-50 p-4 text-sm text-teal-950" aria-label="Payment test readiness">
+        <p className="font-bold">{checkoutStatus.configured ? "Razorpay test checkout is configured" : "Payment gateway setup"}</p>
+        <p className="mt-1">{checkoutStatus.message}</p>
+        <p className="mt-2 font-medium">Test environment only. No real money is collected. Paid subscription access requires a separately verified captured payment.</p>
+      </section>}
       {!report && !message && <p>Loading subscription…</p>}
       {s && (
         <>
@@ -415,6 +431,6 @@ export default function SubscriptionPage() {
           )}
         </>
       )}
-    </main>
+    </div></main>
   );
 }

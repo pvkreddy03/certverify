@@ -16,6 +16,9 @@ function token(user: typeof users[keyof typeof users], aal="aal1") {
 function session(user: typeof users[keyof typeof users], aal="aal1") {
   return { access_token: token(user,aal), refresh_token: "browser-fixture-refresh", token_type: "bearer", expires_in: 3600, user: { ...user, aud: "authenticated", role: "authenticated", app_metadata: {}, factors: user.id===users.platform.id ? [{ id:"platform-factor",factor_type:"totp",status:"verified",friendly_name:"Test MFA" }] : [], email_confirmed_at: "2026-01-01T00:00:00Z", created_at: "2026-01-01T00:00:00Z" } };
 }
+const bulkTemplateId="81000000-0000-0000-0000-000000000001";
+const bulkFieldId="82000000-0000-0000-0000-000000000001";
+let bulkTesting=false;let bulkBatch:Record<string,unknown>|null=null;let bulkCreationCalls=0;
 const certificateId = "20000000-0000-0000-0000-000000000001";
 const publicId = "30000000-0000-0000-0000-000000000001";
 let currentStatus = "Active";
@@ -32,6 +35,7 @@ const billingPlanId="70000000-0000-0000-0000-000000000001";
 const billingTerms={name:"Browser baseline plan",description:"Fixture only",eligibility:["individual","organization"],audience:"standard",billing_period:"monthly",custom_days:30,price_minor:99900,renewal_price_minor:99900,currency:"INR",currency_exponent:2,included_seats:5,extra_seat_price_minor:39900,max_seats:10,certificate_limit:20,trial_days:7,visible:true,features:[],starts_at:null,ends_at:null};
 let billingPlans=[{id:billingPlanId,version_id:"71000000-0000-0000-0000-000000000001",status:"active",revision:2,terms:{...billingTerms}}];
 let billingOffers:Record<string,unknown>[]=[];let billingQuotes:Record<string,unknown>[]=[];
+let publicContact={support_email:"help@certverify.example",support_phone:"+91 90000 00000",website_url:"https://example.com/help",help_text:"Weekday assistance"};
 let billingEntitled=true;let billingStatus="active";let billingTrialUsed=false;let billingUsed=0;let billingCancelled=false;
 let billingPeriod:Record<string,unknown>|null={id:"90000000-0000-0000-0000-000000000001",plan_id:billingPlanId,plan_version_id:"71000000-0000-0000-0000-000000000001",name:billingTerms.name,billing_period:"monthly",starts_at:"2026-10-01T00:00:00Z",ends_at:"2026-11-01T00:00:00Z",licensed_seats:5,certificate_limit:20,payment_status:"waived"};
 let billingHistory:Record<string,unknown>[]=[];let billingPayments:Record<string,unknown>[]=[];
@@ -58,11 +62,13 @@ const server = createServer(async (request, response) => {
   const user = subject === users.platform.id ? users.platform : subject === users.new.id ? users.new : users.existing;
   response.setHeader("Content-Type", "application/json");
   function json(value: unknown, status = 200) { response.writeHead(status).end(JSON.stringify(value)); }
-  if (url.pathname === "/test/reset") { currentStatus = "Active"; internalReason = null; publicReason = null; current={...baseline};versions=[current];brandingRequests=[];logos.clear();resetBilling();accountAccess="active";accessRevision=0;accessReason=null;platformAudit=[];editingPermissions=[];finalizeFailure=false;storageDeletes=0;json({}); return; }
+  if (url.pathname === "/test/reset") { bulkTesting=false;bulkBatch=null;bulkCreationCalls=0;currentStatus = "Active"; internalReason = null; publicReason = null; current={...baseline};versions=[current];brandingRequests=[];logos.clear();resetBilling();accountAccess="active";accessRevision=0;accessReason=null;platformAudit=[];editingPermissions=[];finalizeFailure=false;storageDeletes=0;json({}); return; }
   if (url.pathname === "/test/finalize-failure") { finalizeFailure=true;json({});return; }
   if (url.pathname === "/test/storage-state") { json({ objects:logos.size,deletes:storageDeletes });return; }
   if(url.pathname==="/test/billing-reset"){billingEntitled=false;billingStatus="unsubscribed";billingPeriod=null;json({});return;}
   if(url.pathname==="/test/billing-expire"){billingEntitled=false;billingStatus="expired";billingUsed=20;json({});return;}
+  if (url.pathname === "/test/bulk-enable") { bulkTesting=true;json({});return; }
+  if (url.pathname === "/test/bulk-state") { json({created:bulkCreationCalls,batch:bulkBatch});return; }
   if (url.pathname === "/health") { json({ status: "fixture" }); return; }
   if (url.pathname === "/auth/v1/token") { json(session(body.email === users.platform.email ? users.platform : body.email === users.new.email ? users.new : users.existing)); return; }
   if (url.pathname === "/auth/v1/verify") {
@@ -71,7 +77,7 @@ const server = createServer(async (request, response) => {
   }
   if (url.pathname === "/auth/v1/user") { json({ ...session(user,aal).user, ...(body.data ? { user_metadata: body.data } : {}) }); return; }
   if (url.pathname === "/auth/v1/logout") { response.writeHead(204).end(); return; }
-  if (url.pathname === "/auth/v1/recover" || url.pathname === "/auth/v1/signup") { json({}); return; }
+  if (url.pathname === "/auth/v1/recover" || url.pathname === "/auth/v1/signup" || url.pathname === "/auth/v1/otp") { json({}); return; }
   // Account-security enrollment substitute only; real TOTP remains a hosted gate.
   if (url.pathname === "/auth/v1/factors" && request.method === "POST") { json({id:"account-factor",type:"totp",totp:{qr_code:"<svg xmlns='http://www.w3.org/2000/svg'/>",secret:"fixture-only-totp-secret",uri:"otpauth://totp/fixture"}});return; }
   if (url.pathname.endsWith("/account-factor/challenge")) { json({id:"fixture-account-challenge",type:"totp",expires_at:Math.floor(Date.now()/1000)+60});return; }
@@ -86,14 +92,56 @@ const server = createServer(async (request, response) => {
     response.setHeader("Content-Type","image/webp");response.writeHead(200).end(bytes);return;
   }
   const rpc=url.pathname.replace("/rest/v1/rpc/","");
+  if(rpc==="cv_bulk_batches_list"){json(bulkBatch?[{id:bulkBatch.id,name:bulkBatch.name,sourceName:bulkBatch.sourceName,rowCount:bulkBatch.rowCount,createdAt:bulkBatch.createdAt}]:[]);return;}
+  if(rpc==="cv_bulk_batch_details"){json(bulkBatch&&body.p_batch===bulkBatch.id?bulkBatch:null);return;}
+  if(rpc==="cv_create_certificate_batch"){
+    const rows=body.p_rows as Record<string,string>[];
+    if(!bulkTesting||!Array.isArray(rows)||rows.length>100||rows.length<1){json({message:"Invalid batch"},400);return;}
+    if(!bulkBatch){
+      bulkCreationCalls++;
+      bulkBatch={id:"83000000-0000-0000-0000-000000000001",
+        name:body.p_label,sourceName:body.p_filename,rowCount:rows.length,createdAt:"2026-10-15T12:00:00Z",
+        items:rows.map((row,i)=>({id:"84000000-0000-0000-0000-"+String(i+1).padStart(12,"0"),
+          certificateId:"CV-FIXTURE-"+(i+1),publicReference:"85000000-0000-0000-0000-"+String(i+1).padStart(12,"0"),
+          sourceRow:i+2,status:"Active",values:row})),
+      };
+    }
+    json(bulkBatch);return;
+  }
+  if (rpc==="cv_invitation_setup_required") {
+    json(user.id===users.new.id);return;
+  }
+  if (rpc==="cv_team_member_directory") {
+    const all=[
+      {id:"70000000-0000-0000-0000-000000000001",user_id:users.existing.id,email:users.existing.email,role:"owner",status:"active",joined_at:"2026-10-01T00:00:00Z"},
+      {id:"70000000-0000-0000-0000-000000000002",user_id:users.new.id,email:users.new.email,role:"member",status:"active",joined_at:"2026-10-02T00:00:00Z"},
+    ];
+    json(user.id===users.new.id ? all.filter(x=>x.user_id===user.id):all);return;
+  }
+  if (rpc==="cv_prepare_invitation") { json("63000000-0000-0000-0000-000000000001");return; }
+  if (rpc==="cv_revoke_invitation") { json(true);return; }
   if (rpc==="cv_platform_identity") { json(user.id===users.platform.id);return; }
   if (rpc==="cv_is_platform_admin") { json(user.id===users.platform.id && aal==="aal2");return; }
   if(rpc==="cv_subscription_status"){
     const owner=user.id===users.existing.id;
-    json({account_id:a,account_type:"organization",can_cancel:owner,can_manage:owner&&accountAccess==="active",entitled:billingEntitled,status:billingStatus,period:billingPeriod ? {...billingPeriod,certificates_created:billingUsed,remaining_certificates:Math.max(0,20-billingUsed)}:null,allocated_seats:2,cancel_at_period_end:billingCancelled,trial_used:billingTrialUsed,requests:owner?billingQuotes:[],history:owner?billingHistory:[],payments:owner?billingPayments:[]});return;
+    const billedAccount=request.headers["x-certverify-account"]===b?b:a;
+    json({account_id:billedAccount,account_type:"organization",can_cancel:owner,can_manage:owner&&accountAccess==="active",entitled:billingEntitled,status:billingStatus,period:billingPeriod ? {...billingPeriod,certificates_created:billingUsed,remaining_certificates:Math.max(0,20-billingUsed)}:null,allocated_seats:2,cancel_at_period_end:billingCancelled,trial_used:billingTrialUsed,requests:owner?billingQuotes:[],history:owner?billingHistory:[],payments:owner?billingPayments:[]});return;
   }
   if(rpc==="cv_platform_payment_report"){if(user.id!==users.platform.id||aal!=="aal2"){json({message:"MFA required"},403);return;}json({attempts:[],total:0,page:body.p_page});return;}
   if(rpc==="cv_pricing_catalog"){json(billingPlans.filter(p=>p.status==="active"&&p.terms.visible));return;}
+  if(rpc==="cv_public_login_information") {
+    json({
+      plans: billingPlans.filter((p)=>p.status==="active"&&p.terms.visible),
+      offers: [{name:"Public trial offer",code:"WELCOME",kind:"free_trial",value:0,cycles:1,trial_days:7,currency:null,currency_exponent:2,ends_at:null}],
+      contact:publicContact,
+    });
+    return;
+  }
+  if(rpc==="cv_platform_contact_settings" || rpc==="cv_save_platform_contact_settings") {
+    if(user.id!==users.platform.id || aal!=="aal2"){json({message:"MFA required"},403);return;}
+    if(rpc==="cv_save_platform_contact_settings"){publicContact={...publicContact,...body.p_contact};audit("platform.contact_updated");json(true);return;}
+    json(publicContact);return;
+  }
   if(["cv_platform_billing_catalog","cv_save_plan","cv_save_offer","cv_set_catalog_status","cv_platform_subscription_report","cv_admin_grant_subscription"].includes(rpc)){
     if(user.id!==users.platform.id||aal!=="aal2"){json({message:"Denied"},403);return;}
     if(rpc==="cv_platform_billing_catalog"){json({plans:billingPlans,offers:billingOffers});return;}
@@ -182,11 +230,22 @@ const server = createServer(async (request, response) => {
     if (body.p_action==="approve") { current={...current,id:"40000000-0000-0000-0000-000000000002",company_name:String(r.company_name),professional_details:String(r.professional_details),logo_asset_id:r.logo_asset_id as string|null,origin:"approved",approved_by:user.id};versions.push(current); }
     json(true);return;
   }
+  if(bulkTesting && url.pathname==="/rest/v1/certificate_templates"){
+    json([{id:bulkTemplateId,name:"Bulk template",description:"Fixture"}]);return;
+  }
+  if(bulkTesting && url.pathname==="/rest/v1/certificate_fields"){
+    json([{id:bulkFieldId,field_name:"Owner",field_type:"text",is_required:true,is_public:true,display_order:1}]);return;
+  }
   if (url.pathname==="/rest/v1/cv_branding_versions") { json(versions);return; }
   if (url.pathname==="/rest/v1/cv_branding_requests") { json(user.id===users.existing.id ? brandingRequests : []);return; }
   if (url.pathname === "/rest/v1/rpc/cv_list_accounts") {
-    json([{ id: a, account_name: "Organization A", account_code: "A", account_type: "organization", role: user.id === users.new.id ? "member" : "owner" },
-      { id: b, account_name: "Organization B", account_code: "B", account_type: "organization", role: "member" }]); return;
+    const organizations=[
+      { id: a, account_name: "Organization A", account_code: "A", account_type: "organization", role: user.id === users.new.id ? "member" : "owner" },
+      { id: b, account_name: "Organization B", account_code: "B", account_type: "organization", role: "member" },
+    ];
+    // Invitees also have a placeholder created by the signup process.
+    const individual={id:"10000000-0000-0000-0000-000000000003",account_name:"Professional account",account_code:"PERSONAL",account_type:"individual",role:"owner"};
+    json(user.id===users.new.id ? [individual,...organizations] : organizations);return;
   }
   if (url.pathname === "/rest/v1/rpc/cv_accept_invitation") { json(b); return; }
   if (url.pathname === "/rest/v1/rpc/cv_change_certificate_status") {
@@ -200,6 +259,19 @@ const server = createServer(async (request, response) => {
     json({ public_verification_id:publicId,certificate_id:"CV-FIXTURE-1",issuer_name:"Test Issuer",issued_at:"2026-10-01T00:00:00Z",status,
       revoked_at:status === "Revoked" ? revokedAt : null,public_revocation_reason:status === "Revoked" ? publicReason || "Withdrawn by issuer" : null,
       fields:[{ id:"public-field",field_name:"Public title",field_type:"text",field_value:"Public certificate record" }] }); return;
+  }
+  if (url.pathname === "/rest/v1/account_invitations" && url.searchParams.get("select") === "requires_setup") {
+    json({ requires_setup: true });return;
+  }
+  if (url.pathname === "/rest/v1/account_members" && request.method === "GET") {
+    const membership = {
+      account_id:a, user_id:user.id, role:user.id===users.new.id?"member":"owner",
+      status:"active",joined_at:"2026-10-01T00:00:00Z",
+    };
+    json(membership);return;
+  }
+  if (url.pathname === "/rest/v1/accounts" && request.method === "GET") {
+    json({ id:a,account_name:"Organization A",account_code:"A",account_type:"organization" });return;
   }
   if (url.pathname === "/rest/v1/certificates" && url.searchParams.get("id") === `eq.${certificateId}`) {
     json({ id:certificateId,certificate_id:"CV-FIXTURE-1",status:currentStatus,created_at:"2026-10-01T00:00:00Z",template_id:null,template_name:"Test template",public_verification_id:publicId,

@@ -3,11 +3,13 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { requireSelectedAccountId } from "@/lib/accounts/context";
 
 type Template = {
   id: string;
   name: string;
   description: string | null;
+  user_id: string;
   created_at: string;
 };
 
@@ -40,10 +42,21 @@ export default function TemplatePage() {
 
   const [savingField, setSavingField] = useState(false);
   const [message, setMessage] = useState("");
+  const [fromCertificate, setFromCertificate] = useState(false);
+  const [fromBulk, setFromBulk] = useState(false);
+
+  useEffect(() => {
+    void Promise.resolve().then(() => {
+      const origin = new URLSearchParams(window.location.search).get("from");
+      setFromCertificate(origin === "certificate" || origin === "bulk");
+      setFromBulk(origin === "bulk");
+    });
+  }, []);
 
   const [editingFieldId, setEditingFieldId] = useState<string | null>(null);
 
   const [deletingTemplate, setDeletingTemplate] = useState(false);
+  const [canManageTemplates, setCanManageTemplates] = useState(false);
 
   async function loadTemplate() {
     const {
@@ -56,12 +69,23 @@ export default function TemplatePage() {
       return;
     }
 
+    const { data: member } = await supabase
+      .from("account_members")
+      .select("role, can_manage_templates")
+      .eq("account_id", requireSelectedAccountId())
+      .eq("user_id", user.id)
+      .eq("status", "active")
+      .maybeSingle();
     const { data, error } = await supabase
       .from("certificate_templates")
-      .select("id, name, description, created_at")
+      .select("id, name, description, created_at, user_id")
       .eq("id", templateId)
       .single();
 
+    setCanManageTemplates(!!member && (
+      member.role === "owner" || member.role === "admin" ||
+      (member.can_manage_templates === true && data?.user_id === user.id)
+    ));
     if (error) {
       setMessage("Could not load template: " + error.message);
     } else {
@@ -293,8 +317,8 @@ export default function TemplatePage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-slate-50 px-6 py-10">
-        <div className="mx-auto max-w-6xl">
+      <main className="cv-page">
+        <div className="cv-shell cv-entrance">
           <p className="text-slate-500">Loading template...</p>
         </div>
       </main>
@@ -303,8 +327,8 @@ export default function TemplatePage() {
 
   if (!template) {
     return (
-      <main className="min-h-screen bg-slate-50 px-6 py-10">
-        <div className="mx-auto max-w-6xl">
+      <main className="cv-page">
+        <div className="cv-shell cv-entrance">
           <h1 className="text-2xl font-bold text-slate-900">
             Template not found
           </h1>
@@ -326,42 +350,50 @@ export default function TemplatePage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 px-6 py-10">
-      <div className="mx-auto max-w-6xl">
+    <main className="cv-page">
+      <div className="cv-shell cv-entrance">
 
         {/* Header */}
-        <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+        <div className="cv-hero">
+          <div className="cv-hero__body flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <button
-              type="button"
-              onClick={() => router.push("/dashboard/templates")}
-              className="mb-4 text-sm font-medium text-slate-600 hover:text-slate-900"
-            >
-              ← Back to Templates
-            </button>
-
-            <h1 className="text-3xl font-bold text-slate-900">
+            <p className="cv-eyebrow mb-2">TEMPLATE DESIGNER</p><h1 className="text-3xl font-bold !text-white">
               {template.name}
             </h1>
 
-            <p className="mt-2 text-slate-600">
-              {template.description || "No description"}
+            <p className="mt-2 text-[#cee4ea]">
+              {template.description || "Configure the reusable fields for each certificate."}
             </p>
           </div>
 
           {/* Delete Template */}
-          <button
+          {canManageTemplates && <button
             type="button"
             onClick={handleDeleteTemplate}
             disabled={deletingTemplate}
-            className="rounded-lg border border-red-300 bg-white px-5 py-3 text-sm font-semibold text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-xl border border-red-200 bg-white px-5 py-3 text-sm font-bold text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {deletingTemplate ? "Deleting..." : "Delete Template"}
-          </button>
+          </button>}
+          </div>
         </div>
 
+        {!canManageTemplates && <div role="status" className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-950">This template is read-only for your account. Ask your organization administrator to edit it or grant you template creation and editing access in Team → Members.</div>}
+
+        {fromCertificate && <div className="mt-6 rounded-xl border border-blue-200 bg-blue-50 p-5">
+          <p className="font-semibold text-blue-900">Template created — add the fields you need</p>
+          <p className="mt-1 text-sm text-blue-800">When you are ready, use this template on the {fromBulk ? "Bulk Excel importer" : "certificate form"}.</p>
+          <button
+            type="button"
+            onClick={() => router.push(fromBulk ? `/dashboard/certificates/bulk?template=${encodeURIComponent(templateId)}` : `/dashboard/certificates?template=${encodeURIComponent(templateId)}`)}
+            className="mt-4 rounded-lg bg-blue-700 px-5 py-3 font-semibold text-white hover:bg-blue-800"
+          >
+            {fromBulk ? "Continue to Bulk Excel →" : "Continue to create certificate →"}
+          </button>
+        </div>}
+
         {/* Template Information */}
-        <div className="mt-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="cv-panel mt-6 p-6">
           <p className="text-sm text-slate-500">Template ID</p>
 
           <p className="mt-1 break-all font-mono text-sm text-slate-900">
@@ -376,7 +408,7 @@ export default function TemplatePage() {
         )}
 
         {/* Certificate Fields */}
-        <div className="mt-8 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="cv-panel mt-8 p-6 sm:p-8">
 
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
@@ -390,21 +422,21 @@ export default function TemplatePage() {
               </p>
             </div>
 
-            <button
+            {canManageTemplates && <button
               type="button"
               onClick={() => {
                 setShowAddField(!showAddField);
                 setEditingFieldId(null);
                 setMessage("");
               }}
-              className="rounded-lg bg-slate-900 px-5 py-3 font-medium text-white hover:bg-slate-800"
+              className="cv-primary"
             >
               + Add Field
-            </button>
+            </button>}
           </div>
 
           {/* Add / Edit Field Form */}
-          {(showAddField || editingFieldId) && (
+          {canManageTemplates && (showAddField || editingFieldId) && (
             <form
               onSubmit={handleAddField}
               className="mt-6 rounded-lg border border-slate-200 bg-slate-50 p-5"
@@ -500,7 +532,7 @@ export default function TemplatePage() {
                 </p>
 
                 <p className="mt-1 text-sm text-slate-500">
-                  Click &quot;+ Add Field&quot; to create the first one.
+                  {canManageTemplates ? "Click + Add Field to create the first one." : "Ask your administrator to add fields or grant you template editing access."}
                 </p>
               </div>
             ) : (
@@ -522,7 +554,7 @@ export default function TemplatePage() {
                       </p>
                     </div>
 
-                    <div className="flex flex-wrap gap-2">
+                    {canManageTemplates && <div className="flex flex-wrap gap-2">
                       <button
                         type="button"
                         onClick={() => {
@@ -564,7 +596,7 @@ export default function TemplatePage() {
                       >
                         ↓
                       </button>
-                    </div>
+                    </div>}
                   </div>
                 ))}
               </div>
@@ -573,7 +605,7 @@ export default function TemplatePage() {
         </div>
 
         {/* Danger Zone */}
-        <div className="mt-8 rounded-xl border border-red-200 bg-red-50 p-6">
+        {canManageTemplates && <div className="mt-8 rounded-xl border border-red-200 bg-red-50 p-6">
           <h2 className="text-lg font-semibold text-red-900">
             Danger Zone
           </h2>
@@ -592,7 +624,7 @@ export default function TemplatePage() {
           >
             {deletingTemplate ? "Deleting..." : "Delete This Template"}
           </button>
-        </div>
+        </div>}
       </div>
     </main>
   );
