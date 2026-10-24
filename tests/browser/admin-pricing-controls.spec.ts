@@ -12,6 +12,7 @@ async function openPricing(page: import("@playwright/test").Page) {
   await page.getByRole("button",{name:"Verify MFA",exact:true}).click();
   await page.goto("/platform/pricing");
   await expect(page.getByRole("heading",{name:"Pricing and offers",exact:true})).toBeVisible();
+  await page.getByRole("combobox",{name:"Pricing and offers view"}).selectOption("create");
 }
 test("unlimited certificate count disables numeric quota, while limited enables it",async({page})=>{
   await openPricing(page);
@@ -44,6 +45,7 @@ test("monthly and annual hide irrelevant custom period input; custom enables it"
 });
 test("offer editor enables only relevant discounts, currencies, trial duration and account restriction",async({page})=>{
   await openPricing(page);
+  await page.getByRole("combobox",{name:"What would you like to create?"}).selectOption("offer");
   const kind=page.getByLabel("Offer type",{exact:true});
   const discount=page.getByLabel("Discount percentage (e.g. 50 for 50%)",{exact:true});
   const currency=page.getByLabel("Discount currency",{exact:true});
