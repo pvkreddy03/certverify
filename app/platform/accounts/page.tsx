@@ -1,5 +1,6 @@
 "use client";
 import { useEffect,useState } from "react";
+import { PlatformAdminGuide } from "@/components/platform-admin-guide";
 import Link from "next/link";
 import { PlatformMfa } from "@/components/platform-mfa";
 import { platformFetch } from "@/lib/platform/client";
@@ -27,4 +28,4 @@ function Accounts() {
       {!report.accounts.length && <p>No matching accounts.</p>}<div className="flex items-center gap-4"><button disabled={busy || report.page===1} onClick={()=>{void load(report.page-1);}} className="rounded border px-4 py-2">Previous page</button><span>Page {report.page}</span><button disabled={busy || report.page*report.limit>=report.total} onClick={()=>{void load(report.page+1);}} className="rounded border px-4 py-2">Next page</button></div></>}
   </div>;
 }
-export default function PlatformAccountsPage() { return <main className="mx-auto max-w-6xl space-y-6 px-6 py-8"><h1 className="text-3xl font-bold">Customer accounts</h1><PlatformMfa><Accounts /></PlatformMfa></main>; }
+export default function PlatformAccountsPage() { return <main className="mx-auto max-w-6xl space-y-6 px-6 py-8"><h1 className="text-3xl font-bold">Customer accounts</h1><PlatformAdminGuide section="accounts" /><PlatformMfa><Accounts /></PlatformMfa></main>; }
