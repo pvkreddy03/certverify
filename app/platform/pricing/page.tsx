@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { PlatformAdminGuide } from "@/components/platform-admin-guide";
 import { PlatformMfa } from "@/components/platform-mfa";
 import { platformFetch } from "@/lib/platform/client";
@@ -80,6 +80,42 @@ function Pricing() {
   const [offer, setOffer] = useState<CatalogOffer | null>(null);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  const submitting = useRef(false);
+  const [view, setView] = useState<"existing" | "create">("existing");
+  const [editorType, setEditorType] = useState<"plan" | "offer">("plan");
+  function showExisting(afterSave = false) {
+    setView("existing");
+    if (afterSave) {
+      window.history.replaceState(null, "", "/platform/pricing");
+    } else {
+      window.history.pushState(null, "", "/platform/pricing");
+    }
+    window.scrollTo({ top: 0, behavior: "instant" });
+  }
+  function openEditor(type: "plan" | "offer") {
+    setEditorType(type);
+    setView("create");
+    window.history.pushState(null, "", `/platform/pricing?view=create&type=${type}`);
+    window.scrollTo({ top: 0, behavior: "instant" });
+  }
+  function switchView(next: "existing" | "create") {
+    if (busy) return;
+    setMessage("");
+    if (next === "existing") {
+      showExisting();
+    } else {
+      selectPlan(EMPTY_PLAN);
+      selectOffer(null);
+      openEditor("plan");
+    }
+  }
+  function switchEditor(type: "plan" | "offer") {
+    if (busy) return;
+    selectPlan(EMPTY_PLAN);
+    selectOffer(null);
+    setMessage("");
+    openEditor(type);
+  }
   const [period,setPeriod] = useState<PlanTerms["billing_period"]>(EMPTY_PLAN.billing_period);
   const [unlimited,setUnlimited] = useState(EMPTY_PLAN.certificate_limit===null);
   const [currency,setCurrency] = useState(EMPTY_PLAN.currency);
@@ -95,6 +131,16 @@ function Pricing() {
     setOfferAudience(next?.terms.audience ?? "new");setOfferCurrency(next?.terms.currency ?? "INR");
   }
   useEffect(() => {
+    const syncFromUrl = () => {
+      const params = new URLSearchParams(window.location.search);
+      setView(params.get("view") === "create" ? "create" : "existing");
+      setEditorType(params.get("type") === "offer" ? "offer" : "plan");
+    };
+    syncFromUrl();
+    window.addEventListener("popstate", syncFromUrl);
+    return () => window.removeEventListener("popstate", syncFromUrl);
+  }, []);
+  useEffect(() => {
     let active = true;
     void platformFetch<PricingCatalog>("/api/platform/pricing")
       .then((data) => {
@@ -108,21 +154,39 @@ function Pricing() {
     };
   }, []);
   async function act(body: Record<string, unknown>) {
+    // This synchronous guard blocks rapid double clicks before React disables the button.
+    if (submitting.current) return;
+    submitting.current = true;
     setBusy(true);
     setMessage("");
+    const isSave = body.action === "save_plan" || body.action === "save_offer";
+    let recorded = false;
     try {
       await platformFetch("/api/platform/pricing", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
-      setCatalog(await platformFetch<PricingCatalog>("/api/platform/pricing"));
-      selectPlan(EMPTY_PLAN);
-      selectOffer(null);
-      setMessage("Pricing change saved with immutable version history.");
-    } catch (f) {
-      setMessage(f instanceof Error ? f.message : "Pricing change failed.");
+      recorded = true;
+      if (isSave) {
+        selectPlan(EMPTY_PLAN);
+        selectOffer(null);
+        showExisting(true);
+        setMessage(`${body.action === "save_offer" ? "Promotional offer" : "Subscription plan"} saved with immutable version history. Review it below under Existing pricing and offers; it will not be submitted again.`);
+      } else {
+        setMessage("Pricing change saved with immutable version history.");
+      }
+      try {
+        setCatalog(await platformFetch<PricingCatalog>("/api/platform/pricing"));
+      } catch {
+        setMessage("Saved successfully, but the list could not refresh. Reload Existing pricing and offers to see your change. Do not submit again.");
+      }
+    } catch (error) {
+      setMessage(recorded
+        ? "The change was saved, but the list could not refresh. Reload to review it; do not submit again."
+        : error instanceof Error ? error.message : "Pricing change failed. Please review the fields.");
     } finally {
+      submitting.current = false;
       setBusy(false);
     }
   }
@@ -211,11 +275,28 @@ function Pricing() {
   const offerMoney=offerKind==="fixed"||offerKind==="intro_price";
   return (
     <div className="space-y-8">
+      <section aria-label="Pricing and offers navigation" className="flex flex-wrap items-end justify-between gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div>
+          <label htmlFor="pricing-view" className="block text-sm font-bold text-slate-900">Pricing and offers</label>
+          <select id="pricing-view" aria-label="Pricing and offers view" value={view} disabled={busy}
+            onChange={(event) => switchView(event.target.value as "existing" | "create")}
+            className="mt-2 w-full min-w-64 rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-900 focus:border-teal-600 focus:ring-2 focus:ring-teal-100">
+            <option value="existing">Existing pricing and offers</option>
+            <option value="create">Create new</option>
+          </select>
+        </div>
+        <p className="max-w-md text-sm leading-6 text-slate-600">
+          {view === "existing"
+            ? "Review saved plans and offers, confirm their status, or select Create new to add one."
+            : "Complete one form at a time. After saving, this page returns automatically to your existing items."}
+        </p>
+      </section>
       {message && (
         <p role="status" className="rounded border p-4">
           {message}
         </p>
       )}
+      {view === "existing" && <>
       <div className="rounded-2xl border border-teal-200 bg-teal-50 p-5 text-sm leading-6 text-teal-950">
         <p className="text-base font-bold">How to manage prices</p>
         <p><strong>1.</strong> Create or edit a plan below. <strong>2.</strong> Save a draft. <strong>3.</strong> Review and click Activate plan to offer it to customers.</p>
@@ -249,7 +330,8 @@ function Pricing() {
                 disabled={busy || p.status === "archived"}
                 onClick={() => {
                   selectPlan(p.terms,p);
-                  document.getElementById("plan-editor")?.scrollIntoView({behavior:"smooth",block:"start"});
+                  setMessage("");
+                  openEditor("plan");
                 }}
               >
                 Edit plan
@@ -283,6 +365,22 @@ function Pricing() {
           </article>
         ))}
       </section>
+      </>}
+      {view === "create" && <>
+        <div className="flex flex-wrap items-end justify-between gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <label className="block text-sm font-bold text-slate-900">What would you like to create?
+            <select aria-label="What would you like to create?" value={editorType} disabled={busy}
+              onChange={(event) => switchEditor(event.target.value as "plan" | "offer")}
+              className="mt-2 block min-w-60 rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm font-semibold">
+              <option value="plan">Subscription plan</option>
+              <option value="offer">Promotional offer / coupon code</option>
+            </select>
+          </label>
+          <button type="button" disabled={busy} className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+            onClick={() => showExisting()}>← Back to existing pricing and offers</button>
+        </div>
+      </>}
+      {view === "create" && editorType === "plan" && (
       <section id="plan-editor" className="scroll-mt-36 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <h2 className="text-xl font-bold text-slate-900">
           {edit ? "Edit plan terms" : "Create plan draft"}
@@ -464,6 +562,8 @@ function Pricing() {
           </button>
         </form>
       </section>
+      )}
+      {view === "existing" && (
       <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <h2 className="text-xl font-bold">Promotional campaigns</h2><p className="mt-1 text-sm text-slate-500">Create coupons, trial offers and introductory pricing. Only active offers can be redeemed.</p>
         {catalog.offers.map((o) => (
@@ -480,7 +580,7 @@ function Pricing() {
             </p>
             <button
               disabled={busy || o.status === "archived"}
-              onClick={() => { selectOffer(o);document.getElementById("offer-editor")?.scrollIntoView({behavior:"smooth",block:"start"}); }}
+              onClick={() => { selectOffer(o);setMessage("");openEditor("offer"); }}
             >
               Edit offer
             </button>
@@ -512,6 +612,8 @@ function Pricing() {
           </article>
         ))}
       </section>
+      )}
+      {view === "create" && editorType === "offer" && (
       <form
         id="offer-editor"
         key={offer?.version_id ?? "new-offer"}
@@ -651,6 +753,7 @@ function Pricing() {
           Save offer draft/version
         </button>
       </form>
+      )}
     </div>
   );
 }
