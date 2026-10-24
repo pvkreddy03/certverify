@@ -9,6 +9,9 @@ test("double-click branding submission submits once and automatically returns to
   await page.getByLabel("Email address").fill("existing@example.test");
   await page.getByLabel("Password",{exact:true}).fill("test-password");
   await page.getByRole("button",{name:"Sign in",exact:true}).click();
+  // Wait for the asynchronous post-login redirect before a second navigation.
+  // Otherwise the auth redirect can abort the branding page navigation.
+  await expect(page).toHaveURL(/\/dashboard(?:\?|$)/);
   await page.goto("/dashboard/branding");
 
   let submitted=0;
