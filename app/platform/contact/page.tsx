@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
+import { PlatformAdminGuide } from "@/components/platform-admin-guide";
 import { platformFetch } from "@/lib/platform/client";
 import { EMPTY_PUBLIC_CONTACT, type PublicContact } from "@/lib/platform/contact-validation";
 
@@ -39,6 +40,7 @@ export default function PlatformContactPage() {
   return (
     <main className="mx-auto max-w-3xl space-y-6 px-6 py-8">
       <h1 className="text-3xl font-bold">Public contact details</h1>
+      <PlatformAdminGuide section="contact" />
       <p className="text-sm text-slate-600">Only verified platform administrators can change these fields. Blank fields will be hidden on the public login page. This is separate from customer organization contact settings.</p>
       {loading && <p>Loading contact details…</p>}
       {error && <p role="alert" className="rounded bg-red-50 p-4 text-red-700">{error}</p>}
