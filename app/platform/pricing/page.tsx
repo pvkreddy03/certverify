@@ -455,8 +455,8 @@ function Pricing() {
           </button>
         </form>
       </section>
-      <section className="rounded border bg-white p-6">
-        <h2 className="text-xl font-semibold">Promotional campaigns</h2>
+      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <h2 className="text-xl font-bold">Promotional campaigns</h2><p className="mt-1 text-sm text-slate-500">Create coupons, trial offers and introductory pricing. Only active offers can be redeemed.</p>
         {catalog.offers.map((o) => (
           <article key={o.id} className="mt-4 rounded border p-4">
             <h3>
@@ -471,7 +471,7 @@ function Pricing() {
             </p>
             <button
               disabled={busy || o.status === "archived"}
-              onClick={() => setOffer(o)}
+              onClick={() => { selectOffer(o);document.getElementById("offer-editor")?.scrollIntoView({behavior:"smooth",block:"start"}); }}
             >
               Edit offer
             </button>
@@ -482,6 +482,7 @@ function Pricing() {
                   key={status}
                   disabled={busy || o.status === "archived"}
                   onClick={() => {
+                    if (status==="archived" && !window.confirm("Archive this offer permanently? Already-applied discounts retain their terms.")) return;
                     void act({
                       action: "status",
                       kind: "offer",
@@ -503,9 +504,10 @@ function Pricing() {
         ))}
       </section>
       <form
+        id="offer-editor"
         key={offer?.version_id ?? "new-offer"}
         onSubmit={saveOffer}
-        className="grid gap-4 rounded border bg-white p-6 sm:grid-cols-2"
+        className="scroll-mt-36 grid items-start gap-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:grid-cols-2"
       >
         <h2 className="text-xl font-semibold sm:col-span-2">
           {offer ? "Edit promotional offer" : "Create promotional offer draft"}
@@ -521,7 +523,8 @@ function Pricing() {
           Offer type
           <select
             name="kind"
-            defaultValue={ot?.kind ?? "percentage"}
+            value={offerKind}
+            onChange={(e)=>setOfferKind(e.target.value as OfferTerms["kind"])}
             className="mt-1 block border p-2"
           >
             <option value="percentage">Percentage discount</option>
@@ -534,7 +537,8 @@ function Pricing() {
           Offer eligibility
           <select
             name="audience"
-            defaultValue={ot?.audience ?? "new"}
+            value={offerAudience}
+            onChange={(e)=>setOfferAudience(e.target.value as OfferTerms["audience"])}
             className="mt-1 block border p-2"
           >
             <option value="new">New customers</option>
@@ -544,7 +548,7 @@ function Pricing() {
           </select>
         </label>
         <Input
-          label="Discount percentage or amount"
+          label={offerKind==="free_trial"?"Discount (not applicable)":offerKind==="percentage"?"Discount percentage (e.g. 50 for 50%)":offerKind==="fixed"?"Fixed discount amount":"Introductory cycle price"}
           name="value"
           value={
             ot?.value
@@ -552,21 +556,20 @@ function Pricing() {
                 (ot.kind === "percentage" ? 100 : 10 ** ot.currency_exponent)
               : 0
           }
-          required
-        />
-        <Input
-          label="Amount currency code"
-          name="currency"
-          value={ot?.currency ?? "INR"}
-        />
-        <Input
-          label="Amount decimal places"
-          name="exponent"
-          type="number"
-          value={ot?.currency_exponent ?? 2}
+          required={offerKind!=="free_trial"}
+          disabled={offerKind==="free_trial"}
           min={0}
-          max={3}
+          max={offerKind==="percentage"?100:undefined}
+          step="0.01"
+          hint={offerKind==="free_trial"?"Use the trial duration instead.":offerKind==="percentage"?"Enter a percentage, not a money amount.":"Enter a regular currency amount."}
         />
+        <label>Discount currency
+          <select name="currency" value={offerCurrency} onChange={(e)=>setOfferCurrency(e.target.value)} disabled={!offerMoney} className="mt-1 block w-full rounded-lg border border-slate-300 bg-white p-3 disabled:bg-slate-100">
+            {currencyChoices.map(code=><option key={code} value={code}>{code}</option>)}
+            {!currencyChoices.includes(offerCurrency as (typeof currencyChoices)[number]) && <option value={offerCurrency}>{offerCurrency}</option>}
+          </select>
+          <span className="mt-1 block text-xs text-slate-500">{offerMoney?"Only used for monetary discounts.":"Not applicable to a percentage or free trial."}</span>
+        </label>
         <Input
           label="Introductory billing cycles"
           name="cycles"
@@ -574,7 +577,9 @@ function Pricing() {
           value={ot?.cycles ?? 1}
           min={1}
           max={36}
-          required
+          disabled={offerKind==="free_trial"}
+          required={offerKind!=="free_trial"}
+          hint={offerKind==="free_trial"?"Free trial uses one offer cycle.":"How many subscription periods the promotion lasts."}
         />
         <Input
           label="Offer trial days"
@@ -583,7 +588,9 @@ function Pricing() {
           value={ot?.trial_days ?? 0}
           min={0}
           max={365}
-          required
+          disabled={offerKind!=="free_trial"}
+          required={offerKind==="free_trial"}
+          hint={offerKind==="free_trial"?"Trial duration in days.":"Used only for free-trial offers."}
         />
         <Input
           label="Total redemption limit (empty = unlimited)"
@@ -605,9 +612,11 @@ function Pricing() {
           value={dateInput(ot?.ends_at ?? null)}
         />
         <Input
-          label="Selected account references (comma separated)"
+          label="Selected account IDs (comma separated)"
           name="account_ids"
           value={ot?.account_ids.join(",") ?? ""}
+          disabled={offerAudience!=="selected"}
+          hint={offerAudience==="selected"?"Restrict this offer to named account IDs.":"Only used when eligibility is Selected accounts."}
         />
         <fieldset>
           <legend>Restrict to plans (none = all eligible plans)</legend>
@@ -623,12 +632,7 @@ function Pricing() {
             </label>
           ))}
         </fieldset>
-        <p className="text-sm">
-          Free trials use the trial duration and one redemption cycle.
-          Percentage values are percentages; monetary values use the configured
-          currency precision. Accepted offers keep their versioned terms after
-          campaign expiry.
-        </p>
+        <p className="sm:col-span-2 rounded-lg bg-slate-50 p-3 text-sm text-slate-600">Campaigns start as drafts and require explicit activation. Free trials use one redemption cycle; percentage discounts do not need a currency. Existing redemptions keep their agreed terms after expiry.</p>
         <button
           disabled={busy}
           className="rounded bg-blue-700 px-4 py-2 text-white"
