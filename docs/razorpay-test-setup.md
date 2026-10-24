@@ -17,12 +17,12 @@ This guide enables **simulated payments only**. Do not use live credentials, a p
 4. Keep credentials private. **Do not paste them into chat, email, GitHub issues, commits, or client-side source.**
 
 ## Vercel configuration
-Set these *only for the Preview environment* in Vercel project settings (not Production):
+Set these in Vercel project settings for **Preview → Specific Git Branch: `fix/phase8-email-feedback-mobile-navigation`** (not all Preview branches, and never Production). Branch-specific values override the general Preview values. This prevents unrelated preview branches from receiving payment credentials:
 - `RAZORPAY_TEST_KEY_ID` — Razorpay test-mode key ID (format `rzp_test_...`).
 - `RAZORPAY_TEST_KEY_SECRET` — corresponding test key secret (sensitive/server-side).
 - `RAZORPAY_TEST_WEBHOOK_SECRET` — the exact test webhook secret (sensitive/server-side).
 - Keep `CERTVERIFY_DEPLOYMENT_TARGET=isolated_sandbox`, `CERTVERIFY_SANDBOX_PROJECT_REF=nubohxesjeaodqcveiud`, and staging Supabase URL/key bindings as they are.
-- **Last**, change `CERTVERIFY_PAYMENT_MODE` from `disabled` to `razorpay_test`. Redeploy the reviewed staging branch `fix/phase8-email-feedback-mobile-navigation`. Do not promote it to Production.
+- **Last**, add a branch-specific **override** `CERTVERIFY_PAYMENT_MODE=razorpay_test` to the same staging branch; leave the existing general Preview `CERTVERIFY_PAYMENT_MODE=disabled` untouched. Redeploy the reviewed staging branch. Do not promote it to Production.
 
 The app fails closed on missing, live, or inconsistent credentials. Changing the mode without all required settings can break the staging build. The readiness panel confirms only *configuration*, not successful payment acceptance.
 
