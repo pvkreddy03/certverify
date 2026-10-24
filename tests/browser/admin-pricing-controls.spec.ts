@@ -67,3 +67,42 @@ test("offer editor enables only relevant discounts, currencies, trial duration a
   await page.getByLabel("Offer eligibility",{exact:true}).selectOption("selected");
   await expect(accounts).toBeEnabled();
 });
+
+test("creating an offer returns to existing items and prevents rapid duplicate submissions",async({page})=>{
+  await openPricing(page);
+  await expect(page.getByRole("combobox",{name:"Pricing and offers view"})).toHaveValue("create");
+  await page.getByRole("combobox",{name:"What would you like to create?"}).selectOption("offer");
+  await page.getByLabel("Offer name",{exact:true}).fill("First checkout welcome");
+  await page.getByLabel("Coupon code (permanent)",{exact:true}).fill("CHECKOUTWELCOME");
+  await page.getByLabel("Discount percentage (e.g. 50 for 50%)",{exact:true}).fill("10");
+  const save=page.getByRole("button",{name:"Save offer draft/version",exact:true});
+  await save.evaluate((button)=>{
+    (button as HTMLButtonElement).click();
+    (button as HTMLButtonElement).click();
+  });
+  await expect(page.getByRole("combobox",{name:"Pricing and offers view"})).toHaveValue("existing");
+  await expect(page).toHaveURL(/\/platform\/pricing$/);
+  await expect(page.getByRole("status")).toContainText("Promotional offer saved");
+  await expect(save).toHaveCount(0);
+  const listing=page.getByRole("article").filter({hasText:"CHECKOUTWELCOME"});
+  await expect(listing).toHaveCount(1);
+  await expect(listing).toContainText("draft");
+  await page.reload();
+  await expect(page.getByRole("combobox",{name:"Pricing and offers view"})).toHaveValue("existing");
+  await expect(page.getByRole("article").filter({hasText:"CHECKOUTWELCOME"})).toHaveCount(1);
+});
+
+test("saving a new plan navigates to existing plans and editing comes back to its editor",async({page})=>{
+  await openPricing(page);
+  await page.getByLabel("Plan name",{exact:true}).fill("Review-redirect monthly");
+  await page.getByLabel("Subscription price",{exact:true}).fill("850");
+  await page.getByLabel("Agreed renewal price",{exact:true}).fill("850");
+  await page.getByRole("button",{name:"Save plan draft/version",exact:true}).click();
+  await expect(page.getByRole("combobox",{name:"Pricing and offers view"})).toHaveValue("existing");
+  await expect(page).toHaveURL(/\/platform\/pricing$/);
+  const listing=page.getByRole("article").filter({hasText:"Review-redirect monthly"});
+  await expect(listing).toHaveCount(1);
+  await listing.getByRole("button",{name:"Edit plan",exact:true}).click();
+  await expect(page.getByRole("combobox",{name:"Pricing and offers view"})).toHaveValue("create");
+  await expect(page.getByLabel("Plan name",{exact:true})).toHaveValue("Review-redirect monthly");
+});
