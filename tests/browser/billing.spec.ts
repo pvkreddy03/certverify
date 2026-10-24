@@ -25,6 +25,7 @@ test("platform edits proposed example pricing as a draft and activates it explic
   await page
     .getByRole("link", { name: "Pricing and offers", exact: true })
     .click();
+  await page.getByRole("combobox",{name:"Pricing and offers view"}).selectOption("create");
   await page
     .getByRole("combobox", {
       name: "Optional editable pricing example",
@@ -65,6 +66,8 @@ test("coupon administration records configurable discount, duration and expiry",
 }) => {
   await login(page, true);
   await page.goto("/platform/pricing");
+  await page.getByRole("combobox",{name:"Pricing and offers view"}).selectOption("create");
+  await page.getByRole("combobox",{name:"What would you like to create?"}).selectOption("offer");
   await page.getByLabel("Offer name", { exact: true }).fill("Welcome campaign");
   await page
     .getByLabel("Coupon code (permanent)", { exact: true })
