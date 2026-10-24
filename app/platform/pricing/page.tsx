@@ -67,7 +67,7 @@ function Input({
 }
 const currencyChoices = ["INR","USD","EUR","GBP","AED"] as const;
 function currencyPrecision(code: string) {
-  return new Intl.NumberFormat("en", { style: "currency", currency: code }).resolvedOptions().maximumFractionDigits;
+  return new Intl.NumberFormat("en", { style: "currency", currency: code }).resolvedOptions().maximumFractionDigits ?? 2;
 }
 function Pricing() {
   const [catalog, setCatalog] = useState<PricingCatalog>({
