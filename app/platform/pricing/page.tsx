@@ -214,15 +214,19 @@ function Pricing() {
           {message}
         </p>
       )}
-      <p>
-        Drafts require explicit activation. Editing creates a new version;
-        existing subscribers retain agreed historical prices and limits.
-        Archived items cannot be reopened.
-      </p>
-      <section className="rounded border bg-white p-6">
-        <h2 className="text-xl font-semibold">Subscription plans</h2>
+      <div className="rounded-2xl border border-teal-200 bg-teal-50 p-5 text-sm leading-6 text-teal-950">
+        <p className="text-base font-bold">How to manage prices</p>
+        <p><strong>1.</strong> Create or edit a plan below. <strong>2.</strong> Save a draft. <strong>3.</strong> Review and click Activate plan to offer it to customers.</p>
+        <p>Existing subscribers keep their agreed terms. Monthly and annual subscriptions currently renew through explicit checkout; automatic UPI and card mandates are not yet implemented.</p>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-3">
+        {([["Total plans",catalog.plans.length],["Active plans",catalog.plans.filter(p=>p.status==="active").length],["Active offers",catalog.offers.filter(o=>o.status==="active").length]] as const).map(([label,total])=><div key={label} className="rounded-xl border border-slate-200 bg-white p-4"><div className="text-sm text-slate-500">{label}</div><div className="mt-1 text-2xl font-bold text-slate-900">{total}</div></div>)}
+      </div>
+      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <h2 className="text-xl font-bold text-slate-900">Subscription plans</h2>
+        <p className="mt-1 text-sm text-slate-500">Only active plans are offered to eligible customers. Drafts are for review.</p>
         {catalog.plans.map((p) => (
-          <article key={p.id} className="mt-4 rounded border p-4">
+          <article key={p.id} className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
             <h3 className="font-semibold">
               {p.terms.name} — {p.status}
             </h3>
@@ -242,8 +246,8 @@ function Pricing() {
               <button
                 disabled={busy || p.status === "archived"}
                 onClick={() => {
-                  setEdit(p);
-                  setTemplate(p.terms);
+                  selectPlan(p.terms,p);
+                  document.getElementById("plan-editor")?.scrollIntoView({behavior:"smooth",block:"start"});
                 }}
               >
                 Edit plan
@@ -255,6 +259,8 @@ function Pricing() {
                     key={status}
                     disabled={busy || p.status === "archived"}
                     onClick={() => {
+                      if (status==="archived" && !window.confirm("Permanently archive this plan? Existing subscriber terms remain intact.")) return;
+                      if (status==="inactive" && !window.confirm("Deactivate this plan for new subscriptions? Existing subscribers keep their terms.")) return;
                       void act({
                         action: "status",
                         kind: "plan",
@@ -275,8 +281,8 @@ function Pricing() {
           </article>
         ))}
       </section>
-      <section className="rounded border bg-white p-6">
-        <h2 className="text-xl font-semibold">
+      <section id="plan-editor" className="scroll-mt-36 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <h2 className="text-xl font-bold text-slate-900">
           {edit ? "Edit plan terms" : "Create plan draft"}
         </h2>
         <label className="mt-3 block">
@@ -285,10 +291,7 @@ function Pricing() {
             aria-label="Optional editable pricing example"
             value={edit ? "editing" : PROPOSED_EXAMPLES.indexOf(template)}
             onChange={(e) => {
-              setEdit(null);
-              setTemplate(
-                PROPOSED_EXAMPLES[Number(e.target.value)] ?? EMPTY_PLAN,
-              );
+              selectPlan(PROPOSED_EXAMPLES[Number(e.target.value)] ?? EMPTY_PLAN);
             }}
             className="ml-3 border p-2"
           >
@@ -304,24 +307,27 @@ function Pricing() {
         <form
           key={edit?.version_id ?? template.name}
           onSubmit={savePlan}
-          className="mt-5 grid gap-4 sm:grid-cols-2"
+          className="mt-5 grid items-start gap-5 sm:grid-cols-2"
         >
+          <div className="sm:col-span-2 border-b border-slate-100 pb-2"><h3 className="text-lg font-bold text-slate-900">1. Plan identity</h3><p className="text-xs text-slate-500">Name and description shown to eligible customers.</p></div>
           <Input label="Plan name" name="name" value={t.name} required />
           <Input
             label="Plan description"
             name="description"
             value={t.description}
           />
+          <div className="sm:col-span-2 border-b border-slate-100 pt-4 pb-2"><h3 className="text-lg font-bold text-slate-900">2. Billing and price</h3><p className="text-xs text-slate-500">Monthly and yearly are standard periods. Custom days only apply to a custom plan.</p></div>
           <label>
             Billing period
             <select
               name="billing_period"
-              defaultValue={t.billing_period}
+              value={period}
+              onChange={(e)=>setPeriod(e.target.value as PlanTerms["billing_period"])}
               className="mt-1 block border p-2"
             >
               <option value="monthly">Monthly</option>
               <option value="annual">Annual</option>
-              <option value="custom">Custom days</option>
+              <option value="custom">Custom duration</option>
             </select>
           </label>
           <label>
@@ -351,42 +357,21 @@ function Pricing() {
               </label>
             ))}
           </fieldset>
-          <Input
-            label="Custom period days"
-            name="custom_days"
-            type="number"
-            value={t.custom_days}
-            min={1}
-            max={3660}
-            required
-          />
-          <Input
-            label="Currency code"
-            name="currency"
-            value={t.currency}
-            required
-          />
-          <Input
-            label="Currency decimal places"
-            name="currency_exponent"
-            type="number"
-            value={t.currency_exponent}
-            min={0}
-            max={3}
-            required
-          />
-          <Input
-            label="Subscription price"
-            name="price"
-            value={t.price_minor / 10 ** t.currency_exponent}
-            required
-          />
-          <Input
-            label="Agreed renewal price"
-            name="renewal"
-            value={t.renewal_price_minor / 10 ** t.currency_exponent}
-            required
-          />
+          <Input label="Custom period days" name="custom_days" type="number" value={t.custom_days}
+            min={1} max={3660} required={period==="custom"} disabled={period!=="custom"}
+            hint={period==="custom" ? "Number of days per subscription period." : "Not applicable to monthly or yearly plans."} />
+          <label className="block">Currency
+            <select name="currency" value={currency} onChange={(e)=>setCurrency(e.target.value)} className="mt-1 block w-full rounded-lg border border-slate-300 bg-white p-3">
+              {currencyChoices.map(code=><option key={code} value={code}>{code}{code==="INR"?" — Indian rupees":""}</option>)}
+              {!currencyChoices.includes(currency as (typeof currencyChoices)[number]) && <option value={currency}>{currency}</option>}
+            </select>
+            <span className="mt-1 block text-xs text-slate-500">Enter ordinary prices (for example ₹999.00). Decimal precision is automatic.</span>
+          </label>
+          <Input label="Subscription price" name="price" type="number" min={0} step={priceDigits===0 ? "1":"0.01"}
+            value={t.price_minor / 10 ** t.currency_exponent} required hint="Charged for the first paid period, before promotions." />
+          <Input label="Agreed renewal price" name="renewal" type="number" min={0} step={priceDigits===0 ? "1":"0.01"}
+            value={t.renewal_price_minor / 10 ** t.currency_exponent} required hint="Price for later billing periods. Automatic collection is not yet active." />
+          <div className="sm:col-span-2 border-b border-slate-100 pt-4 pb-2"><h3 className="text-lg font-bold text-slate-900">3. Users and certificate limits</h3><p className="text-xs text-slate-500">Unlimited refers to certificate count, not subscription duration or licensed users.</p></div>
           <Input
             label="Included user seats"
             name="included_seats"
@@ -399,6 +384,9 @@ function Pricing() {
           <Input
             label="Price per additional seat"
             name="extra"
+            type="number"
+            min={0}
+            step={priceDigits===0 ? "1":"0.01"}
             value={t.extra_seat_price_minor / 10 ** t.currency_exponent}
             required
           />
@@ -410,21 +398,14 @@ function Pricing() {
             min={1}
             max={10000}
           />
-          <Input
-            label="Certificate limit per billing period"
-            name="certificate_limit"
-            type="number"
-            value={t.certificate_limit ?? 0}
-            min={0}
-          />
-          <label>
-            <input
-              name="unlimited"
-              type="checkbox"
-              defaultChecked={t.certificate_limit === null}
-            />{" "}
-            Unlimited certificate generation
+          <label className="sm:col-span-2 flex items-start gap-3 rounded-xl border border-teal-200 bg-teal-50 p-4">
+            <input name="unlimited" type="checkbox" checked={unlimited} onChange={(e)=>setUnlimited(e.target.checked)} className="mt-1 h-4 w-4 accent-teal-700" />
+            <span><strong className="block text-slate-900">Unlimited certificate generation</strong><span className="block text-sm text-slate-600">No certificate-count cap. Uncheck to set a specific limit below.</span></span>
           </label>
+          <Input label="Certificate limit per billing period" name="certificate_limit" type="number"
+            value={t.certificate_limit ?? 0} min={0} disabled={unlimited} required={!unlimited}
+            hint={unlimited ? "Disabled while unlimited generation is selected." : "Maximum certificates issued in one subscription period."} />
+          <div className="sm:col-span-2 border-b border-slate-100 pt-4 pb-2"><h3 className="text-lg font-bold text-slate-900">4. Visibility and optional settings</h3><p className="text-xs text-slate-500">Leave plan dates empty for ongoing availability.</p></div>
           <Input
             label="Trial days"
             name="trial_days"
@@ -467,8 +448,7 @@ function Pricing() {
           <button
             type="button"
             onClick={() => {
-              setEdit(null);
-              setTemplate(EMPTY_PLAN);
+              selectPlan(EMPTY_PLAN);
             }}
           >
             Clear plan editor
@@ -662,9 +642,9 @@ function Pricing() {
 export default function PricingPage() {
   return (
     <main className="mx-auto max-w-6xl space-y-6 px-6 py-8">
-      <h1 className="text-3xl font-bold">
-        Pricing plans and promotional offers
-      </h1>
+      <p className="text-xs font-bold uppercase tracking-widest text-teal-700">Commercial controls</p>
+      <h1 className="text-3xl font-extrabold tracking-tight text-[#17344c]">Pricing and offers</h1>
+      <p className="text-sm text-slate-600">Create subscription plans, set team-seat and certificate limits, and publish promotional campaigns.</p>
       <PlatformMfa>
         <Pricing />
       </PlatformMfa>
