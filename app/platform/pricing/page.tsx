@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { PlatformAdminGuide } from "@/components/platform-admin-guide";
 import { PlatformMfa } from "@/components/platform-mfa";
 import { platformFetch } from "@/lib/platform/client";
 import { formatMoney, parseMoney } from "@/lib/billing/money";
@@ -649,6 +650,7 @@ export default function PricingPage() {
       <p className="text-xs font-bold uppercase tracking-widest text-teal-700">Commercial controls</p>
       <h1 className="text-3xl font-extrabold tracking-tight text-[#17344c]">Pricing and offers</h1>
       <p className="text-sm text-slate-600">Create subscription plans, set team-seat and certificate limits, and publish promotional campaigns.</p>
+      <PlatformAdminGuide section="pricing" />
       <PlatformMfa>
         <Pricing />
       </PlatformMfa>
