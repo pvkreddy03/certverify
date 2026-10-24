@@ -42,6 +42,7 @@ test("multi-sheet upload requires choosing sheets, blocks mismatches, then allow
   await page.getByLabel("Email address").fill("existing@example.test");
   await page.getByLabel("Password",{exact:true}).fill("test-password");
   await page.getByRole("button",{name:"Sign in",exact:true}).click();
+  await expect(page).toHaveURL(/\/dashboard(?:\/|\?|$)/);
   await page.goto("/dashboard/certificates/bulk");
   await page.getByLabel("Certificate template").selectOption("81000000-0000-0000-0000-000000000001");
   const workbook=createXlsxWorkbook([
@@ -67,6 +68,7 @@ test("matching selected sheets combine records into one confirmed batch",async({
   await page.getByLabel("Email address").fill("existing@example.test");
   await page.getByLabel("Password",{exact:true}).fill("test-password");
   await page.getByRole("button",{name:"Sign in",exact:true}).click();
+  await expect(page).toHaveURL(/\/dashboard(?:\/|\?|$)/);
   await page.goto("/dashboard/certificates/bulk");
   await page.getByLabel("Certificate template").selectOption("81000000-0000-0000-0000-000000000001");
   const workbook=createXlsxWorkbook([

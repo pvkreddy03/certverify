@@ -70,7 +70,7 @@ test("coupon administration records configurable discount, duration and expiry",
     .getByLabel("Coupon code (permanent)", { exact: true })
     .fill("WELCOME50");
   await page
-    .getByLabel("Discount percentage or amount", { exact: true })
+    .getByLabel("Discount percentage (e.g. 50 for 50%)", { exact: true })
     .fill("50");
   await page
     .getByRole("combobox", { name: "Offer eligibility", exact: true })

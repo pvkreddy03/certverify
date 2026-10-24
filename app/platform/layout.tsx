@@ -1,17 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { serverSession } from "@/lib/auth/server-session";
-
-const adminLinks = [
-  { href: "/platform", label: "Overview" },
-  { href: "/platform/accounts", label: "Accounts" },
-  { href: "/platform/subscriptions", label: "Subscriptions" },
-  { href: "/platform/payments", label: "Payments" },
-  { href: "/platform/pricing", label: "Pricing and offers" },
-  { href: "/platform/branding", label: "Branding approvals" },
-  { href: "/platform/contact", label: "Support details" },
-  { href: "/platform/audit", label: "Audit history" },
-];
+import { PlatformNavigation } from "@/components/platform-navigation";
 
 export default async function PlatformLayout({ children }: { children: React.ReactNode }) {
   const client = await serverSession();
@@ -34,9 +24,7 @@ export default async function PlatformLayout({ children }: { children: React.Rea
             <Link href="/dashboard" className="rounded-xl border border-white/30 px-3 py-2 font-semibold text-white hover:bg-white/10">Customer workspace ↗</Link>
           </div>
         </div>
-        <nav aria-label="Platform administration sections" className="mt-4 flex gap-2 overflow-x-auto pb-1">
-          {adminLinks.map(item => <Link key={item.href} href={item.href} className="shrink-0 rounded-lg px-3 py-2 text-sm font-semibold text-slate-200 transition-colors hover:bg-white/15 hover:text-white">{item.label}</Link>)}
-        </nav>
+        <PlatformNavigation />
       </div>
     </header>
     {children}
