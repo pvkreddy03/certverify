@@ -31,6 +31,9 @@ function Input({
   required = false,
   min,
   max,
+  disabled = false,
+  hint,
+  step,
 }: {
   label: string;
   name: string;
@@ -39,6 +42,9 @@ function Input({
   required?: boolean;
   min?: number;
   max?: number;
+  disabled?: boolean;
+  hint?: string;
+  step?: string;
 }) {
   return (
     <label className="block">
@@ -50,10 +56,17 @@ function Input({
         required={required}
         min={min}
         max={max}
-        className="mt-1 block w-full rounded border p-2"
+        disabled={disabled}
+        step={step}
+        className="mt-1 block w-full rounded-lg border border-slate-300 bg-white p-3 text-slate-900 focus:border-teal-600 focus:ring-2 focus:ring-teal-100 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
       />
+      {hint && <span className="mt-1 block text-xs text-slate-500">{hint}</span>}
     </label>
   );
+}
+const currencyChoices = ["INR","USD","EUR","GBP","AED"] as const;
+function currencyPrecision(code: string) {
+  return new Intl.NumberFormat("en", { style: "currency", currency: code }).resolvedOptions().maximumFractionDigits;
 }
 function Pricing() {
   const [catalog, setCatalog] = useState<PricingCatalog>({
@@ -65,6 +78,20 @@ function Pricing() {
   const [offer, setOffer] = useState<CatalogOffer | null>(null);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  const [period,setPeriod] = useState<PlanTerms["billing_period"]>(EMPTY_PLAN.billing_period);
+  const [unlimited,setUnlimited] = useState(EMPTY_PLAN.certificate_limit===null);
+  const [currency,setCurrency] = useState(EMPTY_PLAN.currency);
+  const [offerKind,setOfferKind] = useState<OfferTerms["kind"]>("percentage");
+  const [offerAudience,setOfferAudience] = useState<OfferTerms["audience"]>("new");
+  const [offerCurrency,setOfferCurrency] = useState("INR");
+  function selectPlan(next:PlanTerms, editing:CatalogPlan|null=null) {
+    setEdit(editing);setTemplate(next);setPeriod(next.billing_period);
+    setUnlimited(next.certificate_limit===null);setCurrency(next.currency);
+  }
+  function selectOffer(next:CatalogOffer|null) {
+    setOffer(next);setOfferKind(next?.terms.kind ?? "percentage");
+    setOfferAudience(next?.terms.audience ?? "new");setOfferCurrency(next?.terms.currency ?? "INR");
+  }
   useEffect(() => {
     let active = true;
     void platformFetch<PricingCatalog>("/api/platform/pricing")
@@ -88,9 +115,8 @@ function Pricing() {
         body: JSON.stringify(body),
       });
       setCatalog(await platformFetch<PricingCatalog>("/api/platform/pricing"));
-      setEdit(null);
-      setOffer(null);
-      setTemplate(EMPTY_PLAN);
+      selectPlan(EMPTY_PLAN);
+      selectOffer(null);
       setMessage("Pricing change saved with immutable version history.");
     } catch (f) {
       setMessage(f instanceof Error ? f.message : "Pricing change failed.");
@@ -102,27 +128,23 @@ function Pricing() {
     event.preventDefault();
     const f = new FormData(event.currentTarget);
     try {
-      const exponent = Number(field(f, "currency_exponent"));
+      const selectedCurrency=field(f,"currency").toUpperCase();
+      const exponent=currencyPrecision(selectedCurrency);
       const terms: PlanTerms = {
         name: field(f, "name"),
         description: field(f, "description"),
         eligibility: f.getAll("eligibility") as PlanTerms["eligibility"],
         audience: field(f, "audience") as PlanTerms["audience"],
-        billing_period: field(
-          f,
-          "billing_period",
-        ) as PlanTerms["billing_period"],
-        custom_days: Number(field(f, "custom_days")),
-        currency: field(f, "currency").toUpperCase(),
+        billing_period: period,
+        custom_days: period==="custom" ? Number(field(f,"custom_days")) : (t.custom_days||30),
+        currency: selectedCurrency,
         currency_exponent: exponent,
         price_minor: parseMoney(field(f, "price"), exponent),
         renewal_price_minor: parseMoney(field(f, "renewal"), exponent),
         extra_seat_price_minor: parseMoney(field(f, "extra"), exponent),
         included_seats: Number(field(f, "included_seats")),
         max_seats: field(f, "max_seats") ? Number(field(f, "max_seats")) : null,
-        certificate_limit: f.has("unlimited")
-          ? null
-          : Number(field(f, "certificate_limit")),
+        certificate_limit: unlimited ? null : Number(field(f,"certificate_limit")),
         trial_days: Number(field(f, "trial_days")),
         visible: f.has("visible"),
         features: field(f, "features")
@@ -152,26 +174,21 @@ function Pricing() {
           ? parseMoney(field(f, "value"), 2)
           : kind === "free_trial"
             ? 0
-            : parseMoney(field(f, "value"), Number(field(f, "exponent")));
+            : parseMoney(field(f, "value"), currencyPrecision(offerCurrency));
       const terms: OfferTerms = {
         name: field(f, "name"),
         kind,
-        audience: field(f, "audience") as OfferTerms["audience"],
+        audience: offerAudience,
         value,
         cycles: kind === "free_trial" ? 1 : Number(field(f, "cycles")),
-        trial_days: Number(field(f, "trial_days")),
-        currency_exponent: Number(field(f, "exponent")),
-        currency: ["fixed", "intro_price"].includes(kind)
-          ? field(f, "currency").toUpperCase()
-          : null,
+        trial_days: kind === "free_trial" ? Number(field(f,"trial_days")) : 0,
+        currency_exponent: currencyPrecision(offerCurrency),
+        currency: ["fixed", "intro_price"].includes(kind) ? offerCurrency : null,
         max_redemptions: field(f, "max_redemptions")
           ? Number(field(f, "max_redemptions"))
           : null,
         plan_ids: f.getAll("plan_ids") as string[],
-        account_ids: field(f, "account_ids")
-          .split(",")
-          .map((s) => s.trim())
-          .filter(Boolean),
+        account_ids: offerAudience==="selected" ? field(f,"account_ids").split(",").map(s=>s.trim()).filter(Boolean) : [],
         starts_at: date(f, "starts_at"),
         ends_at: date(f, "ends_at"),
       };
@@ -188,6 +205,8 @@ function Pricing() {
   }
   const t = edit?.terms ?? template;
   const ot = offer?.terms;
+  const priceDigits=currencyPrecision(currency);
+  const offerMoney=offerKind==="fixed"||offerKind==="intro_price";
   return (
     <div className="space-y-8">
       {message && (
