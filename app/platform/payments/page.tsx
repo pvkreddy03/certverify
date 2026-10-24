@@ -8,6 +8,7 @@ function money(amount:number,currency:string) {
   const digits=new Intl.NumberFormat("en",{style:"currency",currency}).resolvedOptions().maximumFractionDigits;
   return formatMoney(amount,currency,digits);
 }
+type Readiness = { mode:string;configured:boolean;testOnly:true;livePaymentsEnabled:false;message:string };
 type Attempt = {
   id: string;
   account_id: string;
@@ -20,6 +21,7 @@ type Attempt = {
   settlement: string | null;
 };
 export default function Payments() {
+  const [readiness,setReadiness] = useState<Readiness|null>(null);
   const [rows, setRows] = useState<Attempt[]>([]),
     [page, setPage] = useState(1),
     [total, setTotal] = useState(0),
@@ -32,6 +34,9 @@ export default function Payments() {
     [reason, setReason] = useState("");
   useEffect(() => {
     let alive = true;
+    void platformFetch<Readiness>("/api/platform/payments/readiness")
+      .then(status=>{if(alive)setReadiness(status);})
+      .catch(()=>{ /* A failed health report must not imply checkout readiness. */ });
     void platformFetch<{ attempts: Attempt[]; total: number }>(
       `/api/platform/payments?page=${page}`,
     )
@@ -92,6 +97,7 @@ export default function Payments() {
       <h1 className="text-3xl font-bold">
         Payment monitoring and reconciliation
       </h1>
+      {readiness && <div role="status" className={`rounded-xl border p-4 text-sm ${readiness.configured?"border-teal-200 bg-teal-50 text-teal-950":"border-amber-200 bg-amber-50 text-amber-950"}`}><p className="font-bold">{readiness.configured?"Razorpay Test Mode configured":"Razorpay Test Mode not ready"}</p><p className="mt-1">{readiness.message}</p><p className="mt-2 text-xs">Configuration is not a successful payment test. Only verified captured transactions can activate paid subscriptions.</p></div>}
       <p className="text-sm leading-6 text-slate-600">Test transactions only. Captured payments awaiting review do not grant access. Partial refunds preserve quotas; full refunds and disputes block the related paid period. Recurring mandates are not available yet.</p>
       <section aria-label="Payment overview" className="grid gap-3 sm:grid-cols-3">
         {([["Attempts on this page",rows.length],["Captured / active",settled],["Needs verification",attention]] as const).map(([label,count])=><div key={label} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"><p className="text-sm text-slate-500">{label}</p><p className="mt-1 text-2xl font-bold text-slate-900">{count}</p></div>)}
