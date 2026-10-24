@@ -9,6 +9,7 @@ test("Bulk Excel template dropdown opens new template form and preserves bulk re
   await page.getByLabel("Email address").fill("existing@example.test");
   await page.getByLabel("Password",{exact:true}).fill("test-password");
   await page.getByRole("button",{name:"Sign in",exact:true}).click();
+  await expect(page).toHaveURL(/\/dashboard(?:\/|\?|$)/);
   await page.goto("/dashboard/certificates/bulk");
 
   await expect(page.getByRole("heading",{name:"Bulk certificate generation"})).toBeVisible();
