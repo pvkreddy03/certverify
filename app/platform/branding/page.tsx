@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { PlatformAdminGuide } from "@/components/platform-admin-guide";
 import Image from "next/image";
 import { PlatformMfa } from "@/components/platform-mfa";
 import { supabase } from "@/lib/supabase";
@@ -51,5 +52,5 @@ function Queue() {
   </div>;
 }
 export default function PlatformBrandingPage() {
-  return <main className="mx-auto max-w-5xl space-y-6 px-6 py-8"><h1 className="text-3xl font-bold">Platform branding approvals</h1><p>Platform administration is separate from customer organization roles. All decisions are authorized and audited.</p><PlatformMfa><Queue /></PlatformMfa></main>;
+  return <main className="mx-auto max-w-5xl space-y-6 px-6 py-8"><h1 className="text-3xl font-bold">Platform branding approvals</h1><PlatformAdminGuide section="branding" /><p>Platform administration is separate from customer organization roles. All decisions are authorized and audited.</p><PlatformMfa><Queue /></PlatformMfa></main>;
 }
