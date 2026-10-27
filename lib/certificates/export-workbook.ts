@@ -62,7 +62,7 @@ export function buildCertificateExportSheets(
   }
   const groups = new Map<string, ExportCertificate[]>();
   for (const certificate of certificates) {
-    const key = certificate.template_id ?? "unassigned";
+    const key = certificate.template_id ?? "legacy:" + (certificate.template_name?.trim() || "unassigned");
     const list = groups.get(key) ?? [];
     list.push(certificate);
     groups.set(key, list);
