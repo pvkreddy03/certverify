@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+import { accountHeaders } from "@/lib/accounts/context";
 
 type Certificate = {
   id: string;
@@ -23,6 +24,67 @@ export default function CertificateListPage() {
   const [certificates, setCertificates] = useState<CertificateRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
+  const [exportMode, setExportMode] = useState<"all" | "range">("all");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState("");
+  const [exportDone, setExportDone] = useState("");
+  const exportLocked = useRef(false);
+
+  async function exportCertificates(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (exportLocked.current) return;
+    if (exportMode === "range" && (!fromDate || !toDate || fromDate > toDate)) {
+      setExportError("Choose a valid start and end date. End date cannot be before start date.");
+      return;
+    }
+    exportLocked.current = true;
+    setExporting(true);
+    setExportError("");
+    setExportDone("");
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Your session has expired. Sign in again to export certificates.");
+      const headers = accountHeaders({ "Content-Type": "application/json" });
+      headers.set("Authorization", "Bearer " + session.access_token);
+      const response = await fetch("/api/certificates/export", {
+        method: "POST", headers, cache: "no-store",
+        body: JSON.stringify(exportMode === "all" ? {} : { from: fromDate, to: toDate }),
+      });
+      if (!response.ok) {
+        let detail = "Could not export certificates. Please try a shorter date range.";
+        try {
+          const body = await response.json() as { error?: string };
+          detail = body.error || detail;
+        } catch { /* Use safe fallback. */ }
+        throw new Error(detail);
+      }
+      const type = response.headers.get("Content-Type") || "";
+      const extension = type.includes("application/zip") ? "zip" : "xlsx";
+      const safeFile = response.headers.get("Content-Disposition")?.match(/filename="([^"]+)"/)?.[1];
+      const filename = safeFile && /^certverify-certificates-[a-zA-Z0-9-]+\.(xlsx|zip)$/.test(safeFile)
+        ? safeFile : "certverify-certificates." + extension;
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      try {
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      } finally {
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      }
+      setExportDone("Excel export ready. Open your Downloads folder to view the workbook.");
+    } catch (error) {
+      setExportError(error instanceof Error ? error.message : "Could not download certificates.");
+    } finally {
+      exportLocked.current = false;
+      setExporting(false);
+    }
+  }
 
   async function loadCertificates() {
     setLoading(true);
@@ -145,6 +207,52 @@ export default function CertificateListPage() {
           </Link>
           </div>
         </div>
+
+        <section aria-label="Export certificates to Excel" className="cv-panel mb-7 space-y-4 p-5 sm:p-6">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <h2 className="text-lg font-bold text-[#183449]">Export certificates to Excel</h2>
+              <p className="mt-1 text-sm text-slate-600">
+                Download your account&apos;s certificates as an Excel workbook. Each certificate template gets its own worksheet,
+                with its custom fields, certificate number, status, creator, and verification link.
+              </p>
+            </div>
+            <span className="rounded-full border border-teal-200 bg-teal-50 px-3 py-1 text-xs font-bold text-teal-800">Excel .xlsx</span>
+          </div>
+          <form className="space-y-4" onSubmit={exportCertificates}>
+            <fieldset className="flex flex-wrap gap-4">
+              <legend className="mb-2 text-sm font-semibold text-slate-700">Which certificates?</legend>
+              <label className="flex items-center gap-2 text-sm">
+                <input type="radio" name="exportMode" value="all" checked={exportMode === "all"} onChange={() => setExportMode("all")} disabled={exporting} />
+                All certificates
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <input type="radio" name="exportMode" value="range" checked={exportMode === "range"} onChange={() => setExportMode("range")} disabled={exporting} />
+                Choose date range
+              </label>
+            </fieldset>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="block text-sm font-semibold text-slate-700">
+                From date
+                <input aria-label="Export from date" className="cv-field mt-1" type="date" value={fromDate}
+                  onChange={event => setFromDate(event.target.value)} disabled={exportMode === "all" || exporting} required={exportMode === "range"} />
+              </label>
+              <label className="block text-sm font-semibold text-slate-700">
+                To date
+                <input aria-label="Export to date" className="cv-field mt-1" type="date" value={toDate}
+                  min={fromDate || undefined} onChange={event => setToDate(event.target.value)}
+                  disabled={exportMode === "all" || exporting} required={exportMode === "range"} />
+              </label>
+            </div>
+            <p className="text-xs text-slate-500">Dates are inclusive and follow India Standard Time. Exports include the certificates visible in your selected workspace, including revoked certificates.
+              If a download exceeds 20,000 certificates, use smaller date ranges. More than 30 templates will be delivered as a ZIP containing multiple Excel workbooks.</p>
+            <button type="submit" disabled={exporting} className="cv-primary disabled:cursor-wait disabled:opacity-60">
+              {exporting ? "Preparing Excel export…" : "↓ Download Excel"}
+            </button>
+          </form>
+          {exportError && <p role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{exportError}</p>}
+          {exportDone && <p role="status" className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900">{exportDone}</p>}
+        </section>
 
         {errorMessage && (
           <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
