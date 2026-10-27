@@ -67,6 +67,6 @@ test("export warns on oversized report instead of downloading a partial workbook
     await route.fulfill({status:422,contentType:"application/json",body:JSON.stringify({error:"This export exceeds 20,000 certificates. Choose a shorter date range."})});
   });
   await page.getByRole("button",{name:"↓ Download Excel"}).click();
-  await expect(page.getByRole("alert")).toContainText("shorter date range");
+  await expect(page.getByRole("alert").filter({hasText:"shorter date range"})).toContainText("shorter date range");
   await expect(page.getByRole("button",{name:"↓ Download Excel"})).toBeEnabled();
 });
