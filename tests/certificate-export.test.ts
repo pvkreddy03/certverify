@@ -70,6 +70,6 @@ test("formula-looking values stay literal inline string cells without embedded E
   const sheet=buildCertificateExportSheets([cert("xy","t","Source")],
     [value("xy","Input","=HYPERLINK(\"https://example.com\",\"click\")")],new Map(),x=>x);
   const xlsx=packageCertificateExport(sheet).bytes;
-  assert.ok(xlsx.includes(Buffer.from("=HYPERLINK(")));
-  assert.ok(!xlsx.includes(Buffer.from("<f>")));
+  const parsed=readXlsxSheets(xlsx);
+  assert.equal(parsed[0].rows[0].at(-1),'=HYPERLINK("https://example.com","click")');
 });
