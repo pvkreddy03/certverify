@@ -213,7 +213,7 @@ export default function CertificateListPage() {
             <div>
               <h2 className="text-lg font-bold text-[#183449]">Export certificates to Excel</h2>
               <p className="mt-1 text-sm text-slate-600">
-                Download your account's certificates as an Excel workbook. Each certificate template gets its own worksheet,
+                Download your account&apos;s certificates as an Excel workbook. Each certificate template gets its own worksheet,
                 with its custom fields, certificate number, status, creator, and verification link.
               </p>
             </div>
