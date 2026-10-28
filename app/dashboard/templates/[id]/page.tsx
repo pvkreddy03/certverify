@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { requireSelectedAccountId } from "@/lib/accounts/context";
 
@@ -391,6 +392,16 @@ export default function TemplatePage() {
             {fromBulk ? "Continue to Bulk Excel →" : "Continue to create certificate →"}
           </button>
         </div>}
+
+        {/* Optional Word report format bound to the same certificate fields. */}
+        <div className="cv-panel mt-6 flex flex-wrap items-center justify-between gap-4 p-6">
+          <div>
+            <h2 className="text-lg font-semibold text-slate-900">Visual Word Report Designer</h2>
+            <p className="mt-1 text-sm text-slate-600">Upload your existing .docx, select text or blank areas, and map them to these fields. No placeholders to type.</p>
+          </div>
+          <Link href={"/dashboard/templates/" + templateId + "/report"}
+            className="cv-primary">Open Report Designer →</Link>
+        </div>
 
         {/* Template Information */}
         <div className="cv-panel mt-6 p-6">
