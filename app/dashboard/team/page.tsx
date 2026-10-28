@@ -2,15 +2,19 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { useEmailCooldown } from "@/lib/auth/email-cooldown";
+import { isValidEmail, INVALID_EMAIL_MESSAGE } from "@/lib/auth/email-validation";
 import { MemberActions } from "@/components/member-actions";
 import { accountHeaders, requireSelectedAccountId } from "@/lib/accounts/context";
 
 type TeamMember = {
   id: string;
   user_id: string;
+  email: string;
   role: string;
   status: string;
   joined_at: string;
+  can_manage_templates?: boolean;
 };
 
 type Account = {
@@ -56,6 +60,7 @@ export default function TeamPage() {
 
   const [upgrading, setUpgrading] = useState(false);
   const [sendingInvite, setSendingInvite] = useState(false);
+  const inviteCooldown = useEmailCooldown("team-invitation");
 
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteMessage, setInviteMessage] = useState("");
@@ -123,14 +128,10 @@ export default function TeamPage() {
       return;
     }
 
+    // A tenant-scoped RPC resolves user IDs to verified auth emails.
+    // It exposes only this account's users (members see only themselves).
     const { data: memberData, error: memberError } =
-      await supabase
-        .from("account_members")
-        .select(
-          "id, user_id, role, status, joined_at"
-        )
-        .eq("account_id", membershipData.account_id)
-        .order("joined_at", { ascending: true });
+      await supabase.rpc("cv_team_member_directory");
 
     if (memberError) {
       setErrorMessage(
@@ -149,7 +150,23 @@ export default function TeamPage() {
       status: membershipData.status,
     });
 
-    setMembers(memberData ?? []);
+    // Read the per-member permission separately from the existing directory RPC.
+    // Organization RLS limits these records to the selected account.
+    const { data: permissionRows, error: permissionError } = await supabase
+      .from("account_members")
+      .select("id, can_manage_templates")
+      .eq("account_id", membershipData.account_id);
+    if (permissionError) {
+      setErrorMessage("Could not load member permissions: " + permissionError.message);
+      setLoading(false);
+      return;
+    }
+    const visiblePermissions = Array.isArray(permissionRows) ? permissionRows : (permissionRows ? [permissionRows] : []);
+    const permissionById = new Map(visiblePermissions.map(row => [row.id, row.can_manage_templates]));
+    setMembers(((memberData ?? []) as TeamMember[]).map(member => ({
+      ...member,
+      can_manage_templates: permissionById.get(member.id) === true,
+    })));
     setLoading(false);
     // This function declaration is hoisted; load invitations after the team fetch.
     // eslint-disable-next-line react-hooks/immutability
@@ -184,6 +201,7 @@ export default function TeamPage() {
   }
 
   async function handleInvitationAction(invitationId: string, action: "resend" | "revoke") {
+    if (action === "resend" && inviteCooldown.disabled) return;
     setInvitationActionId(invitationId);
     setInvitationListError("");
     setInviteError("");
@@ -196,6 +214,7 @@ export default function TeamPage() {
         return;
       }
 
+      if (action === "resend") inviteCooldown.start();
       const response = await fetch(`/api/team/invitations/${invitationId}`, {
         method: "PATCH",
         headers: accountHeaders({
@@ -300,11 +319,12 @@ export default function TeamPage() {
 
     const email = inviteEmail.trim().toLowerCase();
 
-    if (!email) {
-      setInviteError("Please enter an email address.");
+    if (!isValidEmail(email)) {
+      setInviteError(INVALID_EMAIL_MESSAGE);
       return;
     }
 
+    if (inviteCooldown.disabled) { setInviteError(`Please retry in ${inviteCooldown.remaining}s.`); return; }
     setSendingInvite(true);
 
     try {
@@ -320,6 +340,7 @@ export default function TeamPage() {
         return;
       }
 
+      inviteCooldown.start();
       const response = await fetch("/api/team/invite", {
         method: "POST",
         headers: accountHeaders({
@@ -408,13 +429,13 @@ export default function TeamPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 px-6 py-10">
+    <main className="cv-page min-h-screen px-4 py-10 sm:px-6">
       <div className="mx-auto max-w-6xl">
 
         {/* Header */}
         <div className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">
+            <p className="cv-eyebrow mb-2">ORGANIZATION CONTROL</p><h1 className="text-3xl font-extrabold tracking-tight text-[#1c314a]">
               Team
             </h1>
 
@@ -482,11 +503,10 @@ export default function TeamPage() {
 
                     <div>
                       <p className="font-medium text-slate-900">
-                        User ID
+                        {member.email}
                       </p>
-
-                      <p className="mt-1 break-all text-sm text-slate-500">
-                        {member.user_id}
+                      <p className="mt-1 text-sm text-slate-500">
+                        {member.role === "owner" ? "Organization owner" : member.role === "admin" ? "Organization administrator" : "Team member"}
                       </p>
                     </div>
 
@@ -505,7 +525,7 @@ export default function TeamPage() {
                       >
                         {formatStatus(member.status)}
                       </span>
-                      <MemberActions memberId={member.id} role={member.role} actorRole={membership?.role} active={member.status === "active"} onChanged={loadTeam} />
+                      <MemberActions memberId={member.id} role={member.role} actorRole={membership?.role} active={member.status === "active"} canManageTemplates={member.can_manage_templates === true} onChanged={loadTeam} />
 
                     </div>
 
@@ -564,10 +584,10 @@ export default function TeamPage() {
                         <button
                           type="button"
                           onClick={() => handleInvitationAction(invitation.id, "resend")}
-                          disabled={invitationActionId !== null}
+                          disabled={invitationActionId !== null || inviteCooldown.disabled}
                           className="rounded-lg border border-blue-200 px-3 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-50 disabled:opacity-50"
                         >
-                          {invitationActionId === invitation.id ? "Working..." : "Resend"}
+                          {invitationActionId === invitation.id ? "Working..." : inviteCooldown.disabled ? `Resend in ${inviteCooldown.remaining}s` : "Resend"}
                         </button>
                       )}
                       {canRevoke && (
@@ -720,12 +740,12 @@ export default function TeamPage() {
 
                 <button
                   type="submit"
-                  disabled={sendingInvite}
+                  disabled={sendingInvite || inviteCooldown.disabled}
                   className="rounded-lg bg-blue-600 px-5 py-3 font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {sendingInvite
                     ? "Sending invitation..."
-                    : "Send Invitation"}
+                    : inviteCooldown.disabled ? `Send in ${inviteCooldown.remaining}s` : "Send Invitation"}
                 </button>
 
               </div>

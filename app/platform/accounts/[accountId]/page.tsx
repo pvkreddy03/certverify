@@ -1,5 +1,6 @@
 "use client";
 import { use,useEffect,useState } from "react";
+import { PlatformAdminGuide } from "@/components/platform-admin-guide";
 import Link from "next/link";
 import { PlatformMfa } from "@/components/platform-mfa";
 import { platformFetch } from "@/lib/platform/client";
@@ -29,4 +30,4 @@ function Account({ id }: {id:string}) {
     <Link className="mr-5 text-blue-700" href={`/platform/subscriptions?account=${id}`}>Manage subscription and quotas</Link><Link className="text-blue-700" href={`/platform/audit?account=${id}`}>View immutable administrative history</Link>
   </>}</div>;
 }
-export default function PlatformAccountPage({params}:{params:Promise<{accountId:string}>}){const {accountId}=use(params);return <main className="mx-auto max-w-5xl space-y-6 px-6 py-8"><h1 className="text-3xl font-bold">Account inspection</h1><PlatformMfa><Account id={accountId} /></PlatformMfa></main>;}
+export default function PlatformAccountPage({params}:{params:Promise<{accountId:string}>}){const {accountId}=use(params);return <main className="mx-auto max-w-5xl space-y-6 px-6 py-8"><h1 className="text-3xl font-bold">Account inspection</h1><PlatformAdminGuide section="account" /><PlatformMfa><Account id={accountId} /></PlatformMfa></main>;}

@@ -1,8 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { IssuerBranding } from "@/components/issuer-branding";
+import { LocationPicker } from "@/components/location-picker";
+import {parseGeoLocation} from "@/lib/geo/location";
 
 import {
   generateCertificateId,
@@ -22,6 +26,9 @@ import {
 } from "@/lib/repositories/certificate-fields";
 
 export default function CertificatesPage() {
+  const router = useRouter();
+  const submitLocked = useRef(false);
+  const [createdRecordId, setCreatedRecordId] = useState<string | null>(null);
   const [certificateId, setCertificateId] = useState("");
   const [replacementId, setReplacementId] = useState<string | null>(null);
   useEffect(() => {
@@ -31,6 +38,10 @@ export default function CertificatesPage() {
 
   const [templates, setTemplates] = useState<CertificateTemplate[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState("");
+  useEffect(() => {
+    const template = new URLSearchParams(window.location.search).get("template");
+    if (template && /^[0-9a-f-]{36}$/i.test(template)) void Promise.resolve().then(() => setSelectedTemplateId(template));
+  }, []);
   const [loadingTemplates, setLoadingTemplates] = useState(true);
 
   const [status, setStatus] = useState("Active");
@@ -88,7 +99,9 @@ export default function CertificatesPage() {
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-
+    // Lock synchronously: a second click cannot race the React disabled state.
+    if (submitLocked.current || createdRecordId) return;
+    submitLocked.current = true;
     setMessage("");
     setSaving(true);
     setCertificateId("");
@@ -100,10 +113,17 @@ export default function CertificatesPage() {
     if (!user) {
       setMessage("You must be logged in.");
       setSaving(false);
+      submitLocked.current = false;
       return;
     }
 
+    let insertedId: string | null = null;
     try {
+      for (const field of customFields) {
+        if (field.field_type === "location" && customFieldValues[field.id]) {
+          if (!parseGeoLocation(customFieldValues[field.id])) throw new Error("Invalid map location for "+field.field_name);
+        }
+      }
       /*
        * Find the active account for the logged-in user.
        */
@@ -129,6 +149,8 @@ export default function CertificatesPage() {
         status,
         replaces_certificate_id: replacementId,
       });
+      insertedId = certificate.id;
+      setCreatedRecordId(certificate.id);
 
       /*
        * Save custom certificate field values.
@@ -146,59 +168,72 @@ export default function CertificatesPage() {
         await createCertificateFieldValues(fieldValues);
       }
 
-      /*
-       * Show the generated ID after successful creation.
-       */
       setCertificateId(newCertificateId);
-
-      setMessage(
-        `Certificate created successfully: ${newCertificateId}`
-      );
+      // Replace the form history entry to prevent another submission on Back.
+      router.replace(`/dashboard/certificates/${certificate.id}?created=1`);
     } catch (error) {
+      // The main record may already exist if saving the dynamic fields failed.
+      // Never re-enable submission in that case: it would mint another ID.
       setMessage(
-        error instanceof Error
-          ? error.message
-          : "Could not save certificate."
+        insertedId
+          ? "The certificate was created, but some details could not be saved. Open the existing certificate to review it. Do not submit again."
+          : error instanceof Error ? error.message : "Could not save certificate."
       );
-
+      if (!insertedId) submitLocked.current = false;
+    } finally {
       setSaving(false);
-      return;
     }
-
-    setSaving(false);
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 px-6 py-10">
-      <div className="mx-auto max-w-4xl">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-slate-900">
+    <main className="cv-page">
+      <div className="cv-shell !max-w-5xl cv-entrance">
+        <div className="cv-hero mb-7">
+          <div className="cv-hero__body">
+            <p className="cv-eyebrow mb-3">SINGLE CERTIFICATE</p>
+          <h1 className="text-3xl font-bold !text-white">
             Create Certificate
           </h1>
 
-          <p className="mt-2 text-slate-600">
-            Enter the certificate details below.
+          <p className="mt-3 text-[#d0e5eb]">
+            Choose your template, enter certificate details, and generate a unique verification ID.
           </p>
+          </div>
         </div>
 
+        <div className="cv-card cv-card--interactive mb-6 flex flex-wrap items-center justify-between gap-4 p-5">
+          <div className="flex items-center gap-3">
+            <span className="cv-glow-icon"><svg aria-hidden="true" width="23" height="23" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 4v16M15 10v10"/></svg></span>
+            <div><p className="font-extrabold text-[#1d3449]">Have an Excel spreadsheet?</p>
+            <p className="mt-1 text-xs text-[#6b7d95]">Upload, review and create up to 100 certificates in one batch.</p></div>
+          </div>
+          <Link href="/dashboard/certificates/bulk" className="cv-primary text-sm">Import Excel →</Link>
+        </div>
         <IssuerBranding />
         {replacementId && <p className="mb-6 rounded border border-blue-200 bg-blue-50 p-4">This new certificate will be linked to the revoked original. The original remains revoked and its history is preserved.</p>}
         <form
           onSubmit={handleSubmit}
-          className="space-y-6 rounded-2xl bg-white p-8 shadow-sm"
+          className="cv-panel space-y-6 p-5 sm:p-8"
         >
           {/* Certificate Template */}
           <div>
-            <label className="mb-2 block text-sm font-medium text-slate-700">
+            <label htmlFor="certificate-template" className="mb-2 block text-sm font-medium text-slate-700">
               Certificate Template
             </label>
 
             <select
+              id="certificate-template"
               value={selectedTemplateId}
-              onChange={(e) => setSelectedTemplateId(e.target.value)}
+              onChange={(e) => {
+                if (e.target.value === "__create__") {
+                  router.push("/dashboard/templates?create=1&from=certificate");
+                  return;
+                }
+                setSelectedTemplateId(e.target.value);
+              }}
               disabled={loadingTemplates || saving}
               required
-              className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none focus:border-slate-500"
+              className="cv-field"
             >
               <option value="">
                 {loadingTemplates
@@ -211,7 +246,11 @@ export default function CertificatesPage() {
                   {template.name}
                 </option>
               ))}
+              <option value="__create__">＋ Create a new template…</option>
             </select>
+            <Link href="/dashboard/templates?create=1&from=certificate" className="mt-2 inline-block text-sm font-semibold text-blue-700 hover:underline">
+              + Create and configure a new template
+            </Link>
           </div>
 
           {/* Certificate ID */}
@@ -225,7 +264,7 @@ export default function CertificatesPage() {
               value={certificateId}
               readOnly
               placeholder="Generated when certificate is saved"
-              className="w-full rounded-lg border border-slate-300 bg-slate-100 px-4 py-3 text-slate-700 outline-none"
+              className="cv-field !bg-[#f3f6fa] text-[#748399]"
             />
 
             <p className="mt-2 text-xs text-slate-500">
@@ -252,7 +291,9 @@ export default function CertificatesPage() {
                       )}
                     </label>
 
-                    <input
+                    {field.field_type === "location" ? (
+                      <LocationPicker name={field.field_name} value={customFieldValues[field.id] ?? ""} onChange={value=>setCustomFieldValues(previous=>({...previous,[field.id]:value}))} disabled={saving} required={field.is_required}/>
+                    ) : <input
                       type={
                         field.field_type === "number"
                           ? "number"
@@ -271,7 +312,7 @@ export default function CertificatesPage() {
                       required={field.is_required}
                       disabled={saving}
                       className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none focus:border-slate-500"
-                    />
+                    />}
                   </div>
                 ))}
               </div>
@@ -288,7 +329,7 @@ export default function CertificatesPage() {
               value={status}
               onChange={(e) => setStatus(e.target.value)}
               disabled={saving}
-              className="w-full rounded-lg border border-slate-300 px-4 py-3"
+              className="cv-field"
             >
               <option value="Active">Active</option>
               <option value="Inactive">Inactive</option>
@@ -302,11 +343,17 @@ export default function CertificatesPage() {
             </div>
           )}
 
+          {createdRecordId && (
+            <p role="status" className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
+              A certificate record already exists. <Link href={`/dashboard/certificates/${createdRecordId}`} className="font-semibold underline">View this certificate and download its QR code</Link>. Do not resubmit.
+            </p>
+          )}
+
           {/* Save Button */}
           <button
             type="submit"
-            disabled={saving || loadingTemplates}
-            className="rounded-lg bg-slate-900 px-6 py-3 font-medium text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+            disabled={saving || loadingTemplates || Boolean(createdRecordId)}
+            className="cv-primary disabled:cursor-not-allowed disabled:opacity-50"
           >
             {saving ? "Saving..." : "Save Certificate"}
           </button>

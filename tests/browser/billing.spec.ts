@@ -13,7 +13,7 @@ async function login(page: Page, admin = false) {
     await expect(
       page.getByRole("heading", { name: "Platform MFA verification" }),
     ).toHaveCount(0);
-  } else await expect(page.getByLabel("Current account")).toBeVisible();
+  } else await expect(page.getByLabel("Workspace")).toBeVisible();
 }
 test.beforeEach(async ({ request }) => {
   await request.post("http://127.0.0.1:54329/test/reset");
@@ -25,6 +25,7 @@ test("platform edits proposed example pricing as a draft and activates it explic
   await page
     .getByRole("link", { name: "Pricing and offers", exact: true })
     .click();
+  await page.getByRole("combobox",{name:"Pricing and offers view"}).selectOption("create");
   await page
     .getByRole("combobox", {
       name: "Optional editable pricing example",
@@ -65,12 +66,14 @@ test("coupon administration records configurable discount, duration and expiry",
 }) => {
   await login(page, true);
   await page.goto("/platform/pricing");
+  await page.getByRole("combobox",{name:"Pricing and offers view"}).selectOption("create");
+  await page.getByRole("combobox",{name:"What would you like to create?"}).selectOption("offer");
   await page.getByLabel("Offer name", { exact: true }).fill("Welcome campaign");
   await page
     .getByLabel("Coupon code (permanent)", { exact: true })
     .fill("WELCOME50");
   await page
-    .getByLabel("Discount percentage or amount", { exact: true })
+    .getByLabel("Discount percentage (e.g. 50 for 50%)", { exact: true })
     .fill("50");
   await page
     .getByRole("combobox", { name: "Offer eligibility", exact: true })

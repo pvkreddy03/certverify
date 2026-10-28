@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+import { accountHeaders } from "@/lib/accounts/context";
 
 type Certificate = {
   id: string;
@@ -23,6 +24,67 @@ export default function CertificateListPage() {
   const [certificates, setCertificates] = useState<CertificateRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
+  const [exportMode, setExportMode] = useState<"all" | "range">("all");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState("");
+  const [exportDone, setExportDone] = useState("");
+  const exportLocked = useRef(false);
+
+  async function exportCertificates(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (exportLocked.current) return;
+    if (exportMode === "range" && (!fromDate || !toDate || fromDate > toDate)) {
+      setExportError("Choose a valid start and end date. End date cannot be before start date.");
+      return;
+    }
+    exportLocked.current = true;
+    setExporting(true);
+    setExportError("");
+    setExportDone("");
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Your session has expired. Sign in again to export certificates.");
+      const headers = accountHeaders({ "Content-Type": "application/json" });
+      headers.set("Authorization", "Bearer " + session.access_token);
+      const response = await fetch("/api/certificates/export", {
+        method: "POST", headers, cache: "no-store",
+        body: JSON.stringify(exportMode === "all" ? {} : { from: fromDate, to: toDate }),
+      });
+      if (!response.ok) {
+        let detail = "Could not export certificates. Please try a shorter date range.";
+        try {
+          const body = await response.json() as { error?: string };
+          detail = body.error || detail;
+        } catch { /* Use safe fallback. */ }
+        throw new Error(detail);
+      }
+      const type = response.headers.get("Content-Type") || "";
+      const extension = type.includes("application/zip") ? "zip" : "xlsx";
+      const safeFile = response.headers.get("Content-Disposition")?.match(/filename="([^"]+)"/)?.[1];
+      const filename = safeFile && /^certverify-certificates-[a-zA-Z0-9-]+\.(xlsx|zip)$/.test(safeFile)
+        ? safeFile : "certverify-certificates." + extension;
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      try {
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      } finally {
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      }
+      setExportDone("Excel export ready. Open your Downloads folder to view the workbook.");
+    } catch (error) {
+      setExportError(error instanceof Error ? error.message : "Could not download certificates.");
+    } finally {
+      exportLocked.current = false;
+      setExporting(false);
+    }
+  }
 
   async function loadCertificates() {
     setLoading(true);
@@ -54,33 +116,38 @@ export default function CertificateListPage() {
 
     const certificatesData = certificateData || [];
 
-    const { data: profileData, error: profileError } =
-      await supabase
-        .from("profiles")
-        .select("user_id, professional_name")
-        .eq("user_id", user.id)
-        .maybeSingle();
+    // Resolve each certificate's actual creator, not the currently logged-in user.
+    // Limit the lookup to IDs already visible through certificate RLS.
+    const creatorIds = [...new Set(certificatesData.map((c) => c.user_id))];
+    const { data: profiles, error: profileError } = creatorIds.length
+      ? await supabase
+          .from("profiles")
+          .select("user_id, professional_name, email")
+          .in("user_id", creatorIds)
+      : { data: [], error: null };
 
     if (profileError) {
-      setErrorMessage(
-        "Could not load profile: " + profileError.message
-      );
+      setErrorMessage("Could not load creator details: " + profileError.message);
       setLoading(false);
       return;
     }
 
-    const createdBy =
-      profileData?.professional_name?.trim() || "You";
-
-    const rows: CertificateRow[] = certificatesData.map(
-      (certificate) => ({
-        ...certificate,
-        templateName:
-          certificate.template_name?.trim() ||
-          "Template name unavailable",
-        createdBy: certificate.user_id === user.id ? createdBy : "Organization member",
-      })
+    const creatorLabels = new Map(
+      (profiles ?? []).map((profile) => [
+        profile.user_id,
+        profile.professional_name?.trim() || profile.email?.trim() || profile.user_id,
+      ])
     );
+
+    const rows: CertificateRow[] = certificatesData.map((certificate) => ({
+      ...certificate,
+      templateName:
+        certificate.template_name?.trim() || "Template name unavailable",
+      createdBy:
+        creatorLabels.get(certificate.user_id) ||
+        (certificate.user_id === user.id ? user.email : null) ||
+        certificate.user_id,
+    }));
 
     setCertificates(rows);
     setLoading(false);
@@ -115,34 +182,77 @@ export default function CertificateListPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 px-6 py-10">
-      <div className="mx-auto max-w-6xl">
+    <main className="cv-page">
+      <div className="cv-shell cv-entrance">
 
-        <div className="mb-8 flex items-center justify-between">
+        <Link href="/dashboard/certificates/bulk" className="cv-secondary mb-5 text-sm">▦ &nbsp; Bulk imports / Upload Excel →</Link>
+        <div className="cv-hero mb-7">
+          <div className="cv-hero__body flex flex-wrap items-center justify-between gap-5">
           <div>
-            <Link
-              href="/dashboard"
-              className="mb-3 inline-block text-sm font-medium text-slate-600 hover:text-slate-900"
-            >
-              ← Back to Dashboard
-            </Link>
-
-            <h1 className="text-3xl font-bold text-slate-900">
+            <p className="cv-eyebrow mb-3">VERIFICATION LIBRARY</p>
+            <h1 className="text-3xl font-bold !text-white">
               My Certificates
             </h1>
 
-            <p className="mt-2 text-slate-600">
-              View certificates you have created.
+            <p className="mt-2 text-[#d2e5ec]">
+              Review issued records, access QR codes and monitor certificate status.
             </p>
           </div>
 
           <Link
             href="/dashboard/certificates"
-            className="rounded-lg bg-slate-900 px-5 py-3 font-medium text-white hover:bg-slate-800"
+            className="cv-primary !border-[#3dcbb7] !bg-[#49d7c4] !text-[#09333b]"
           >
             + Create Certificate
           </Link>
+          </div>
         </div>
+
+        <section aria-label="Export certificates to Excel" className="cv-panel mb-7 space-y-4 p-5 sm:p-6">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <h2 className="text-lg font-bold text-[#183449]">Export certificates to Excel</h2>
+              <p className="mt-1 text-sm text-slate-600">
+                Download your account&apos;s certificates as an Excel workbook. Each certificate template gets its own worksheet,
+                with its custom fields, certificate number, status, creator, and verification link.
+              </p>
+            </div>
+            <span className="rounded-full border border-teal-200 bg-teal-50 px-3 py-1 text-xs font-bold text-teal-800">Excel .xlsx</span>
+          </div>
+          <form className="space-y-4" onSubmit={exportCertificates}>
+            <fieldset className="flex flex-wrap gap-4">
+              <legend className="mb-2 text-sm font-semibold text-slate-700">Which certificates?</legend>
+              <label className="flex items-center gap-2 text-sm">
+                <input type="radio" name="exportMode" value="all" checked={exportMode === "all"} onChange={() => setExportMode("all")} disabled={exporting} />
+                All certificates
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <input type="radio" name="exportMode" value="range" checked={exportMode === "range"} onChange={() => setExportMode("range")} disabled={exporting} />
+                Choose date range
+              </label>
+            </fieldset>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="block text-sm font-semibold text-slate-700">
+                From date
+                <input aria-label="Export from date" className="cv-field mt-1" type="date" value={fromDate}
+                  onChange={event => setFromDate(event.target.value)} disabled={exportMode === "all" || exporting} required={exportMode === "range"} />
+              </label>
+              <label className="block text-sm font-semibold text-slate-700">
+                To date
+                <input aria-label="Export to date" className="cv-field mt-1" type="date" value={toDate}
+                  min={fromDate || undefined} onChange={event => setToDate(event.target.value)}
+                  disabled={exportMode === "all" || exporting} required={exportMode === "range"} />
+              </label>
+            </div>
+            <p className="text-xs text-slate-500">Dates are inclusive and follow India Standard Time. Exports include the certificates visible in your selected workspace, including revoked certificates.
+              If a download exceeds 20,000 certificates, use smaller date ranges. More than 30 templates will be delivered as a ZIP containing multiple Excel workbooks.</p>
+            <button type="submit" disabled={exporting} className="cv-primary disabled:cursor-wait disabled:opacity-60">
+              {exporting ? "Preparing Excel export…" : "↓ Download Excel"}
+            </button>
+          </form>
+          {exportError && <p role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{exportError}</p>}
+          {exportDone && <p role="status" className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900">{exportDone}</p>}
+        </section>
 
         {errorMessage && (
           <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -151,11 +261,11 @@ export default function CertificateListPage() {
         )}
 
         {loading ? (
-          <div className="rounded-xl border border-slate-200 bg-white p-8 text-center text-slate-500">
+          <div className="cv-panel p-8 text-center text-slate-500">
             Loading certificates...
           </div>
         ) : certificates.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-slate-300 bg-white p-12 text-center">
+          <div className="cv-panel border-dashed p-12 text-center">
             <h2 className="text-xl font-semibold text-slate-900">
               No certificates yet
             </h2>
@@ -172,9 +282,9 @@ export default function CertificateListPage() {
             </Link>
           </div>
         ) : (
-          <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+          <div className="cv-panel overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="min-w-full text-left text-sm">
+              <table className="cv-table min-w-full">
                 <thead className="border-b border-slate-200 bg-slate-50">
                   <tr>
                     <th className="px-6 py-4 font-semibold text-slate-700">
@@ -207,7 +317,7 @@ export default function CertificateListPage() {
                   {certificates.map((certificate) => (
                     <tr
                       key={certificate.id}
-                      className="hover:bg-slate-50"
+                      className="hover:bg-[#f6fbfa]"
                     >
                       <td className="px-6 py-4 font-medium text-slate-900">
                         {certificate.certificate_id}

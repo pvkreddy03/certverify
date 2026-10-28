@@ -5,8 +5,10 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import QRCode from "qrcode";
+import { publicVerificationUrl } from "@/lib/certificates/public-verification-url";
 import { IssuerBranding } from "@/components/issuer-branding";
 import { CertificateStatusActions } from "@/components/certificate-status-actions";
+import {geoUrl,parseGeoLocation} from "@/lib/geo/location";
 
 type Certificate = {
   id: string;
@@ -47,6 +49,24 @@ export default function ViewCertificatePage() {
   const [loadingFields, setLoadingFields] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
   const [qrCode, setQrCode] = useState("");
+  const [justCreated, setJustCreated] = useState(false);
+
+  useEffect(() => {
+    if (!certificate?.public_verification_id) return;
+    let active = true;
+    // Show the QR automatically on the saved certificate details screen.
+    const verificationUrl = publicVerificationUrl(certificate.public_verification_id, window.location.origin);
+    void QRCode.toDataURL(verificationUrl, { width: 300, margin: 2 }).then((dataUrl) => {
+      if (active) setQrCode(dataUrl);
+    }).catch(() => {
+      if (active) setErrorMessage("Could not generate the QR code. Try Generate QR.");
+    });
+    return () => { active = false; };
+  }, [certificate?.public_verification_id]);
+
+  useEffect(() => {
+    void Promise.resolve().then(() => setJustCreated(new URLSearchParams(window.location.search).get("created") === "1"));
+  }, []);
 
   async function loadCertificate() {
     setLoading(true);
@@ -128,8 +148,7 @@ export default function ViewCertificatePage() {
 
     try {
       const verificationUrl =
-        `${window.location.origin}/verify/` +
-        encodeURIComponent(certificate.public_verification_id);
+        publicVerificationUrl(certificate.public_verification_id, window.location.origin);
 
       const qrDataUrl = await QRCode.toDataURL(
         verificationUrl,
@@ -156,7 +175,7 @@ export default function ViewCertificatePage() {
 
     const link = document.createElement("a");
 
-    link.href = await QRCode.toDataURL(`${window.location.origin}/verify/${encodeURIComponent(certificate.public_verification_id)}`, {
+    link.href = await QRCode.toDataURL(publicVerificationUrl(certificate.public_verification_id, window.location.origin), {
       width: 600, margin: 2, type: format === "jpeg" ? "image/jpeg" : "image/png",
       color: { dark: "#000000", light: "#ffffff" },
     });
@@ -253,9 +272,7 @@ export default function ViewCertificatePage() {
 
   const verificationUrl =
     typeof window !== "undefined"
-      ? `${window.location.origin}/verify/${encodeURIComponent(
-          certificate.public_verification_id
-        )}`
+      ? publicVerificationUrl(certificate.public_verification_id, window.location.origin)
       : "";
 
   return (
@@ -286,7 +303,7 @@ export default function ViewCertificatePage() {
               onClick={generateQRCode}
               className="rounded-lg bg-slate-900 px-5 py-3 font-medium text-white hover:bg-slate-800"
             >
-              {qrCode ? "Regenerate QR" : "Generate QR"}
+              Generate QR
             </button>
 
             <Link
@@ -298,6 +315,9 @@ export default function ViewCertificatePage() {
           </div>
         </div>
 
+        {justCreated && <p role="status" className="mb-6 rounded-xl border border-emerald-200 bg-emerald-50 p-5 font-medium text-emerald-900">
+          ✓ Certificate saved successfully. Your QR code is below — download PNG or JPEG to insert it into your letterhead or report.
+        </p>}
         {errorMessage && (
           <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             {errorMessage}
@@ -376,7 +396,7 @@ export default function ViewCertificatePage() {
                     </p>
 
                     <p className="mt-2 text-sm font-medium text-slate-900">
-                      {formatFieldValue(
+                      {field.field_type === "location" ? (()=>{const point=parseGeoLocation(field.field_value);return point ? <><span>{point.lat.toFixed(6)}, {point.lng.toFixed(6)}</span><a className="mt-2 block text-blue-700 underline" href={geoUrl(point)} target="_blank" rel="noopener noreferrer">Open property location on map</a></> : "No valid location";})() : formatFieldValue(
                         field.field_value,
                         field.field_type
                       )}
@@ -395,7 +415,7 @@ export default function ViewCertificatePage() {
               </h2>
 
               <p className="mt-2 text-sm text-slate-500">
-                Scan this QR code to verify the certificate.
+                Scan this QR code to verify the certificate, or download it to paste into your letterhead.
               </p>
 
               <div className="mt-6 flex justify-center">
@@ -414,11 +434,11 @@ export default function ViewCertificatePage() {
                 <button
                   type="button"
                   onClick={() => { void downloadQRCode("png"); }}
-                  className="rounded-lg bg-slate-900 px-5 py-3 font-medium text-white hover:bg-slate-800"
+                  className="rounded-lg bg-blue-700 px-5 py-3 font-semibold text-white hover:bg-blue-800"
                 >
                   Download PNG
                 </button>
-                <button type="button" onClick={() => { void downloadQRCode("jpeg"); }} className="rounded-lg border border-slate-300 px-5 py-3">Download JPEG</button>
+                <button type="button" onClick={() => { void downloadQRCode("jpeg"); }} className="rounded-lg border border-blue-200 bg-white px-5 py-3 font-semibold text-blue-800 hover:bg-blue-50">Download JPEG</button>
               </div>
 
               {verificationUrl && (
