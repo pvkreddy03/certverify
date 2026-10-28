@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { GeoLocation } from "@/lib/geo/location";
 
+const EMPTY_POINTS:GeoMapPoint[]=[];
 export type GeoMapPoint = GeoLocation & { id: string; title: string; subtitle?: string };
 type Coordinate = { lng: number; lat: number };
 type MapInstance = {
@@ -34,7 +35,7 @@ function loadMapLibre():Promise<MapLibrary> {
   });
   return window.__cvMapLibreLoading;
 }
-export function GeoMap({center, value, onPick, points=[], onPointClick, zoom=14, height=360}:{
+export function GeoMap({center, value, onPick, points=EMPTY_POINTS, onPointClick, zoom=14, height=360}:{
   center?:GeoLocation|null;value?:GeoLocation|null;
   onPick?:(value:GeoLocation)=>void;points?:GeoMapPoint[];
   onPointClick?:(point:GeoMapPoint)=>void;zoom?:number;height?:number;
@@ -44,7 +45,7 @@ export function GeoMap({center, value, onPick, points=[], onPointClick, zoom=14,
   const pickRef=useRef(onPick);
   const clickRef=useRef(onPointClick);
   const [error,setError]=useState("");
-  pickRef.current=onPick;clickRef.current=onPointClick;
+  useEffect(()=>{pickRef.current=onPick;clickRef.current=onPointClick;},[onPick,onPointClick]);
   useEffect(()=>{
     let mounted=true;
     void loadMapLibre().then(lib=>{
