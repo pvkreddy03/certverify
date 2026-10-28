@@ -5,7 +5,7 @@ import {supabase} from "@/lib/supabase";
 import {accountHeaders} from "@/lib/accounts/context";
 import {GeoMap,type GeoMapPoint} from "@/components/geo-map";
 import {geoDistanceKm,geoUrl,type GeoLocation} from "@/lib/geo/location";
-type Valuation={id:string;certificate_id:string;template_name:string|null;created_at:string;valuation_date:string|null;status:string;price_per_sq_meter:number|null;total_property_value:number|null;field_name:string;lat:number;lng:number;label:string};
+type Valuation={id:string;certificate_id:string;template_name:string|null;created_at:string;valuation_date:string|null;status:string;price_per_sq_meter:number|null;total_property_value:number|null;field_name:string;lat:number;lng:number;label:string;valuation_metrics?:Array<{name:string;value:string}>};
 export default function ReferenceMapPage(){
   const [records,setRecords]=useState<Valuation[]>([]);
   const [referenceNow]=useState(()=>Date.now());
@@ -71,6 +71,7 @@ export default function ReferenceMapPage(){
               <p><strong>Valuation date:</strong> {chosen.valuation_date||"Not recorded; showing certificate creation date"}</p>
               <p><strong>Location:</strong> {chosen.lat.toFixed(6)}, {chosen.lng.toFixed(6)}</p>
               <p><strong>Previously recorded rate:</strong> {chosen.price_per_sq_meter??"Not recorded"} {chosen.price_per_sq_meter!==null?"per sq. metre":""}</p>
+              {!!chosen.valuation_metrics?.length && <div className="rounded-lg border bg-white p-3"><strong>Saved valuation figures (original units)</strong>{chosen.valuation_metrics.map((metric,i)=><p key={i} className="mt-1"><span className="text-slate-600">{metric.name}:</span> {metric.value}</p>)}</div>}
               <p className="text-xs text-slate-500">Past assessed rates are not independently verified market comparables. Confirm currency, unit and basis before use.</p>
               <div className="flex flex-wrap gap-3"><Link className="font-semibold text-teal-700 underline" href={"/dashboard/certificates/"+chosen.id}>Open original certificate</Link><a className="font-semibold text-teal-700 underline" href={geoUrl(chosen)} rel="noopener noreferrer" target="_blank">Open in map</a><button className="text-teal-700 underline" onClick={()=>setCenter({lat:chosen.lat,lng:chosen.lng})}>Centre on this record</button></div>
             </div>:<p className="mt-3 text-sm text-slate-500">Select a map marker or a record to inspect it.</p>}
