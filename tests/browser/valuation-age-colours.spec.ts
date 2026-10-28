@@ -69,8 +69,8 @@ test("reference map renders accessible age-coloured pins and filters historical 
   await expect(legend.getByRole("button",{name:"All ages · 5"})).toBeVisible();
   for(const [label,color,certificate] of [
     ["Under 6 months","rgb(21, 128, 61)","CV-NEW"],
-    ["6–12 months","rgb(217, 119, 6)","CV-MIDDLE"],
-    ["1–2 years","rgb(37, 99, 235)","CV-YEAR"],
+    ["6–12 months","rgb(234, 179, 8)","CV-MIDDLE"],
+    ["1–2 years","rgb(249, 115, 22)","CV-YEAR"],
     ["Older than 2 years","rgb(220, 38, 38)","CV-OLD"],
     ["Date unavailable","rgb(100, 116, 139)","CV-UNKNOWN"],
   ]){

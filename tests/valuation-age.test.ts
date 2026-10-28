@@ -28,6 +28,10 @@ test("monthly thresholds work through leap days and month-end",()=>{
 });
 test("age legend is complete, colour-coded and remains distinct for unknown dates",()=>{
   assert.equal(VALUATION_AGE_LEGEND.length,5);
+  assert.equal(valuationAgeInfo("under-6-months").color,"#15803d");
+  assert.equal(valuationAgeInfo("6-to-12-months").color,"#eab308");
+  assert.equal(valuationAgeInfo("1-to-2-years").color,"#f97316");
+  assert.equal(valuationAgeInfo("over-2-years").color,"#dc2626");
   assert.equal(new Set(VALUATION_AGE_LEGEND.map(item=>item.color)).size,5);
   for(const item of VALUATION_AGE_LEGEND){
     assert.equal(valuationAgeInfo(item.key).color,item.color);
