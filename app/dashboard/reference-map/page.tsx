@@ -13,7 +13,7 @@ export default function ReferenceMapPage(){
   const [loading,setLoading]=useState(true);
   const [selected,setSelected]=useState<Valuation|null>(null);
   const [center,setCenter]=useState<GeoLocation|null>(null);
-  const [radius,setRadius]=useState(5);
+  const [radius,setRadius]=useState(0);
   const [months,setMonths]=useState("all");
   const [search,setSearch]=useState("");
   useEffect(()=>{
@@ -37,7 +37,7 @@ export default function ReferenceMapPage(){
     const earliest=months==="all"?0:referenceNow-Number(months)*30.44*86400000;
     return records.filter(r=>(!query||[r.certificate_id,r.template_name??"",r.label,r.field_name].some(x=>x.toLowerCase().includes(query))) &&
       new Date(r.valuation_date??r.created_at).getTime()>=earliest &&
-      (!center||geoDistanceKm(center,r)<=radius));
+      (!center||radius===0||geoDistanceKm(center,r)<=radius));
   },[records,search,months,center,radius,referenceNow]);
   const points:GeoMapPoint[]=useMemo(()=>visible.map(r=>({id:r.id+":"+r.field_name,title:r.certificate_id,subtitle:r.template_name??"",lat:r.lat,lng:r.lng})),[visible]);
   const chosen=selected&&visible.find(r=>r.id===selected.id&&r.field_name===selected.field_name);
@@ -46,10 +46,10 @@ export default function ReferenceMapPage(){
     <div className="cv-panel space-y-4 p-5">
       <div className="grid gap-3 sm:grid-cols-3">
         <label className="text-sm">Find certificates<input className="cv-field mt-1" value={search} onChange={e=>setSearch(e.target.value)} placeholder="Certificate, template, location"/></label>
-        <label className="text-sm">Distance from map centre<select className="cv-field mt-1" value={radius} onChange={e=>setRadius(Number(e.target.value))}>{[0.5,1,3,5,10,25,100].map(n=><option value={n} key={n}>{n} km</option>)}</select></label>
+        <label className="text-sm">Distance from map centre<select className="cv-field mt-1" value={radius} onChange={e=>setRadius(Number(e.target.value))}><option value={0}>All mapped records</option>{[0.5,1,3,5,10,25,100].map(n=><option value={n} key={n}>{n} km</option>)}</select></label>
         <label className="text-sm">Valuation period<select className="cv-field mt-1" value={months} onChange={e=>setMonths(e.target.value)}><option value="all">All dates</option><option value="3">Last 3 months</option><option value="6">Last 6 months</option><option value="12">Last year</option><option value="36">Last 3 years</option></select></label>
       </div>
-      <p className="text-xs text-slate-500">The search radius uses your map centre. Select “Centre on this record” to search around another valuation. Up to 1,500 recent location entries are loaded from your own issued certificates.</p>
+      <p className="text-xs text-slate-500">Choose All mapped records, or filter by distance from the map centre. Select “Centre on this record” to search around another valuation. Up to 1,500 recent location entries are loaded from your own issued certificates.</p>
       {loading?<p>Loading private records…</p>:error?<p role="alert" className="text-red-700">{error}</p>:<>
         <p className="text-sm font-semibold">{visible.length} location records in view · {records.length} records loaded</p>
         <GeoMap center={center} points={points} zoom={12} height={430}
