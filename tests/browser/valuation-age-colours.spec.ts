@@ -24,7 +24,7 @@ test("reference map renders accessible age-coloured pins and filters historical 
       addControl(){}
       on(){}
       flyTo(){}
-      remove(){}
+      remove(){this.container.replaceChildren();}
     }
     class FakeMarker {
       element:HTMLElement;
