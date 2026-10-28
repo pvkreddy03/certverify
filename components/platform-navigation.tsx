@@ -8,6 +8,7 @@ const items=[
   {href:"/platform/payments",label:"Payments"},
   {href:"/platform/pricing",label:"Pricing and offers"},
   {href:"/platform/branding",label:"Branding approvals"},
+  {href:"/platform/geo",label:"Geo intelligence"},
   {href:"/platform/contact",label:"Support details"},
   {href:"/platform/audit",label:"Audit history"},
 ];
