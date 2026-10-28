@@ -8,12 +8,11 @@ export function parseGeoLocation(raw: unknown): GeoLocation | null {
     if (typeof v.lat !== "number" || typeof v.lng !== "number" ||
       !Number.isFinite(v.lat) || !Number.isFinite(v.lng) ||
       Math.abs(v.lat) > 90 || Math.abs(v.lng) > 180) return null;
-    return {
-      lat: v.lat, lng: v.lng,
-      label: typeof v.label === "string" ? v.label.slice(0, 200) : undefined,
-      source: ["pin","gps","search","coordinates","import"].includes(String(v.source))
-        ? v.source as GeoLocation["source"] : undefined,
-    };
+    const location:GeoLocation={lat:v.lat,lng:v.lng};
+    if(typeof v.label==="string") location.label=v.label.slice(0,200);
+    if(["pin","gps","search","coordinates","import"].includes(String(v.source)))
+      location.source=v.source as GeoLocation["source"];
+    return location;
   } catch { return null; }
 }
 export function serializeGeoLocation(location: GeoLocation): string {
