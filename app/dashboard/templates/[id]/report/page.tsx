@@ -20,10 +20,9 @@ function WordParagraph({
   paragraph: ReportParagraph; bindings: ReportBinding[]; selected: boolean;
   onPick: (paragraph: number) => void;
 }) {
-  let offset = 0;
   const parts = paragraph.runs.flatMap((run, runIndex) => {
-    const start = offset;
-    offset += run.text.length;
+    const start = paragraph.runs.slice(0, runIndex).reduce((sum, item) => sum + item.text.length, 0);
+    const offset = start + run.text.length;
     const cuts = new Set([0, run.text.length]);
     for (const binding of bindings) {
       if (binding.paragraph !== paragraph.index) continue;
@@ -107,7 +106,7 @@ export default function VisualReportDesigner() {
     } finally { setLoading(false); }
   }, [id]);
 
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => { void Promise.resolve().then(() => load()); }, [load]);
 
   async function upload(file: File) {
     setMessage("");
