@@ -15,8 +15,8 @@ export const VALUATION_AGE_LEGEND: ReadonlyArray<{
   color: string;
 }> = [
   { key: "under-6-months", label: "Under 6 months", color: "#15803d" },
-  { key: "6-to-12-months", label: "6–12 months", color: "#d97706" },
-  { key: "1-to-2-years", label: "1–2 years", color: "#2563eb" },
+  { key: "6-to-12-months", label: "6–12 months", color: "#eab308" },
+  { key: "1-to-2-years", label: "1–2 years", color: "#f97316" },
   { key: "over-2-years", label: "Older than 2 years", color: "#dc2626" },
   { key: "unknown", label: "Date unavailable", color: "#64748b" },
 ];
@@ -48,8 +48,8 @@ function monthsEarlier(today: Date, months: number): number {
 }
 
 /**
- * At exactly six months, the orange band starts; at exactly one year, blue;
- * at exactly two years, blue remains, and only older dates become red.
+ * At exactly six months, the yellow band starts; at exactly one year, orange;
+ * at exactly two years, orange remains, and only older dates become red.
  * Missing, invalid or future valuation dates are never labelled recent.
  */
 export function valuationAgeBand(
