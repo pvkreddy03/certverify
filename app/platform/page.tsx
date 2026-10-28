@@ -13,6 +13,7 @@ const actions = [
   { href:"/platform/branding", title:"Branding approvals", description:"Review and decide pending branding requests", icon:"✓" },
   { href:"/platform/contact", title:"Support and contact", description:"Manage public contact details", icon:"✉" },
   { href:"/platform/audit", title:"Audit trail", description:"Review administrator actions", icon:"☷" },
+  { href:"/platform/geo", title:"Geo intelligence", description:"MFA-protected, aggregated regional map analytics", icon:"⌖" },
 ];
 
 function Overview() {
