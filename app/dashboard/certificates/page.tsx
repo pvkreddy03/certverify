@@ -312,7 +312,7 @@ export default function CertificatesPage() {
                       required={field.is_required}
                       disabled={saving}
                       className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none focus:border-slate-500"
-                    />
+                    />}
                   </div>
                 ))}
               </div>
