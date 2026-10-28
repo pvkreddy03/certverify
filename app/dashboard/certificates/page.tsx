@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { IssuerBranding } from "@/components/issuer-branding";
+import { LocationPicker } from "@/components/location-picker";
+import {parseGeoLocation} from "@/lib/geo/location";
 
 import {
   generateCertificateId,
@@ -117,6 +119,11 @@ export default function CertificatesPage() {
 
     let insertedId: string | null = null;
     try {
+      for (const field of customFields) {
+        if (field.field_type === "location" && customFieldValues[field.id]) {
+          if (!parseGeoLocation(customFieldValues[field.id])) throw new Error("Invalid map location for "+field.field_name);
+        }
+      }
       /*
        * Find the active account for the logged-in user.
        */
@@ -284,7 +291,9 @@ export default function CertificatesPage() {
                       )}
                     </label>
 
-                    <input
+                    {field.field_type === "location" ? (
+                      <LocationPicker name={field.field_name} value={customFieldValues[field.id] ?? ""} onChange={value=>setCustomFieldValues(previous=>({...previous,[field.id]:value}))} disabled={saving} required={field.is_required}/>
+                    ) : <input
                       type={
                         field.field_type === "number"
                           ? "number"
