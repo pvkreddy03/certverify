@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import type { GeoLocation } from "@/lib/geo/location";
 
 const EMPTY_POINTS:GeoMapPoint[]=[];
-export type GeoMapPoint = GeoLocation & { id: string; title: string; subtitle?: string };
+export type GeoMapPoint = GeoLocation & { id: string; title: string; subtitle?: string; color?: string; ageLabel?: string };
 type Coordinate = { lng: number; lat: number };
 type MapInstance = {
   on: (event:string,fn:(event:{lngLat:Coordinate})=>void)=>void;
@@ -64,9 +64,11 @@ export function GeoMap({center, value, onPick, points=EMPTY_POINTS, onPointClick
       if (value) new lib.Marker({color:"#e34b58"}).setLngLat([value.lng,value.lat]).addTo(view);
       for (const item of points) {
         const marker=document.createElement("button");
-        marker.type="button";marker.title=item.title;
-        marker.setAttribute("aria-label","Open "+item.title);
-        marker.style.cssText="border:2px solid white;border-radius:100%;width:22px;height:22px;background:#087e75;box-shadow:0 2px 9px #0c303d88;cursor:pointer";
+        marker.type="button";
+        marker.title=item.ageLabel ? item.title+" — "+item.ageLabel : item.title;
+        marker.setAttribute("aria-label","Open "+marker.title);
+        marker.style.cssText="border:2px solid white;border-radius:100%;width:22px;height:22px;box-shadow:0 2px 9px #0c303d88;cursor:pointer";
+        marker.style.backgroundColor=item.color??"#087e75";
         marker.addEventListener("click",(event)=>{event.stopPropagation();clickRef.current?.(item);});
         new lib.Marker({element:marker}).setLngLat([item.lng,item.lat]).addTo(view);
       }
