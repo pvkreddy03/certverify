@@ -8,6 +8,7 @@ import {geoDistanceKm,geoUrl,type GeoLocation} from "@/lib/geo/location";
 type Valuation={id:string;certificate_id:string;template_name:string|null;created_at:string;valuation_date:string|null;status:string;price_per_sq_meter:number|null;total_property_value:number|null;field_name:string;lat:number;lng:number;label:string};
 export default function ReferenceMapPage(){
   const [records,setRecords]=useState<Valuation[]>([]);
+  const [referenceNow]=useState(()=>Date.now());
   const [error,setError]=useState("");
   const [loading,setLoading]=useState(true);
   const [selected,setSelected]=useState<Valuation|null>(null);
@@ -33,11 +34,11 @@ export default function ReferenceMapPage(){
   },[]);
   const visible=useMemo(()=>{
     const query=search.trim().toLowerCase();
-    const earliest=months==="all"?0:Date.now()-Number(months)*30.44*86400000;
+    const earliest=months==="all"?0:referenceNow-Number(months)*30.44*86400000;
     return records.filter(r=>(!query||[r.certificate_id,r.template_name??"",r.label,r.field_name].some(x=>x.toLowerCase().includes(query))) &&
       new Date(r.valuation_date??r.created_at).getTime()>=earliest &&
       (!center||geoDistanceKm(center,r)<=radius));
-  },[records,search,months,center,radius]);
+  },[records,search,months,center,radius,referenceNow]);
   const points:GeoMapPoint[]=useMemo(()=>visible.map(r=>({id:r.id+":"+r.field_name,title:r.certificate_id,subtitle:r.template_name??"",lat:r.lat,lng:r.lng})),[visible]);
   const chosen=selected&&visible.find(r=>r.id===selected.id&&r.field_name===selected.field_name);
   return <main className="cv-page"><div className="cv-shell space-y-5">
