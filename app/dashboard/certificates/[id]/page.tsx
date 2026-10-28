@@ -8,6 +8,7 @@ import QRCode from "qrcode";
 import { publicVerificationUrl } from "@/lib/certificates/public-verification-url";
 import { IssuerBranding } from "@/components/issuer-branding";
 import { CertificateStatusActions } from "@/components/certificate-status-actions";
+import {geoUrl,parseGeoLocation} from "@/lib/geo/location";
 
 type Certificate = {
   id: string;
@@ -395,7 +396,7 @@ export default function ViewCertificatePage() {
                     </p>
 
                     <p className="mt-2 text-sm font-medium text-slate-900">
-                      {formatFieldValue(
+                      {field.field_type === "location" ? (()=>{const point=parseGeoLocation(field.field_value);return point ? <><span>{point.lat.toFixed(6)}, {point.lng.toFixed(6)}</span><a className="mt-2 block text-blue-700 underline" href={geoUrl(point)} target="_blank" rel="noopener noreferrer">Open property location on map</a></> : "No valid location";})() : formatFieldValue(
                         field.field_value,
                         field.field_type
                       )}
