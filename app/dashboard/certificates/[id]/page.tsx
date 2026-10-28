@@ -8,6 +8,7 @@ import QRCode from "qrcode";
 import { publicVerificationUrl } from "@/lib/certificates/public-verification-url";
 import { IssuerBranding } from "@/components/issuer-branding";
 import { CertificateStatusActions } from "@/components/certificate-status-actions";
+import { DownloadWordReport } from "@/components/download-word-report";
 import {geoUrl,parseGeoLocation} from "@/lib/geo/location";
 
 type Certificate = {
@@ -369,6 +370,9 @@ export default function ViewCertificatePage() {
             <Link href={`/dashboard/certificates?replaces=${certificate.id}`} className="mt-4 inline-block font-medium text-blue-700">Issue linked replacement</Link>
           </section>}
           <CertificateStatusActions certificateId={certificate.id} status={certificate.status} onChanged={loadCertificate} />
+
+          {!loadingFields && <DownloadWordReport templateId={certificate.template_id}
+            certificateNumber={certificate.certificate_id} fieldValues={fieldValues} />}
 
           {/* Certificate Details */}
           <section className="rounded-2xl bg-white p-8 shadow-sm">
