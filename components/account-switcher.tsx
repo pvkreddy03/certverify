@@ -70,7 +70,7 @@ export function AccountWorkspace({ children }: { children: ReactNode }) {
   const canManageBilling = owner;
   const accessStatus = accessStates[selected.id] ?? "unavailable";
   const hasEntitlement = billing?.entitled === true;
-  const existingRecords = pathname === "/dashboard"
+  const existingRecords = pathname === "/dashboard/reference-map" || pathname === "/dashboard"
     || /^\/dashboard\/certificates\/(list|[0-9a-f-]{36})$/.test(pathname);
 
   function switchWorkspace(id: string) {

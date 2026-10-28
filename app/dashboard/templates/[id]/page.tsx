@@ -466,12 +466,13 @@ export default function TemplatePage() {
 
                 <select
                   value={fieldType}
-                  onChange={(e) => setFieldType(e.target.value)}
+                  onChange={(e) => { setFieldType(e.target.value); if (e.target.value === "location") setIsPublic(false); }}
                   className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-4 py-3 outline-none focus:border-slate-500"
                 >
                   <option value="text">Text</option>
                   <option value="number">Number</option>
                   <option value="date">Date</option>
+                  <option value="location">Map Location (pin / GPS / coordinates)</option>
                 </select>
               </div>
 

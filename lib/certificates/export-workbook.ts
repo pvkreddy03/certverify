@@ -1,4 +1,5 @@
 import { createXlsxWorkbook, zipFiles, WorkbookError } from "../bulk/xlsx";
+import {parseGeoLocation} from "../geo/location";
 
 export type ExportCertificate = {
   id: string;
@@ -88,7 +89,8 @@ export function buildCertificateExportSheets(
     const rows = group.map((certificate) => {
       const fieldsForCertificate = new Map<string, string>();
       for (const value of byCertificate.get(certificate.id) ?? []) {
-        fieldsForCertificate.set(value.field_name, value.field_value ?? "");
+        const geo=value.field_type==="location"?parseGeoLocation(value.field_value):null;
+        fieldsForCertificate.set(value.field_name,geo?geo.lat.toFixed(6)+", "+geo.lng.toFixed(6):value.field_value??"");
       }
       return [
         certificate.certificate_id,
