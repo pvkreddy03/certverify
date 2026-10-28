@@ -16,8 +16,7 @@ export function LocationPicker({name,value,onChange,disabled=false,required=fals
   const [lng,setLng]=useState("");
   const [center,setCenter]=useState<GeoLocation|null>(null);
   function select(next:GeoLocation) {onChange(serializeGeoLocation(next));setCenter(next);setNotice("Location selected. Check the pin position before saving.");}
-  async function findPlace(event:React.FormEvent){
-    event.preventDefault();if(busy||search.trim().length<2)return;
+  async function findPlace(){if(busy||search.trim().length<2)return;
     setBusy(true);setNotice("");
     try{
       const {data:{session}}=await supabase.auth.getSession();
@@ -47,12 +46,12 @@ export function LocationPicker({name,value,onChange,disabled=false,required=fals
   }
   return <div className="space-y-3 rounded-xl border border-teal-200 bg-teal-50/40 p-3 sm:p-4">
     <p className="text-sm font-semibold text-slate-900">{name}{required?" *":""}</p>
-    <form onSubmit={findPlace} className="flex flex-wrap gap-2">
+    <div className="flex flex-wrap gap-2">
       <input aria-label={"Search area for "+name} type="search" value={search} onChange={e=>setSearch(e.target.value)}
         placeholder="Area or town, e.g. Kukatpally, Hyderabad" maxLength={100} disabled={disabled||busy}
         className="min-w-0 flex-1 rounded-lg border p-2 text-sm" />
-      <button type="submit" disabled={disabled||busy||search.trim().length<2} className="rounded-lg bg-teal-800 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50">Search area</button>
-    </form>
+      <button type="button" onClick={()=>{void findPlace();}} disabled={disabled||busy||search.trim().length<2} className="rounded-lg bg-teal-800 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50">Search area</button>
+    </div>
     <div className="flex flex-wrap items-center gap-2">
       <button type="button" onClick={gps} disabled={disabled||busy} className="rounded-lg border bg-white px-3 py-2 text-sm">Use my GPS</button>
       <span className="text-xs text-slate-500">Or tap the map to place your pin</span>
