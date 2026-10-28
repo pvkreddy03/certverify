@@ -9,6 +9,7 @@ import { getCertificateFields, type CertificateField } from "@/lib/repositories/
 import { normalizeBulkDate, displayBulkDate } from "@/lib/bulk/date";
 import { combineSelectedSheets, type ImportedSource } from "@/lib/bulk/sheet-selection";
 import type { NamedImportedSheet } from "@/lib/bulk/xlsx";
+import {parseImportedLocation} from "@/lib/geo/location";
 
 type Sheet={headers:string[];rows:string[][]};
 type Item={id:string;certificateId:string;publicReference:string;sourceRow:number;status:string};
@@ -28,6 +29,8 @@ function validate(fields:CertificateField[],mapping:Record<string,number>,rows:s
     if(val.length>1500)errors.push("Row "+(index+2)+": "+field.field_name+" is too long.");
     if(val.trim()&&field.field_type==="number"&&!/^-?\d+(\.\d+)?$/.test(val.trim()))
       errors.push("Row "+(index+2)+": "+field.field_name+" must be numeric.");
+    if(val.trim()&&field.field_type==="location"&&parseImportedLocation(val)===null)
+      errors.push("Row "+(index+2)+": "+field.field_name+" must contain latitude,longitude (e.g. 17.49,78.4).");
     if(val.trim()&&field.field_type==="date"&&!normalizeBulkDate(val))
       errors.push("Row "+(index+2)+": "+field.field_name+" needs a valid DD/MM/YYYY date (Excel date cells also work).");
   }));
@@ -164,7 +167,7 @@ export default function BulkCertificatePage(){
     try{
       const rows=sheet.rows.map(row=>Object.fromEntries(fields.map(f=>{
         const raw=(row[mapping[f.id]]??"").trim();
-        return [f.id,f.field_type==="date"&&raw?normalizeBulkDate(raw):raw];
+        return [f.id,f.field_type==="date"&&raw?normalizeBulkDate(raw):f.field_type==="location"?(parseImportedLocation(raw)??""):raw];
       })));
       const {data,error:failure}=await supabase.rpc("cv_create_certificate_batch",{
         p_template:selected,p_rows:rows,p_idempotency:currentKey,
