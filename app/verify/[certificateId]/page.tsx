@@ -2,6 +2,7 @@ import { publicVerificationRepository } from "@/lib/providers/public-verificatio
 import Link from "next/link";
 import Image from "next/image";
 import { statusPresentation } from "@/lib/certificates/status";
+import {geoUrl,parseGeoLocation} from "@/lib/geo/location";
 
 export default async function VerifyCertificatePage({ params }: { params: Promise<{ certificateId: string }> }) {
   const { certificateId } = await params;
@@ -46,7 +47,7 @@ export default async function VerifyCertificatePage({ params }: { params: Promis
         </section>}
         <section><h2 className="text-lg font-semibold">Public certificate details</h2>
           {!certificate.fields.length ? <p className="mt-3 text-slate-600">No public certificate details are available.</p> : <dl className="mt-4 space-y-3">
-            {certificate.fields.map((field) => <div key={field.id} className="rounded border p-4"><dt className="text-sm text-slate-500">{field.field_name}</dt><dd className="mt-1 whitespace-pre-wrap break-words">{field.field_value || "—"}</dd></div>)}
+            {certificate.fields.map((field) => <div key={field.id} className="rounded border p-4"><dt className="text-sm text-slate-500">{field.field_name}</dt><dd className="mt-1 whitespace-pre-wrap break-words">{field.field_type === "location" ? (()=>{const point=parseGeoLocation(field.field_value);return point ? <a href={geoUrl(point)} rel="noopener noreferrer" target="_blank" className="text-blue-700 underline">View shared location: {point.lat.toFixed(6)}, {point.lng.toFixed(6)}</a> : "—";})() : field.field_value || "—"}</dd></div>)}
           </dl>}
         </section>
       </div>
