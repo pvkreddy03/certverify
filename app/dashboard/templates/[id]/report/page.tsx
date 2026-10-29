@@ -288,7 +288,7 @@ export default function VisualReportDesigner() {
           </div>
           <div>
             <h2 className="text-xl font-extrabold text-[#17483f]">Attach your existing Word report</h2>
-            <p className="mt-1 text-sm leading-6 text-[#40695f]">Choose the original Word (.docx) report for this template and format. We'll preserve its original design and let you connect names, amounts and property details with the fields above.</p>
+            <p className="mt-1 text-sm leading-6 text-[#40695f]">Choose the original Word (.docx) report for this template and format. We&apos;ll preserve its original design and let you connect names, amounts and property details with the fields above.</p>
           </div>
         </div>
         <div className="mt-5 flex flex-wrap items-center gap-3">
