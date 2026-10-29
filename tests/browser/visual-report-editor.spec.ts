@@ -60,7 +60,8 @@ test.beforeEach(async ({ request }) => {
 test("visually map text in a DOCX, save the template and download a populated Word file", async ({ page }) => {
   let saved: { id: string; format_name: string; storage_path: string; bindings: Array<{ fieldName: string; start: number; end: number }> } | null = null;
   let storedDocx: Buffer | null = null;
-  await page.route("**/storage/v1/object/**/certverify-word-formats/**", async route => {
+  await page.route("**/storage/v1/object/**", async route => {
+    if (!route.request().url().includes("/certverify-word-formats/")) return route.continue();
     const method = route.request().method();
     if (method === "POST") {
       storedDocx = route.request().postDataBuffer();
