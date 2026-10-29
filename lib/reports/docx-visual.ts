@@ -1,3 +1,5 @@
+import { safeReportFileName } from "@/lib/reports/report-filenames";
+
 /**
  * Browser-side, no third-party execution: DOCX is an OOXML ZIP archive.
  * Visual selections are recorded by paragraph and character offset, not by
@@ -292,7 +294,7 @@ export function base64ToBytes(value: string) {
 }
 export function downloadReport(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob), a = document.createElement("a");
-  a.href = url; a.download = filename.replace(/[^a-z0-9_.-]/gi, "_");
+  a.href = url; a.download = safeReportFileName(filename, 180);
   document.body.appendChild(a); a.click(); a.remove();
   window.setTimeout(() => URL.revokeObjectURL(url), 3000);
 }
