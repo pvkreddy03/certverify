@@ -45,17 +45,26 @@ export default function CertificatesPage() {
   }, []);
   const [loadingTemplates, setLoadingTemplates] = useState(true);
   const [formats, setFormats] = useState<ReportFormat[]>([]);
+  const [formatLoading, setFormatLoading] = useState(false);
+  const [formatLoadError, setFormatLoadError] = useState("");
   const [includeWordReport, setIncludeWordReport] = useState(false);
   const [selectedFormatId, setSelectedFormatId] = useState("");
   useEffect(() => {
     let active = true;
     if (!selectedTemplateId) return;
+    void Promise.resolve().then(() => {
+      if (active) { setFormats([]); setFormatLoadError(""); setFormatLoading(true); }
+    });
     void listReportFormats(selectedTemplateId).then(items => {
       if (!active) return;
       setFormats(items);
       setSelectedFormatId(items[0]?.id ?? "");
       setIncludeWordReport(false);
-    }).catch(() => { if (active) setFormats([]); });
+    }).catch(error => {
+      if (!active) return;
+      setFormats([]);
+      setFormatLoadError(error instanceof Error ? error.message : "Word formats are unavailable.");
+    }).finally(() => { if (active) setFormatLoading(false); });
     return () => { active = false; };
   }, [selectedTemplateId]);
 
@@ -270,6 +279,15 @@ export default function CertificatesPage() {
             </Link>
           </div>
 
+          {selectedTemplateId && !formatLoading && formats.length === 0 && <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#d9e8e9] bg-[#f3f9f8] px-5 py-4">
+            <div>
+              <p className="text-sm font-bold text-[#1d4451]">Want to generate a Word report?</p>
+              <p className="mt-1 text-xs text-slate-600">This template has no saved Word formats yet. You can create SBI, Canara, Visa or another .docx layout once, then reuse it.</p>
+              {formatLoadError && <p className="mt-1 text-xs text-amber-800">{formatLoadError}</p>}
+            </div>
+            <Link href={`/dashboard/templates/${selectedTemplateId}/report?format=__new__`}
+              className="rounded-lg border border-[#abd7d1] bg-white px-4 py-2.5 text-sm font-bold text-[#14746c] hover:bg-[#e7faf2]">+ Create Word format</Link>
+          </div>}
           {formats.length > 0 && <div className="rounded-xl border border-teal-200 bg-teal-50 p-5">
             <label className="flex cursor-pointer items-center gap-3 text-sm font-semibold text-slate-900">
               <input type="checkbox" checked={includeWordReport} disabled={saving}

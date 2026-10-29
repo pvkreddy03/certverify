@@ -71,7 +71,11 @@ export function AccountWorkspace({ children }: { children: ReactNode }) {
   const accessStatus = accessStates[selected.id] ?? "unavailable";
   const hasEntitlement = billing?.entitled === true;
   const subscriptionPage = pathname === "/dashboard/subscription" || pathname.startsWith("/dashboard/subscription/");
-  const existingRecords = pathname === "/dashboard/reference-map" || pathname === "/dashboard"
+  // Users can prepare certificate fields and Word formats before purchasing.
+  // Creating NEW certificates remains subscription-gated and authorized in SQL.
+  const setupPages = pathname === "/dashboard/templates" || pathname.startsWith("/dashboard/templates/")
+    || pathname === "/dashboard/report-formats" || pathname.startsWith("/dashboard/report-formats/");
+  const existingRecords = setupPages || pathname === "/dashboard/reference-map" || pathname === "/dashboard"
     || /^\/dashboard\/certificates\/(list|[0-9a-f-]{36})$/.test(pathname);
 
   function switchWorkspace(id: string) {
