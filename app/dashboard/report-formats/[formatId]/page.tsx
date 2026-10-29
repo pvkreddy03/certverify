@@ -143,7 +143,7 @@ export default function SavedReportFormatPage() {
           <h2 className="mt-2 text-xl font-extrabold text-[#163d50]">Generate a Word report</h2>
           <p className="mt-2 text-sm leading-6 text-slate-600">
             Select an existing certificate created using <strong>{templateName}</strong>.
-            CertVerify will fill this saved report format using that certificate's data and download a Word file named after <strong>{format.format_name}</strong>.
+            CertVerify will fill this saved report format using that certificate&apos;s data and download a Word file named after <strong>{format.format_name}</strong>.
           </p>
         </div>
         {mapped.size === 0 ? <div className="rounded-xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-950">
