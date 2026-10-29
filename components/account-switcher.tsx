@@ -70,6 +70,7 @@ export function AccountWorkspace({ children }: { children: ReactNode }) {
   const canManageBilling = owner;
   const accessStatus = accessStates[selected.id] ?? "unavailable";
   const hasEntitlement = billing?.entitled === true;
+  const subscriptionPage = pathname === "/dashboard/subscription" || pathname.startsWith("/dashboard/subscription/");
   const existingRecords = pathname === "/dashboard/reference-map" || pathname === "/dashboard"
     || /^\/dashboard\/certificates\/(list|[0-9a-f-]{36})$/.test(pathname);
 
@@ -81,25 +82,62 @@ export function AccountWorkspace({ children }: { children: ReactNode }) {
   }
 
   let content: ReactNode = children;
-  if (staff && (pathname === "/dashboard/team" || pathname === "/dashboard/subscription" || pathname === "/dashboard/payment" || pathname === "/dashboard/branding")) {
+  if (staff && (pathname === "/dashboard/team" || subscriptionPage || pathname === "/dashboard/payment" || pathname === "/dashboard/branding")) {
     content = <main className="mx-auto max-w-3xl p-8">
       <h1 className="text-2xl font-semibold">Managed by your organization</h1>
       <p className="mt-3 text-slate-600">Team membership, billing and branding are managed by the organization owner. You can issue certificates under your organization&apos;s subscription without purchasing a separate plan.</p>
       <Link href="/dashboard" className="mt-4 inline-block font-semibold text-blue-700">Return to dashboard</Link>
     </main>;
-  } else if (!staff && !owner && (pathname === "/dashboard/subscription" || pathname === "/dashboard/payment")) {
+  } else if (!staff && !owner && (subscriptionPage || pathname === "/dashboard/payment")) {
     content = <main className="p-8"><h1 className="text-2xl font-semibold">Owner access required</h1><p className="mt-3">Only the organization owner can manage payment and subscription settings.</p><Link className="mt-3 block text-blue-700" href="/dashboard">Return to dashboard</Link></main>;
   } else if (accessStatus !== "active") {
     content = <main className="p-8"><h1 className="text-2xl font-semibold">Account access {accessStatus}</h1><p className="mt-3">Customer operations are unavailable for this account. Contact CertVerify support, or select another workspace if available. Issued certificates remain publicly verifiable.</p></main>;
-  } else if (!hasEntitlement && !existingRecords && pathname !== "/dashboard/subscription" && pathname !== "/dashboard/payment") {
-    content = <main className="p-8">
-      <h1 className="text-2xl font-semibold">{canManageBilling ? "Subscription required" : "Organization subscription unavailable"}</h1>
-      <p className="mt-3 text-slate-600">{canManageBilling
-        ? "Renew or activate a subscription to use this feature. Existing certificates and public verification remain available."
-        : "Your organization does not currently have certificate-generation access. Contact your organization owner; do not purchase a personal subscription."}</p>
-      {canManageBilling && <Link className="mt-3 block text-blue-700" href="/dashboard/subscription">View subscription and renewal options</Link>}
-      <Link href="/dashboard/certificates/list" className="mt-3 block text-blue-700">View issued certificates</Link>
+  } else if (!hasEntitlement && !existingRecords && !subscriptionPage && pathname !== "/dashboard/payment") {
+    content = <main className="cv-page min-h-[70vh] px-4 py-10 sm:px-6">
+      <div className="mx-auto max-w-4xl overflow-hidden rounded-[28px] border border-[#d8e9ed] bg-white shadow-[0_18px_55px_rgba(17,44,61,.09)]">
+        <div className="relative overflow-hidden bg-gradient-to-br from-[#10243b] via-[#15475a] to-[#0d766c] p-7 text-white sm:p-11">
+          <div aria-hidden="true" className="absolute -right-16 -top-20 h-72 w-72 rounded-full border-[30px] border-white/5"/>
+          <div className="relative flex flex-wrap items-center gap-5">
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-white/20 bg-white/15">
+              <svg aria-hidden="true" width="34" height="34" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.6">
+                <rect x="2.5" y="5" width="19" height="14" rx="3"/><path d="M2.5 10h19M7 15h4"/>
+              </svg>
+            </div>
+            <div className="max-w-lg">
+              <p className="text-xs font-bold uppercase tracking-[.18em] text-[#8ef2df]">CertVerify membership</p>
+              <h1 className="mt-2 text-2xl font-extrabold sm:text-3xl">{canManageBilling ? "Subscription required" : "Organization subscription unavailable"}</h1>
+              <p className="mt-3 text-sm leading-6 text-[#d5f1ed]">{canManageBilling
+                ? "Your workspace is ready. Activate or renew a plan to keep issuing new certificates and reports."
+                : "The organization owner manages membership and payment. Your organization’s subscription needs attention."}</p>
+            </div>
+          </div>
+        </div>
+        <div className="space-y-6 p-7 sm:p-10">
+          <div className="grid gap-4 sm:grid-cols-3">
+            {[
+              { title: "Your records stay safe", desc: "Previously issued documents remain accessible." },
+              { title: "QR links keep working", desc: "Public verification remains available." },
+              { title: canManageBilling ? "Choose a plan" : "No purchase needed", desc: canManageBilling ? "View plans side by side and select what fits." : "Ask the organization owner to restore access." },
+            ].map(item => <div key={item.title} className="rounded-2xl bg-[#f1f8f8] p-4">
+              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#d4f1e9] text-[#087d6d]">
+                <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m5 12 4 4L19 6"/></svg>
+              </span>
+              <h2 className="mt-3 text-sm font-bold text-[#1c3e50]">{item.title}</h2>
+              <p className="mt-1 text-xs leading-5 text-slate-600">{item.desc}</p>
+            </div>)}
+          </div>
+          <div className="flex flex-wrap gap-3">
+            {canManageBilling && <Link href="/dashboard/subscription"
+              className="inline-flex items-center gap-2 rounded-xl bg-[#0e746b] px-6 py-3.5 text-sm font-bold text-white shadow-sm hover:bg-[#075e56]">View plans &amp; renew
+              <svg aria-hidden="true" width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path d="M4 12h16m-7-7 7 7-7 7"/></svg>
+            </Link>}
+            <Link href="/dashboard/certificates/list" className="rounded-xl border border-[#cadbe0] px-6 py-3.5 text-sm font-bold text-[#2a5260] hover:bg-slate-50">View issued certificates</Link>
+          </div>
+          {!canManageBilling && <p className="text-sm text-slate-500">Sub-users never need to purchase their own subscription for this organization.</p>}
+        </div>
+      </div>
     </main>;
+
   }
 
   return <>
