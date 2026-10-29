@@ -333,7 +333,7 @@ export default function CertificatesPage() {
 
               <div className="grid gap-6 md:grid-cols-2">
                 {customFields.map((field) => (
-                  <div key={field.id}>
+                  <div key={field.id} className={field.field_type === "location" ? "md:col-span-2 min-w-0" : "min-w-0"}>
                     <label className="mb-2 block text-sm font-medium text-slate-700">
                       {field.field_name}
 
