@@ -71,7 +71,7 @@ export default function DashboardPage(){
         <div>
           <p className="cv-eyebrow"><span className="h-2 w-2 rounded-full bg-[#0d978f]"/> Your workspace</p>
           <h1 className="mt-2 text-[28px] font-extrabold tracking-tight text-[#172a45] sm:text-4xl">Welcome to CertVerify</h1>
-          <p className="mt-2 text-sm text-[#687991]">Your certificates, templates, verification and imports—organized in one place.</p>
+          <p className="mt-2 text-sm text-[#687991]">Certificates, reusable Word report formats, location-tagged references and verification—organized in one place.</p>
         </div>
         <div className="flex items-center gap-3">
           {email&&<span className="hidden max-w-[220px] truncate rounded-full border border-[#e4edf1] bg-white px-4 py-2 text-xs font-medium text-[#6d7b92] md:inline">{email}</span>}
@@ -86,10 +86,18 @@ export default function DashboardPage(){
               <Graphic name="shield" className="h-4 w-4"/> Secure document authentication
             </span>
             <h2 className="mt-5 max-w-[690px] text-white">One trusted record.<br/><span className="text-[#79ead7]">Every certificate.</span></h2>
-            <p className="mt-4 max-w-xl text-sm sm:text-base">Create tamper-resistant verification records, manage your organization&apos;s templates and issue unique QR codes in seconds.</p>
+            <p className="mt-4 max-w-2xl text-sm leading-7 sm:text-base">Create verifiable certificates and unique QR codes, generate Word reports using bank- or client-specific formats, and keep geotagged property valuations on your private reference map—all from one professional workspace.</p>
+            <div className="mt-5 flex flex-wrap gap-2 text-xs font-semibold text-white/90">
+              <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1.5">✓ QR verification</span>
+              <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1.5">✓ Multiple Word formats</span>
+              <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1.5">✓ Property location references</span>
+            </div>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link href="/dashboard/certificates" className="cv-primary !border-[#4ce0cb] !bg-[#43d2bc] !text-[#072b32] hover:!bg-[#76ead7]">
                 <Graphic name="certificate" className="h-5 w-5"/> + Create Certificate
+              </Link>
+              <Link href="/dashboard/report-formats" className="inline-flex items-center gap-2 rounded-xl border border-white/25 bg-white/10 px-5 py-3 text-sm font-bold text-white hover:bg-white/20">
+                <Graphic name="template" className="h-5 w-5"/> Word report formats <Graphic name="arrow" className="h-4 w-4"/>
               </Link>
               <Link href="/dashboard/certificates/bulk" className="inline-flex items-center gap-2 rounded-xl border border-white/25 bg-white/10 px-5 py-3 text-sm font-bold text-white hover:bg-white/20">
                 <Graphic name="excel" className="h-5 w-5"/> Bulk Excel import <Graphic name="arrow" className="h-4 w-4"/>
