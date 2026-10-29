@@ -7,6 +7,7 @@ import { supabase } from "@/lib/supabase";
 import { IssuerBranding } from "@/components/issuer-branding";
 import { LocationPicker } from "@/components/location-picker";
 import {parseGeoLocation} from "@/lib/geo/location";
+import { listReportFormats, type ReportFormat } from "@/lib/reports/private-storage";
 
 import {
   generateCertificateId,
@@ -43,6 +44,21 @@ export default function CertificatesPage() {
     if (template && /^[0-9a-f-]{36}$/i.test(template)) void Promise.resolve().then(() => setSelectedTemplateId(template));
   }, []);
   const [loadingTemplates, setLoadingTemplates] = useState(true);
+  const [formats, setFormats] = useState<ReportFormat[]>([]);
+  const [includeWordReport, setIncludeWordReport] = useState(false);
+  const [selectedFormatId, setSelectedFormatId] = useState("");
+  useEffect(() => {
+    let active = true;
+    if (!selectedTemplateId) return;
+    void listReportFormats(selectedTemplateId).then(items => {
+      if (!active) return;
+      setFormats(items);
+      setSelectedFormatId(items[0]?.id ?? "");
+      setIncludeWordReport(false);
+    }).catch(() => { if (active) setFormats([]); });
+    return () => { active = false; };
+  }, [selectedTemplateId]);
+
 
   const [status, setStatus] = useState("Active");
 
@@ -148,6 +164,7 @@ export default function CertificatesPage() {
         template_id: selectedTemplateId,
         status,
         replaces_certificate_id: replacementId,
+        report_format_id: includeWordReport && selectedFormatId ? selectedFormatId : null,
       });
       insertedId = certificate.id;
       setCreatedRecordId(certificate.id);
@@ -252,6 +269,22 @@ export default function CertificatesPage() {
               + Create and configure a new template
             </Link>
           </div>
+
+          {formats.length > 0 && <div className="rounded-xl border border-teal-200 bg-teal-50 p-5">
+            <label className="flex cursor-pointer items-center gap-3 text-sm font-semibold text-slate-900">
+              <input type="checkbox" checked={includeWordReport} disabled={saving}
+                onChange={event => setIncludeWordReport(event.target.checked)} />
+              Prepare a Word report too (optional)
+            </label>
+            <p className="mt-2 text-xs text-slate-600">Leave unchecked for QR-only issuance. All report formats reuse the fields below; nothing extra is required.</p>
+            {includeWordReport && <label className="mt-4 block text-sm font-semibold">
+              Choose report format
+              <select aria-label="Choose report format" className="cv-field mt-2" value={selectedFormatId}
+                onChange={event => setSelectedFormatId(event.target.value)} disabled={saving} required>
+                {formats.map(item => <option key={item.id} value={item.id}>{item.format_name}</option>)}
+              </select>
+            </label>}
+          </div>}
 
           {/* Certificate ID */}
           <div>
