@@ -17,6 +17,7 @@ export default function ReportFormatsPage() {
   const [attachTemplateId, setAttachTemplateId] = useState("");
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
+  const [formatSearch, setFormatSearch] = useState("");
 
   useEffect(() => {
     let live = true;
@@ -50,6 +51,11 @@ export default function ReportFormatsPage() {
 
   const canCreate = !!member && (member.role === "owner" || member.role === "admin" || member.can_manage_templates === true);
   const count = formats.length;
+  const visibleFormats = formats.filter(format => {
+    const template = templates.find(item => item.id === format.template_id);
+    const text = (format.format_name + " " + (template?.name ?? "")).toLowerCase();
+    return text.includes(formatSearch.trim().toLowerCase());
+  });
 
   return <main className="cv-page min-h-screen">
     <div className="cv-shell space-y-6 pb-14">
@@ -105,6 +111,37 @@ export default function ReportFormatsPage() {
           </div>)}
       </div>
 
+      {formats.length > 0 && <section aria-label="Saved report formats" className="space-y-4">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wider text-[#0f8b7a]">YOUR LIBRARY</p>
+            <h2 className="mt-1 text-xl font-extrabold text-[#1a4250]">Saved Report Formats</h2>
+            <p className="mt-1 text-sm text-slate-600">Formats are identified by the name you choose, not by an automatically generated file name.</p>
+          </div>
+          <label className="text-sm font-semibold text-[#345c69]">Find by format name or template
+            <input type="search" className="cv-field mt-2" aria-label="Find report format"
+              placeholder="e.g. SBI – Open Plot" value={formatSearch} onChange={event => setFormatSearch(event.target.value)}/>
+          </label>
+        </div>
+        {visibleFormats.length === 0 ? <p className="cv-panel rounded-xl p-5 text-sm text-slate-600">No saved formats match that search.</p>
+          : <div className="grid gap-4 md:grid-cols-2">
+            {visibleFormats.map(format => {
+              const assigned = templates.find(item => item.id === format.template_id);
+              return <Link key={format.id} href={"/dashboard/report-formats/" + format.id}
+                className="group cv-card cv-card--interactive flex min-w-0 items-center gap-4 rounded-2xl p-5">
+                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#e0f6ed] text-[#087d73]">
+                  <svg width="25" height="25" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M6 3h9l5 5v13H6zM15 3v6h5M9 13h8M9 17h8"/></svg>
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block break-words text-lg font-extrabold text-[#163d4d] group-hover:text-[#078777]">{format.format_name}</span>
+                  <span className="mt-1 block text-xs font-semibold text-[#5e7786]">Template: {assigned?.name ?? "Certificate template"}</span>
+                  <span className="mt-2 block text-xs font-bold text-[#0b7a70]">Open format · Generate report →</span>
+                </span>
+              </Link>;
+            })}
+          </div>}
+      </section>}
+
       <div className="cv-panel rounded-2xl border-l-4 border-l-[#13a48f] p-5 sm:p-6">
         <h2 className="text-lg font-bold text-[#173648]">How to create a report format</h2>
         <ol className="mt-3 grid gap-3 text-sm leading-6 text-[#3a5262] md:grid-cols-3">
@@ -147,7 +184,7 @@ export default function ReportFormatsPage() {
                 </div>
                 <div className="mt-5 space-y-2">
                   {linked.length === 0 ? <p className="rounded-xl bg-[#f4f8f9] px-4 py-3 text-sm text-slate-600">No report formats yet. Add your first .docx file.</p>
-                    : linked.slice(0, 4).map(f => <Link key={f.id} href={"/dashboard/templates/" + t.id + "/report?format=" + encodeURIComponent(f.id)}
+                    : linked.slice(0, 4).map(f => <Link key={f.id} href={"/dashboard/report-formats/" + f.id}
                       className="flex items-center justify-between gap-2 rounded-xl border border-[#deebed] px-4 py-3 text-sm font-semibold text-[#274b59] hover:bg-[#eef9f5]">
                       <span className="min-w-0 truncate">📄 {f.format_name}</span><span aria-hidden="true">→</span>
                     </Link>)}
