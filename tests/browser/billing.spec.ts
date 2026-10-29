@@ -121,7 +121,7 @@ test("paid subscription selections show server prices and stay pending without c
   await page.getByRole("link", { name: /My Orders/ }).first().click();
   await expect(page.getByRole("heading", { name: "My Orders" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Your payments" })).toBeVisible();
-  await page.goto("/dashboard/templates");
+  await page.goto("/dashboard/certificates");
   await expect(
     page.getByRole("heading", { name: "Subscription required", exact: true }),
   ).toBeVisible();
@@ -152,7 +152,7 @@ test("a free trial activates only after the quoted terms are confirmed and expos
   await expect(
     page.getByRole("button", { name: "Request free trial quote", exact: true }),
   ).toBeDisabled();
-  await page.goto("/dashboard/templates");
+  await page.goto("/dashboard/certificates");
   await expect(
     page.getByRole("heading", { name: "Subscription required", exact: true }),
   ).toHaveCount(0);
@@ -163,7 +163,7 @@ test("expired subscriptions retain renewal/history and public verification witho
 }) => {
   await request.post("http://127.0.0.1:54329/test/billing-expire");
   await login(page);
-  await page.goto("/dashboard/templates");
+  await page.goto("/dashboard/certificates");
   await expect(
     page.getByRole("heading", { name: "Subscription required", exact: true }),
   ).toBeVisible();
@@ -267,4 +267,18 @@ test("sub-users have no subscription navigation, no order access and no billing 
   await expect(page.getByRole("heading", { name: "Managed by your organization" })).toBeVisible();
   const account = await page.evaluate(() => window.sessionStorage.getItem("certverify.selected-account"));
   expect(account).toBeTruthy();
+});
+
+test("report setup remains discoverable and accessible without a paid plan; issuance remains gated", async ({ page, request }) => {
+  await request.post("http://127.0.0.1:54329/test/billing-reset");
+  await login(page);
+  await expect(page.getByRole("link", { name: "Word reports", exact: true })).toBeVisible();
+  await page.getByRole("link", { name: "Word reports", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Word Reports & Formats" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "How to create a Word report format" })).toBeVisible();
+  await page.goto("/dashboard/templates");
+  await expect(page.getByText("Word report formats — SBI, Canara, Visa & more")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Subscription required" })).toHaveCount(0);
+  await page.goto("/dashboard/certificates");
+  await expect(page.getByRole("heading", { name: "Subscription required" })).toBeVisible();
 });
