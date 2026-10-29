@@ -41,7 +41,7 @@ export default function ReportFormatsPage() {
         setMember(memberResult.data);
         setUserId(user.id);
       } catch (error) {
-        if (live) setMessage(error instanceof Error ? error.message : "Could not load Word reports.");
+        if (live) setMessage(error instanceof Error ? error.message : "Could not load report formats.");
       } finally { if (live) setLoading(false); }
     }
     void load();
@@ -57,7 +57,7 @@ export default function ReportFormatsPage() {
         <div className="cv-hero__body flex flex-col justify-between gap-5 sm:flex-row sm:items-center">
           <div>
             <p className="cv-eyebrow mb-2">DOCUMENT AUTOMATION</p>
-            <h1 className="text-3xl font-bold !text-white">Word Reports &amp; Formats</h1>
+            <h1 className="text-3xl font-bold !text-white">Report Formats</h1>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-[#d2e5ec]">
               Build one certificate template with shared fields, then attach separate Word report formats for each bank, client or purpose. Generate finished reports only when needed.
             </p>
@@ -96,7 +96,7 @@ export default function ReportFormatsPage() {
 
       <div className="grid gap-4 sm:grid-cols-3">
         {[{ number: templates.length, name: "Certificate templates", caption: "Reusable field sets" },
-          { number: count, name: "Saved Word formats", caption: "Original DOCX files stored privately" },
+          { number: count, name: "Saved report formats", caption: "Original DOCX files stored privately" },
           { number: "On demand", name: "Generated reports", caption: "No separate report files saved" }].map(tile =>
           <div key={tile.name} className="cv-panel rounded-2xl p-5">
             <p className="text-xs font-bold uppercase tracking-[.10em] text-[#527087]">{tile.name}</p>
@@ -106,10 +106,10 @@ export default function ReportFormatsPage() {
       </div>
 
       <div className="cv-panel rounded-2xl border-l-4 border-l-[#13a48f] p-5 sm:p-6">
-        <h2 className="text-lg font-bold text-[#173648]">How to create a Word report format</h2>
+        <h2 className="text-lg font-bold text-[#173648]">How to create a report format</h2>
         <ol className="mt-3 grid gap-3 text-sm leading-6 text-[#3a5262] md:grid-cols-3">
           <li><strong className="text-[#088a7e]">1. Choose a template.</strong> For example, Open Plot Valuation. Add common certificate fields once.</li>
-          <li><strong className="text-[#088a7e]">2. Add Word format.</strong> Upload SBI.docx, Canara.docx or another existing document and visually link its text to the fields.</li>
+          <li><strong className="text-[#088a7e]">2. Add report format.</strong> Upload SBI.docx, Canara.docx or another existing document and visually link its text to the fields.</li>
           <li><strong className="text-[#088a7e]">3. Generate when needed.</strong> Open an issued certificate, select the bank format and download the filled Word report.</li>
         </ol>
       </div>
@@ -127,7 +127,7 @@ export default function ReportFormatsPage() {
         </div>
       : <section className="space-y-4">
           <div className="flex flex-wrap items-end justify-between gap-2">
-            <h2 className="text-xl font-bold text-[#173648]">Your templates and Word formats</h2>
+            <h2 className="text-xl font-bold text-[#173648]">Your templates and report formats</h2>
             <span className="text-sm text-slate-500">{templates.length} template{templates.length === 1 ? "" : "s"}</span>
           </div>
           <div className="grid gap-5 lg:grid-cols-2">
@@ -146,7 +146,7 @@ export default function ReportFormatsPage() {
                   <span className="shrink-0 rounded-full bg-[#ecf4f5] px-3 py-1.5 text-xs font-bold text-[#336371]">{linked.length} format{linked.length === 1 ? "" : "s"}</span>
                 </div>
                 <div className="mt-5 space-y-2">
-                  {linked.length === 0 ? <p className="rounded-xl bg-[#f4f8f9] px-4 py-3 text-sm text-slate-600">No Word formats yet. Add your first .docx file.</p>
+                  {linked.length === 0 ? <p className="rounded-xl bg-[#f4f8f9] px-4 py-3 text-sm text-slate-600">No report formats yet. Add your first .docx file.</p>
                     : linked.slice(0, 4).map(f => <Link key={f.id} href={"/dashboard/templates/" + t.id + "/report?format=" + encodeURIComponent(f.id)}
                       className="flex items-center justify-between gap-2 rounded-xl border border-[#deebed] px-4 py-3 text-sm font-semibold text-[#274b59] hover:bg-[#eef9f5]">
                       <span className="min-w-0 truncate">📄 {f.format_name}</span><span aria-hidden="true">→</span>
@@ -155,7 +155,7 @@ export default function ReportFormatsPage() {
                 </div>
                 <div className="mt-5 flex flex-wrap gap-3">
                   {canEdit && <Link href={"/dashboard/templates/" + t.id + "/report?format=__new__"}
-                    className="cv-primary inline-flex items-center justify-center">+ Create Word format</Link>}
+                    className="cv-primary inline-flex items-center justify-center">+ Create report format</Link>}
                   <Link href={"/dashboard/templates/" + t.id}
                     className="inline-flex items-center justify-center rounded-xl border border-[#cbdce1] px-4 py-3 text-sm font-bold text-[#27536a] hover:bg-[#f3f9fa]">Edit fields</Link>
                   {!canEdit && <Link href={"/dashboard/templates/" + t.id + "/report"}
