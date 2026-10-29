@@ -99,9 +99,6 @@ export default function DashboardPage(){
               <Link href="/dashboard/report-formats" className="inline-flex items-center gap-2 rounded-xl border border-white/25 bg-white/10 px-5 py-3 text-sm font-bold text-white hover:bg-white/20">
                 <Graphic name="template" className="h-5 w-5"/> Word report formats <Graphic name="arrow" className="h-4 w-4"/>
               </Link>
-              <Link href="/dashboard/certificates/bulk" className="inline-flex items-center gap-2 rounded-xl border border-white/25 bg-white/10 px-5 py-3 text-sm font-bold text-white hover:bg-white/20">
-                <Graphic name="excel" className="h-5 w-5"/> Bulk Excel import <Graphic name="arrow" className="h-4 w-4"/>
-              </Link>
             </div>
           </div>
           <div aria-hidden="true" className="relative mx-auto hidden h-[215px] w-[215px] items-center justify-center rounded-[28px] border border-white/20 bg-white/[.10] shadow-[0_25px_45px_rgba(0,0,0,.15)] backdrop-blur-sm lg:flex">
@@ -155,6 +152,7 @@ export default function DashboardPage(){
             {href:"/dashboard/certificates/bulk",name:"Generate from Excel",help:"Preview, edit and issue up to 100 certificates",kind:"excel" as IconName},
             {href:"/dashboard/templates",name:"Manage templates",help:"Design reusable fields and approval-ready formats",kind:"template" as IconName},
             {href:"/dashboard/certificates/list",name:"Certificate library",help:"Find certificates and download their QR codes",kind:"certificate" as IconName},
+            {href:"/dashboard/report-formats",name:"Manage Word Reports",help:"Attach and edit reusable bank- or client-specific Word formats",kind:"template" as IconName},
           ].map(action=><Link href={action.href} key={action.href}
             className="cv-card cv-card--interactive group flex items-center gap-4 p-5">
             <span className="cv-glow-icon"><Graphic name={action.kind}/></span>
