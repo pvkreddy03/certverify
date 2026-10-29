@@ -5,9 +5,23 @@ import {
 } from "@/lib/auth/request";
 import { billingCommand, BillingInputError } from "@/lib/billing/validation";
 import { privateJson } from "@/lib/platform/server";
+async function requireOwner(request: Request) {
+  const { client, user, accountId } = await authenticatedRequest(request);
+  const { data, error } = await client.from("account_members")
+    .select("role")
+    .eq("account_id", accountId!)
+    .eq("user_id", user.id)
+    .eq("status", "active")
+    .maybeSingle();
+  if (error || data?.role !== "owner") {
+    throw new RequestError("Only the organization owner can access subscriptions and payments.", 403);
+  }
+  return { client };
+}
+
 export async function GET(request: Request) {
   try {
-    const { client } = await authenticatedRequest(request);
+    const { client } = await requireOwner(request);
     const [status, catalog] = await Promise.all([
       client.rpc("cv_subscription_status"),
       client.rpc("cv_pricing_catalog"),
