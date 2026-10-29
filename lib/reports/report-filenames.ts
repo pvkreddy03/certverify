@@ -1,9 +1,7 @@
-/** Use a client-assigned report title for downloadable Word files.
- * Opaque storage object IDs deliberately remain independent from the display name.
- */
+/** Use a client-assigned title in the filename. Internal object paths are opaque. */
 export function safeReportFileName(value: string): string {
   const safe = value
-    .replace(/[<>:"/\\|?*\x00-\x1F]/g, " ")
+    .replace(/[<>:"\/\\|?*\x00-\x1F]/g, " ")
     .replace(/\s+/g, " ")
     .replace(/[. ]+$/g, "")
     .trim()
