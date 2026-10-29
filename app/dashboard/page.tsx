@@ -150,8 +150,8 @@ export default function DashboardPage(){
           <div><h3 className="cv-section-title">Quick actions</h3><p className="cv-section-description mt-1">Move from creation to verification in fewer steps.</p></div>
           {[
             {href:"/dashboard/certificates/bulk",name:"Generate from Excel",help:"Preview, edit and issue up to 100 certificates",kind:"excel" as IconName},
-            {href:"/dashboard/templates",name:"Manage templates",help:"Design reusable fields and approval-ready formats",kind:"template" as IconName},
-            {href:"/dashboard/certificates/list",name:"Certificate library",help:"Find certificates and download their QR codes",kind:"certificate" as IconName},
+            {href:"/dashboard/templates",name:"Manage Templates",help:"Design reusable fields and approval-ready formats",kind:"template" as IconName},
+            {href:"/dashboard/certificates/list",name:"Certificate Library",help:"Find certificates and download their QR codes",kind:"certificate" as IconName},
             {href:"/dashboard/report-formats",name:"Manage Word Reports",help:"Attach and edit reusable bank- or client-specific Word formats",kind:"template" as IconName},
           ].map(action=><Link href={action.href} key={action.href}
             className="cv-card cv-card--interactive group flex items-center gap-4 p-5">
