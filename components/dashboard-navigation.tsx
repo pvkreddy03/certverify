@@ -17,9 +17,9 @@ const menu: MenuItem[] = [
     { href: "/dashboard/certificates/list", label: "Certificates", icon: "certificates" },
     { href: "/dashboard/reports", label: "Reports", icon: "reports" },
   ] },
-  { label: "Templates & Word Reports", icon: "templates", items: [
+  { label: "Templates & Formats", icon: "templates", items: [
     { href: "/dashboard/templates", label: "Templates", icon: "templates" },
-    { href: "/dashboard/report-formats", label: "Word Reports", icon: "reports" },
+    { href: "/dashboard/report-formats", label: "Report Formats", icon: "reports" },
   ] },
   { href: "/dashboard/reference-map", label: "Reference Map", icon: "map" },
   { href: "/dashboard/team", label: "Team", icon: "team", managerOnly: true },
