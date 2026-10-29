@@ -130,7 +130,7 @@ test("visually map text in a DOCX, save the template and download a populated Wo
   expect(bytes.toString()).toContain("Applicant");
 
   await page.getByRole("button", { name: /Save report format/ }).click();
-  await expect(page.getByText("Report format and its visual field mappings saved successfully.")).toBeVisible();
+  await expect(page.getByText("Private Word format and visual field mappings saved. Other formats under this template are unchanged.")).toBeVisible();
   expect(saved).not.toBeNull();
   expect(saved!.bindings[0]).toMatchObject({ fieldName: "Client Name", start: 8, end: 18 });
   expect(saved!.format_name).toBe("SBI Open Plot");
