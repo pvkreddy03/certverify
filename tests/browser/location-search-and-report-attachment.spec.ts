@@ -66,7 +66,7 @@ test("map search on Enter moves the view but never submits a certificate; locati
   await expect(page.getByRole("status")).toContainText("Map moved to the searched area");
   expect(searches).toBe(1);
   expect(certificateCreates).toBe(0);
-  await expect(page.getByLabel("Use My Current Location")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Use My Current Location" })).toBeVisible();
   const map = page.getByLabel("Interactive property location map");
   await expect(map).toHaveCSS("height", "500px");
   const dimensions = await map.boundingBox();
