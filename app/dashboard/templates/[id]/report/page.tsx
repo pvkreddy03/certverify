@@ -249,12 +249,12 @@ export default function VisualReportDesigner() {
   return <main className="cv-page">
     <div className="cv-shell space-y-5 pb-12">
       <div className="flex flex-wrap items-center gap-4 text-sm font-semibold">
-        <Link href="/dashboard/report-formats" className="text-teal-800 underline">← All Word report formats</Link>
+        <Link href="/dashboard/report-formats" className="text-teal-800 underline">← All report formats</Link>
         <Link href={"/dashboard/templates/" + id} className="text-slate-600 underline">Edit template fields</Link>
       </div>
       <div className="cv-hero"><div className="cv-hero__body">
         <p className="cv-eyebrow mb-2">VISUAL WORD REPORT DESIGNER</p>
-        <h1 className="text-3xl font-bold text-white">Create and manage Word report formats</h1>
+        <h1 className="text-3xl font-bold text-white">Create and manage report formats</h1>
         <p className="mt-2 text-slate-200">Choose a saved bank or client format, or create a new one. Upload your existing .docx, highlight text and link it to certificate fields. You never need to type placeholders.</p>
       </div></div>
       {message && <p role="status" className="rounded-lg border border-slate-200 bg-white p-4 text-sm text-slate-800">{message}</p>}
@@ -265,7 +265,7 @@ export default function VisualReportDesigner() {
             Report format
             <select aria-label="Select Word report format" className="cv-field mt-2" value={formatId ?? "__new__"}
               disabled={busy} onChange={event => void chooseFormat(event.target.value)}>
-              {formats.length === 0 && <option value="__new__">Create first Word format</option>}
+              {formats.length === 0 && <option value="__new__">Create first report format</option>}
               {formats.map(item => <option key={item.id} value={item.id}>{item.format_name}</option>)}
               <option value="__new__">＋ New report format…</option>
             </select>
