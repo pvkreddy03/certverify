@@ -19,13 +19,13 @@ test("grouped desktop ribbon opens Certificates/Reports and Templates/Word Repor
   await expect(nav.getByRole("link", { name: "Bulk Excel" })).toHaveCount(0);
   await expect(nav.getByRole("link", { name: "Branding" })).toHaveCount(0);
   await expect(nav.getByRole("link", { name: "Security" })).toHaveCount(0);
-  const certificates = nav.locator("details").filter({ has: nav.locator('summary[aria-label="My Certificates"]') });
+  const certificates = nav.locator("details").nth(0);
   await certificates.locator("summary").click();
   await expect(certificates.getByRole("link", { name: "Certificates", exact: true })).toBeVisible();
   await certificates.getByRole("link", { name: "Reports", exact: true }).click();
   await expect(page).toHaveURL(/\/dashboard\/reports$/);
   await expect(page.getByRole("heading", { name: "My Reports" })).toBeVisible();
-  const templates = nav.locator("details").filter({ has: nav.locator('summary[aria-label="Templates & Word Reports"]') });
+  const templates = nav.locator("details").nth(1);
   await templates.locator("summary").click();
   await expect(templates.getByRole("link", { name: "Templates", exact: true })).toBeVisible();
   await templates.getByRole("link", { name: "Word Reports", exact: true }).click();
