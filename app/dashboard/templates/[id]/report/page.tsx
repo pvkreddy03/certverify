@@ -5,14 +5,14 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { requireSelectedAccountId } from "@/lib/accounts/context";
+import { downloadWordOriginal, listReportFormats, removeUncommittedWord, reportStoragePath, uploadWordOriginal, type ReportFormat } from "@/lib/reports/private-storage";
 import {
-  base64ToBytes, downloadReport, fileToBase64, generateWordReport, openWordDocument,
+  downloadReport, generateWordReport, openWordDocument,
   validateBindings, type ReportBinding, type ReportParagraph, type VisualDocx,
 } from "@/lib/reports/docx-visual";
 
 type Field = { id: string; field_name: string; field_type: string };
 type Target = { paragraph: number; start: number; end: number; sample: string };
-type StoredFormat = { template_id: string; file_name: string; docx_base64: string; bindings: ReportBinding[] };
 
 function WordParagraph({
   paragraph, bindings, selected, onPick,
@@ -60,6 +60,10 @@ export default function VisualReportDesigner() {
   const { id } = useParams<{ id: string }>();
   const [docx, setDocx] = useState<VisualDocx | null>(null);
   const [filename, setFilename] = useState("");
+  const [formats, setFormats] = useState<ReportFormat[]>([]);
+  const [formatId, setFormatId] = useState<string | null>(null);
+  const [formatName, setFormatName] = useState("");
+  const [fileChanged, setFileChanged] = useState(false);
   const [fields, setFields] = useState<Field[]>([]);
   const [bindings, setBindings] = useState<ReportBinding[]>([]);
   const [target, setTarget] = useState<Target | null>(null);
@@ -79,27 +83,28 @@ export default function VisualReportDesigner() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Log in to edit report formats.");
       const accountId = requireSelectedAccountId();
-      const [template, member, fieldResult, saved] = await Promise.all([
+      const [template, member, fieldResult, available] = await Promise.all([
         supabase.from("certificate_templates").select("id,user_id,account_id").eq("id", id).single(),
         supabase.from("account_members").select("role,can_manage_templates").eq("account_id", accountId).eq("user_id", user.id).eq("status", "active").maybeSingle(),
         supabase.from("certificate_fields").select("id,field_name,field_type").eq("template_id", id).order("display_order"),
-        supabase.from("cv_report_formats").select("template_id,file_name,docx_base64,bindings").eq("template_id", id).maybeSingle(),
+        listReportFormats(id),
       ]);
       if (template.error) throw new Error("You cannot access this certificate template.");
       if (fieldResult.error) throw new Error(fieldResult.error.message);
-      if (saved.error) throw new Error("Report-format storage is not ready. The report migration must be applied to this environment.");
       const canEdit = !!member.data && (
         member.data.role === "owner" || member.data.role === "admin" ||
         (member.data.role === "member" && member.data.can_manage_templates && template.data.user_id === user.id)
       );
       setAllowed(canEdit);
       setFields(fieldResult.data ?? []);
-      if (saved.data) {
-        const record = saved.data as StoredFormat;
-        const parsed = await openWordDocument(base64ToBytes(record.docx_base64));
-        const mapping = Array.isArray(record.bindings) ? record.bindings : [];
-        validateBindings(mapping, parsed.paragraphs);
-        setDocx(parsed); setFilename(record.file_name); setBindings(mapping);
+      setFormats(available);
+      const requested = new URLSearchParams(window.location.search).get("format");
+      const chosen = available.find(item => item.id === requested) ?? available[0];
+      if (chosen) {
+        const parsed = await openWordDocument(await downloadWordOriginal(chosen.storage_path));
+        validateBindings(chosen.bindings, parsed.paragraphs);
+        setDocx(parsed); setFilename(chosen.file_name); setBindings(chosen.bindings);
+        setFormatId(chosen.id); setFormatName(chosen.format_name);
       }
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Could not open report designer.");
@@ -115,6 +120,7 @@ export default function VisualReportDesigner() {
     try {
       const parsed = await openWordDocument(new Uint8Array(await file.arrayBuffer()));
       setDocx(parsed); setFilename(file.name); setBindings([]); setTarget(null);
+      setFileChanged(true);
       setDirty(true);
       setMessage("Word report loaded. Select text in the page, then choose the field that replaces it.");
     } catch (error) { setMessage(error instanceof Error ? error.message : "Could not open Word report."); }
@@ -169,21 +175,59 @@ export default function VisualReportDesigner() {
     } catch (error) { setMessage(error instanceof Error ? error.message : "This selection overlaps another field."); }
   }
 
-  async function save() {
-    if (!docx || !allowed) return;
-    setBusy(true); setMessage("");
+  async function chooseFormat(nextId: string) {
+    if (dirty && !window.confirm("Discard unsaved changes to this Word format?")) return;
+    setBusy(true); setMessage(""); setTarget(null);
     try {
+      if (nextId === "__new__") {
+        setFormatId(null); setFormatName(""); setDocx(null); setBindings([]);
+        setFilename(""); setFileChanged(false); setDirty(false);
+      } else {
+        const selected = formats.find(item => item.id === nextId);
+        if (!selected) throw new Error("Select a valid Word format.");
+        const document = await openWordDocument(await downloadWordOriginal(selected.storage_path));
+        validateBindings(selected.bindings, document.paragraphs);
+        setDocx(document); setFilename(selected.file_name); setBindings(selected.bindings);
+        setFormatId(selected.id); setFormatName(selected.format_name);
+        setFileChanged(false); setDirty(false);
+      }
+    } catch (error) { setMessage(error instanceof Error ? error.message : "Could not open Word format."); }
+    finally { setBusy(false); }
+  }
+
+  async function save() {
+    if (!docx || !allowed || busy) return;
+    setBusy(true); setMessage("");
+    let uploaded: string | null = null;
+    try {
+      const title = formatName.trim();
+      if (title.length < 2 || title.length > 120) throw new Error("Enter a report format name (2–120 characters).");
       validateBindings(bindings, docx.paragraphs);
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Session expired. Log in again.");
-      const { error } = await supabase.from("cv_report_formats").upsert({
-        template_id: id, account_id: requireSelectedAccountId(), created_by: user.id,
-        file_name: filename, docx_base64: fileToBase64(docx.bytes), bindings,
-      }, { onConflict: "template_id" });
-      if (error) throw new Error("Could not save report format. " + error.message);
-      setDirty(false); setMessage("Report format and its visual field mappings saved successfully.");
-    } catch (error) { setMessage(error instanceof Error ? error.message : "Could not save Word report."); }
-    finally { setBusy(false); }
+      const current = formats.find(item => item.id === formatId);
+      const selectedId = current?.id ?? crypto.randomUUID();
+      const path = (!current || fileChanged) ? reportStoragePath(id, selectedId) : current.storage_path;
+      if (!current || fileChanged) {
+        await uploadWordOriginal(path, docx.bytes);
+        uploaded = path;
+      }
+      const payload = {
+        template_id: id, account_id: requireSelectedAccountId(), format_name: title,
+        file_name: filename, storage_path: path, bindings,
+      };
+      const query = current
+        ? supabase.from("cv_report_format_library").update(payload).eq("id", current.id)
+        : supabase.from("cv_report_format_library").insert({ ...payload, id: selectedId, created_by: user.id });
+      const { error } = await query;
+      if (error) throw new Error("Could not save Word format. " + error.message);
+      setFormats(await listReportFormats(id));
+      setFormatId(selectedId); setFileChanged(false); setDirty(false);
+      setMessage("Private Word format and visual field mappings saved. Other formats under this template are unchanged.");
+    } catch (error) {
+      if (uploaded) await removeUncommittedWord(uploaded);
+      setMessage(error instanceof Error ? error.message : "Could not save Word format.");
+    } finally { setBusy(false); }
   }
 
   async function testDownload() {
@@ -212,6 +256,28 @@ export default function VisualReportDesigner() {
       </div></div>
       {message && <p role="status" className="rounded-lg border border-slate-200 bg-white p-4 text-sm text-slate-800">{message}</p>}
       {!allowed && <p className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm">Only the template owner, authorized template editor or account administrator can change this report format.</p>}
+      <div className="cv-panel space-y-3 p-5">
+        <div className="flex flex-wrap items-end gap-3">
+          <label className="min-w-56 flex-1 text-sm font-semibold">
+            Report format
+            <select aria-label="Select Word report format" className="cv-field mt-2" value={formatId ?? "__new__"}
+              disabled={busy} onChange={event => void chooseFormat(event.target.value)}>
+              {formats.length === 0 && <option value="__new__">Create first Word format</option>}
+              {formats.map(item => <option key={item.id} value={item.id}>{item.format_name}</option>)}
+              <option value="__new__">＋ New report format…</option>
+            </select>
+          </label>
+          {allowed && <button className="rounded-lg border border-teal-600 px-4 py-3 text-sm font-semibold text-teal-900"
+            type="button" disabled={busy} onClick={() => void chooseFormat("__new__")}>＋ Add format</button>}
+        </div>
+        <label className="block text-sm font-semibold">
+          Format name (e.g. SBI – Open Plot, Canara – Open Plot, Visa Report)
+          <input aria-label="Word format name" className="cv-field mt-2" maxLength={120} value={formatName}
+            disabled={!allowed || busy} onChange={event => { setFormatName(event.target.value); setDirty(true); }}
+            placeholder="SBI – Open Plot"/>
+        </label>
+        <p className="text-xs text-slate-500">One certificate template can have many independent Word formats. All reuse your common fields. Only original DOCX files are stored privately; generated reports are not saved.</p>
+      </div>
       <div className="cv-panel flex flex-wrap items-center gap-3 p-4">
         <label className={"cursor-pointer rounded-lg px-4 py-3 font-semibold " + (allowed ? "bg-teal-700 text-white" : "pointer-events-none bg-slate-200 text-slate-500")}>
           {docx ? "Replace Word file" : "Upload Word .docx"}
