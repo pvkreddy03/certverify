@@ -281,16 +281,28 @@ export default function VisualReportDesigner() {
         </label>
         <p className="text-xs text-slate-500">One certificate template can have many independent Word formats. All reuse your common fields. Only original DOCX files are stored privately; generated reports are not saved.</p>
       </div>
-      <div className="cv-panel flex flex-wrap items-center gap-3 p-4">
-        <label className={"cursor-pointer rounded-lg px-4 py-3 font-semibold " + (allowed ? "bg-teal-700 text-white" : "pointer-events-none bg-slate-200 text-slate-500")}>
-          {docx ? "Replace Word file" : "Upload Word .docx"}
-          <input aria-label="Upload Word report" ref={fileRef} type="file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-            className="sr-only" disabled={!allowed || busy} onChange={event => { const file = event.target.files?.[0]; if (file) void upload(file); }}/>
-        </label>
-        <span className="min-w-0 flex-1 truncate text-sm text-slate-600">{filename || "No report attached yet"}</span>
-        <button disabled={!docx || !allowed || busy} className="cv-primary disabled:opacity-50" onClick={() => void save()}>{busy ? "Working…" : dirty ? "Save report format *" : "Save report format"}</button>
-        <button disabled={!docx || busy} className="rounded-lg border border-slate-300 px-4 py-3 text-sm font-semibold disabled:opacity-50" onClick={() => void testDownload()}>Download sample .docx</button>
-      </div>
+      <section aria-label="Attach Word document to report format" className="rounded-3xl border-2 border-dashed border-[#8dd7c9] bg-[#eafff7] p-5 sm:p-6">
+        <div className="flex items-start gap-4">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white text-[#0d8476] shadow-sm">
+            <svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M4 17v3h16v-3M12 3v13m-5-5 5 5 5-5"/></svg>
+          </div>
+          <div>
+            <h2 className="text-xl font-extrabold text-[#17483f]">Attach your existing Word report</h2>
+            <p className="mt-1 text-sm leading-6 text-[#40695f]">Choose the original Word (.docx) report for this template and format. We'll preserve its original design and let you connect names, amounts and property details with the fields above.</p>
+          </div>
+        </div>
+        <div className="mt-5 flex flex-wrap items-center gap-3">
+          <label className={"inline-flex cursor-pointer items-center rounded-xl px-5 py-3 text-sm font-bold shadow-sm " + (allowed ? "bg-teal-700 text-white hover:bg-teal-800" : "pointer-events-none bg-slate-200 text-slate-500")}>
+            {docx ? "Change attached Word file" : "Choose Word file (.docx)"}
+            <input aria-label="Upload Word report" ref={fileRef} type="file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+              className="sr-only" disabled={!allowed || busy} onChange={event => { const file = event.target.files?.[0]; if (file) void upload(file); }}/>
+          </label>
+          <span className="min-w-0 flex-1 truncate text-sm font-medium text-[#31544e]">{filename ? "Attached: " + filename : "No Word document attached yet"}</span>
+          <button type="button" disabled={!docx || !allowed || busy} className="cv-primary disabled:opacity-50" onClick={() => void save()}>{busy ? "Working…" : dirty ? "Save report format *" : "Save report format"}</button>
+          <button type="button" disabled={!docx || busy} className="rounded-xl border border-[#afd9d2] bg-white px-4 py-3 text-sm font-semibold text-[#1e645f] disabled:opacity-50" onClick={() => void testDownload()}>Download sample .docx</button>
+        </div>
+        <p className="mt-3 text-xs text-[#5b7971]">The original file is saved once in private Supabase Storage when you click Save report format. Generated reports are downloaded on demand, not stored separately.</p>
+      </section>
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_330px]">
         <section className="min-w-0">
           <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
