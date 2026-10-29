@@ -41,7 +41,8 @@ test("mocked checkout demonstration labels all outcomes and preserves pending su
       await expect(demonstration.getByRole("status")).toContainText("no payment recorded or subscription activated");
       await expect(page.getByRole("heading", { name: "Current subscription — unsubscribed" })).toBeVisible();
     });
-  await expect(page.getByRole("heading", { name: "Payment intent history" }).locator("..")).toContainText("pending");
+  await page.goto("/dashboard/subscription/orders");
+  await expect(page.getByRole("heading", { name: "Your payments" }).locator("..")).toContainText("Pending");
   await page.goto("/dashboard/templates");
   await expect(page.getByRole("heading", { name: "Subscription required", exact: true })).toBeVisible();
   expect(gatewayRequests).toBe(0);

@@ -118,9 +118,9 @@ test("paid subscription selections show server prices and stay pending without c
   await expect(
     page.getByRole("heading", { name: "Current subscription — unsubscribed" }),
   ).toBeVisible();
-  await expect(
-    page.getByRole("heading", { name: "Payment intent history" }),
-  ).toBeVisible();
+  await page.getByRole("link", { name: /My Orders/ }).first().click();
+  await expect(page.getByRole("heading", { name: "My Orders" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Your payments" })).toBeVisible();
   await page.goto("/dashboard/templates");
   await expect(
     page.getByRole("heading", { name: "Subscription required", exact: true }),
@@ -242,4 +242,29 @@ test("customer owners cannot enter pricing administration and endpoints require 
   await expect(
     page.getByRole("button", { name: "Confirm complimentary grant" }),
   ).toHaveCount(0);
+});
+
+test("plan cards are selectable without a plan dropdown; history is accessible only from My Orders", async ({ page }) => {
+  await login(page);
+  await page.goto("/dashboard/subscription");
+  await expect(page.getByRole("heading", { name: "Choose or change a subscription" })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Choose Browser baseline plan|Plan selected/ })).toBeVisible();
+  await expect(page.getByLabel("Subscription plan")).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Previous subscription periods" })).toHaveCount(0);
+  await page.getByRole("link", { name: "My Orders", exact: true }).last().click();
+  await expect(page.getByRole("heading", { name: "Previous subscription periods" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Your payments" })).toBeVisible();
+});
+
+test("sub-users have no subscription navigation, no order access and no billing API privileges", async ({ page }) => {
+  await page.goto("/login");
+  await page.getByLabel("Email address").fill("new@example.test");
+  await page.getByLabel("Password", { exact: true }).fill("test-password");
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  await expect(page).toHaveURL(/\/dashboard/);
+  await expect(page.getByRole("link", { name: "Subscription", exact: true })).toHaveCount(0);
+  await page.goto("/dashboard/subscription/orders");
+  await expect(page.getByRole("heading", { name: "Managed by your organization" })).toBeVisible();
+  const account = await page.evaluate(() => window.sessionStorage.getItem("certverify.selected-account"));
+  expect(account).toBeTruthy();
 });

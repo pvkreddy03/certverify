@@ -135,5 +135,5 @@ test("visually map text in a DOCX, save the template and download a populated Wo
   expect(saved!.bindings[0]).toMatchObject({ fieldName: "Client Name", start: 8, end: 18 });
   expect(saved!.format_name).toBe("SBI Open Plot");
   expect(saved!.storage_path).toContain("/" + templateId + "/");
-  expect((storedDocx as Buffer | null)?.subarray(0, 2).toString()).toBe("PK");
+  expect((storedDocx as Buffer | null)?.includes(Buffer.from([0x50, 0x4b, 0x03, 0x04]))).toBe(true);
 });
