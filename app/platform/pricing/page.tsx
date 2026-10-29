@@ -302,7 +302,7 @@ function Pricing() {
         <p><strong>1.</strong> Create or edit a plan below. <strong>2.</strong> Save a draft. <strong>3.</strong> Review and click Activate plan to offer it to customers.</p>
         <p>Existing subscribers keep their agreed terms. Monthly and annual subscriptions currently renew through explicit checkout; automatic UPI and card mandates are not yet implemented.</p>
       </div>
-      {catalog.plans.length > 0 && !catalog.plans.some(p => p.status === "active" && p.terms.visible && (!p.terms.starts_at || Date.parse(p.terms.starts_at) <= Date.now()) && (!p.terms.ends_at || Date.parse(p.terms.ends_at) > Date.now())) && (
+      {catalog.plans.length > 0 && !catalog.plans.some(p => p.status === "active" && p.terms.visible) && (
         <div role="status" className="rounded-2xl border border-amber-300 bg-amber-50 p-5 text-amber-950">
           <h3 className="font-bold">No customer-visible subscription plans</h3>
           <p className="mt-2 text-sm">Customer plan selection will be empty until a plan is active, visible, eligible, and within its availability dates. Activating an expired plan without changing its dates will not publish it. Review plans below.</p>
