@@ -201,7 +201,7 @@ export default function SubscriptionPage() {
           {eligible.length === 0 ? <div className="cv-panel rounded-3xl border-amber-200 p-7">
             <h3 className="text-lg font-bold text-[#253e50]">No plans are currently available for this account</h3>
             <p className="mt-2 text-sm leading-6 text-slate-600">Plans must be activated and marked visible by the CertVerify platform administrator, and their availability dates must include today. Your account and existing documents are unaffected.</p>
-            <p className="mt-3 text-sm font-medium text-amber-800">If you are the platform administrator, check Pricing &amp; Offers → Existing Plans, activate an eligible plan, and verify its dates.</p>
+            <p className="mt-3 text-sm font-medium text-amber-800">Please contact CertVerify support for available subscription plans. No payment can be requested until a plan is published.</p>
             {s.can_manage && s.period && <button type="button" disabled={busy}
               onClick={() => void act({ action: "quote", planId: s.period!.plan_id, seats: s.period!.licensed_seats, coupon, intent: "renewal" })}
               className="mt-5 rounded-xl bg-[#0e746c] px-5 py-3 text-sm font-bold text-white hover:bg-[#095e56] disabled:opacity-50">
