@@ -15,6 +15,6 @@ export default async function AccountSecurityPage() {
     <p>Set up an authenticator for your own account. Keep its setup QR private. MFA enrollment does not grant platform administrator privileges.</p>
     <PasswordSecurity />
     <PlatformMfa accountSecurity><p role="status">Your authenticator is verified for this session. Platform access requires a separate approved administrator grant.</p></PlatformMfa>
-    <Link href="/dashboard" className="text-blue-700">Return to dashboard</Link>
+    <Link href="/dashboard/settings" className="text-blue-700">← Return to Settings</Link>
   </div></main></>;
 }
