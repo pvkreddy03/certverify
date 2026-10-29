@@ -3,6 +3,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { requireSelectedAccountId } from "@/lib/accounts/context";
 
@@ -140,7 +141,7 @@ export default function TemplatesPage() {
             </h1>
 
             <p className="mt-2 max-w-xl text-[#d2e5ec]">
-              Build certificate formats once, then reuse them for individual or bulk issuance.
+              Create shared certificate fields once, then use them for QR verification or multiple Word report formats.
             </p>
           </div>
 
@@ -156,6 +157,20 @@ export default function TemplatesPage() {
           </button>}
           </div>
         </div>
+
+        <Link href="/dashboard/report-formats"
+          className="group flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[#9be3d5] bg-gradient-to-r from-[#e9fcf4] to-[#f5fbff] p-5 shadow-sm transition hover:shadow-md sm:p-6">
+          <div className="flex items-start gap-4">
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white text-[#07897b] shadow-sm">
+              <svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.7"><path d="M6 3h9l5 5v13H6zM15 3v6h5M9 13h8M9 17h7"/></svg>
+            </span>
+            <div>
+              <h2 className="text-lg font-extrabold text-[#153d48]">Word report formats — SBI, Canara, Visa &amp; more</h2>
+              <p className="mt-1 max-w-2xl text-sm text-[#38636a]">Upload an existing Word document, visually assign template fields and save multiple bank-specific formats. Generate reports from certificates whenever needed.</p>
+            </div>
+          </div>
+          <span className="rounded-xl bg-[#0d776d] px-5 py-3 text-sm font-bold text-white group-hover:bg-[#085e55]">Manage Word Formats →</span>
+        </Link>
 
         {!loading && !canManageTemplates && <div role="status" className="rounded-xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-950"><strong>Template creation requires permission.</strong> Ask your organization administrator to create a template for you, or grant you template creation access in Team → Members. You can still use existing templates to issue certificates.</div>}
 
@@ -244,10 +259,9 @@ export default function TemplatesPage() {
           ) : (
             <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
               {templates.map((template) => (
-                <a
+                <article
                   key={template.id}
-                  href={`/dashboard/templates/${template.id}`}
-                  className="cv-card cv-card--interactive group block p-6"
+                  className="cv-card cv-card--interactive group p-6"
                 >
                   <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-[#e3f8f1] text-[#07786e]">
                     <svg aria-hidden="true" width="23" height="23" viewBox="0 0 24 24" stroke="currentColor" fill="none" strokeWidth="1.7"><rect x="3" y="3" width="7" height="7" rx="1.2"/><rect x="14" y="3" width="7" height="7" rx="1.2"/><rect x="3" y="14" width="7" height="7" rx="1.2"/><rect x="14" y="14" width="7" height="7" rx="1.2"/></svg>
@@ -263,7 +277,17 @@ export default function TemplatesPage() {
                     Created{" "}
                     {new Date(template.created_at).toLocaleDateString()}
                   </p>
-                </a>
+                  <div className="mt-5 flex flex-wrap gap-2">
+                    <Link href={`/dashboard/templates/${template.id}`}
+                      className="inline-flex items-center rounded-xl border border-[#c5dbe2] px-4 py-2.5 text-sm font-bold text-[#275367] hover:bg-[#f2f8fa]">
+                      Edit Fields
+                    </Link>
+                    <Link href={`/dashboard/templates/${template.id}/report`}
+                      className="inline-flex items-center rounded-xl bg-[#0d766c] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#085d55]">
+                      Word Formats →
+                    </Link>
+                  </div>
+                </article>
               ))}
             </div>
           )}
