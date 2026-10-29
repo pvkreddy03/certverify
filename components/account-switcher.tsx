@@ -75,7 +75,7 @@ export function AccountWorkspace({ children }: { children: ReactNode }) {
   // Creating NEW certificates remains subscription-gated and authorized in SQL.
   const setupPages = pathname === "/dashboard/templates" || pathname.startsWith("/dashboard/templates/")
     || pathname === "/dashboard/report-formats" || pathname.startsWith("/dashboard/report-formats/");
-  const existingRecords = setupPages || pathname === "/dashboard/reports" || pathname === "/dashboard/settings"
+  const existingRecords = setupPages || pathname === "/dashboard/profile" || pathname === "/dashboard/reports" || pathname === "/dashboard/settings"
     || pathname === "/dashboard/branding" || pathname === "/dashboard/reference-map" || pathname === "/dashboard"
     || /^\/dashboard\/certificates\/(list|[0-9a-f-]{36})$/.test(pathname);
 

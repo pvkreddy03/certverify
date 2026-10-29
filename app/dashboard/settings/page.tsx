@@ -224,6 +224,15 @@ export default function SettingsPage() {
           membership && (
             <div className="space-y-6">
 
+              <Link href="/dashboard/profile" className="cv-card cv-card--interactive flex items-start gap-4 rounded-2xl p-6">
+                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#e3f8f0] text-[#0c7b71]">
+                  <svg aria-hidden="true" width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/></svg>
+                </span>
+                <span><span className="block text-lg font-bold text-[#1c394b]">My Profile</span>
+                  <span className="mt-1 block text-sm leading-6 text-slate-600">Update contact details, profession and your optional profile photo.</span>
+                  <span className="mt-4 block text-sm font-bold text-[#0a7770]">Edit profile →</span>
+                </span>
+              </Link>
               {/* Security settings remain available to every signed-in member.
                    Organization branding stays restricted to account managers. */}
               <section aria-label="Settings options" className="grid gap-4 sm:grid-cols-2">

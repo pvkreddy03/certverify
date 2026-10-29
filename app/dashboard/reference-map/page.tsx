@@ -32,6 +32,7 @@ export default function ReferenceMapPage(){
   const [referenceNow]=useState(()=>Date.now());
   const [error,setError]=useState("");
   const [loading,setLoading]=useState(true);
+  const [permissionRequired,setPermissionRequired]=useState(false);
   const [selected,setSelected]=useState<Valuation|null>(null);
   const [center,setCenter]=useState<GeoLocation|null>(null);
   const [radius,setRadius]=useState(0);
@@ -48,6 +49,7 @@ export default function ReferenceMapPage(){
         const headers=accountHeaders({Authorization:"Bearer "+session.access_token});
         const response=await fetch("/api/geo/references",{headers,cache:"no-store"});
         const result=await response.json() as {points?:Valuation[];error?:string};
+        if(response.status===403){if(live)setPermissionRequired(true);return;}
         if(!response.ok)throw new Error(result.error||"Could not load locations.");
         if(live){
           setRecords(result.points??[]);
@@ -105,6 +107,24 @@ export default function ReferenceMapPage(){
   })),[visible]);
   const chosen=selected&&visible.find(record=>record.id===selected.id&&record.field_name===selected.field_name);
   const chosenBand=chosen?valuationAgeBand(chosen.valuation_date,new Date(referenceNow)):null;
+
+  if (!loading && permissionRequired) return <main className="cv-page min-h-[65vh] px-4 py-12">
+    <section className="mx-auto max-w-2xl overflow-hidden rounded-3xl border border-[#d7e9ed] bg-white shadow-[0_18px_55px_rgba(15,40,55,.09)]">
+      <div className="bg-gradient-to-br from-[#102a43] to-[#087f73] px-7 py-8 text-white sm:px-10">
+        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/15">
+          <svg aria-hidden="true" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3zM9 3v15M15 6v15"/><path d="m12 9 2 2m0-2-2 2"/></svg>
+        </div>
+        <p className="mt-5 text-xs font-bold uppercase tracking-[.16em] text-[#96f0e1]">PRIVATE ORGANIZATION DATA</p>
+        <h1 className="mt-2 text-3xl font-extrabold">Reference Map access requires permission</h1>
+        <p className="mt-3 text-sm leading-6 text-[#d4f0ed]">Your organization owner has not enabled Reference Map access for this workspace.</p>
+      </div>
+      <div className="space-y-4 p-7 sm:p-10">
+        <p className="text-sm leading-7 text-[#3b5868]">Please ask the main account owner to open <strong>Team → Team Members</strong> and enable <strong>Reference Map access</strong> beside your account. Once permission is granted, reopen this page.</p>
+        <p className="rounded-xl bg-[#f2f8fa] p-4 text-xs leading-6 text-[#547080]">You can still create certificates and use other features assigned to your role. Reference Map permission is separate from template access.</p>
+        <Link href="/dashboard" className="cv-primary inline-flex">← Return to dashboard</Link>
+      </div>
+    </section>
+  </main>;
 
   return <main className="cv-page">
     <div className="cv-shell space-y-5">

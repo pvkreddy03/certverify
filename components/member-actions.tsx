@@ -4,13 +4,14 @@ import { useState } from "react";
 import { supabase } from "@/lib/supabase";
 
 export function MemberActions({
-  memberId, role, actorRole, active, canManageTemplates = false, onChanged,
+  memberId, role, actorRole, active, canManageTemplates = false, canAccessReferenceMap = false, onChanged,
 }: {
   memberId: string;
   role: string;
   actorRole?: string;
   active: boolean;
   canManageTemplates?: boolean;
+  canAccessReferenceMap?: boolean;
   onChanged: () => Promise<void>;
 }) {
   const [busy, setBusy] = useState(false);
@@ -51,6 +52,19 @@ export function MemberActions({
     }
   }
 
+  async function setReferenceMapAccess(allowed: boolean) {
+    setBusy(true); setError("");
+    try {
+      const { error: rpcError } = await supabase.rpc("cv_set_member_map_permission", {
+        p_member_id: memberId, p_allowed: allowed,
+      });
+      if (rpcError) throw new Error("Only the organization owner can change Reference Map permissions.");
+      await onChanged();
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Could not update Reference Map permission.");
+    } finally { setBusy(false); }
+  }
+
   return <div className="flex flex-wrap items-center gap-3">
     {actorRole === "owner" && <select aria-label="Member role" value={role} disabled={busy} className="rounded border px-2 py-1" onChange={event => { void change(event.target.value, false); }}>
       <option value="member">Member</option><option value="admin">Admin</option>
@@ -58,6 +72,12 @@ export function MemberActions({
     {role === "member" && <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-teal-200 bg-teal-50 px-3 py-2 text-xs font-semibold text-teal-900">
       <input type="checkbox" checked={canManageTemplates} disabled={busy} onChange={event => void setTemplateAccess(event.target.checked)} aria-label="Allow this member to create and edit templates" />
       Allow template creation
+    </label>}
+    {role === "member" && actorRole === "owner" && <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-900">
+      <input type="checkbox" checked={canAccessReferenceMap} disabled={busy}
+        onChange={event => void setReferenceMapAccess(event.target.checked)}
+        aria-label="Allow this member to access Reference Map" />
+      Reference Map access
     </label>}
     <button type="button" disabled={busy} className="text-red-700" onClick={() => { void change(null, true); }}>Remove access</button>
     {error && <p role="alert" className="w-full text-sm text-red-700">{error}</p>}

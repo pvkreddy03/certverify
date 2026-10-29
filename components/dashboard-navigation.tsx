@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { ProfileAvatarLink } from "@/components/profile-avatar-link";
 import { chooseAccount, selectedAccountId, type AccountMembership } from "@/lib/accounts/context";
 
 type NavItem = { href: string; label: string; icon: string; ownerOnly?: boolean; managerOnly?: boolean };
@@ -190,6 +191,7 @@ export function DashboardNavigation({ role, accounts = [], selectedAccountId: se
             </select>
           </label>
         )}
+        <ProfileAvatarLink />
       </div>
     </nav>
   );
