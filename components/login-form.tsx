@@ -168,7 +168,7 @@ export function LoginForm({ platform = false }: { platform?: boolean }) {
 
   return (
     <>
-      <PortalNavigation portal={platform ? "platform" : "customer"} />
+      {platform && <PortalNavigation portal="platform" />}
       <main className="cv-page">
         <div className={`cv-shell grid min-h-[84vh] items-start gap-10 pt-12 ${platform ? "!max-w-lg" : "lg:grid-cols-2"}`}>
           <div className="w-full max-w-md justify-self-center">
