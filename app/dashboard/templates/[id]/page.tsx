@@ -398,7 +398,7 @@ export default function TemplatePage() {
           <div className="flex flex-wrap items-center justify-between gap-5">
             <div className="max-w-2xl">
               <p className="text-xs font-extrabold uppercase tracking-[.14em] text-[#0c8a78]">OPTIONAL DOCUMENT GENERATION</p>
-              <h2 className="mt-2 text-xl font-extrabold text-[#173b45]">Word report formats</h2>
+              <h2 className="mt-2 text-xl font-extrabold text-[#173b45]">Report formats</h2>
               <p className="mt-2 text-sm leading-6 text-[#46626a]">
                 Create separate Word formats for SBI, Canara Bank, Visa or other clients. All formats reuse the fields below.
                 Upload your existing .docx and visually map the locations — no placeholders needed.
@@ -407,7 +407,7 @@ export default function TemplatePage() {
             </div>
             <div className="flex flex-wrap gap-2">
               {canManageTemplates && <Link href={"/dashboard/templates/" + templateId + "/report?format=__new__"}
-                className="cv-primary">+ Create Word format</Link>}
+                className="cv-primary">+ Create report format</Link>}
               <Link href={"/dashboard/templates/" + templateId + "/report"}
                 className="rounded-xl border border-[#b3d3d3] bg-white px-5 py-3 text-sm font-bold text-[#1d625e] hover:bg-[#f1fbf6]">Manage formats →</Link>
             </div>
