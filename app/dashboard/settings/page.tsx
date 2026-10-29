@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { requireSelectedAccountId } from "@/lib/accounts/context";
 
@@ -222,6 +223,33 @@ export default function SettingsPage() {
           account &&
           membership && (
             <div className="space-y-6">
+
+              {/* Security settings remain available to every signed-in member.
+                   Organization branding stays restricted to account managers. */}
+              <section aria-label="Settings options" className="grid gap-4 sm:grid-cols-2">
+                <Link href="/account/security" className="cv-card cv-card--interactive flex items-start gap-4 rounded-2xl p-6">
+                  <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#e5f6f0] text-[#0a847a]">
+                    <svg aria-hidden="true" viewBox="0 0 24 24" width="25" height="25" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M12 2 4 5v7c0 5.4 3.5 8.6 8 10 4.5-1.4 8-4.6 8-10V5Z"/><path d="m9 12 2 2 4-4"/></svg>
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-lg font-bold text-[#1c394b]">Security Options</span>
+                    <span className="mt-1 block text-sm leading-6 text-slate-600">Manage password, authenticator and account security settings.</span>
+                    <span className="mt-4 block text-sm font-bold text-[#0a7770]">Manage security →</span>
+                  </span>
+                </Link>
+                {(membership.role === "owner" || membership.role === "admin") && (
+                  <Link href="/dashboard/branding" className="cv-card cv-card--interactive flex items-start gap-4 rounded-2xl p-6">
+                    <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#e7f1fa] text-[#2858a3]">
+                      <svg aria-hidden="true" viewBox="0 0 24 24" width="25" height="25" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="m12 2-9 5v10l9 5 9-5V7zM3 7l9 5 9-5M12 12v10"/></svg>
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-lg font-bold text-[#1c394b]">Organization Branding</span>
+                      <span className="mt-1 block text-sm leading-6 text-slate-600">Manage your organization&apos;s name, logo and issuer branding.</span>
+                      <span className="mt-4 block text-sm font-bold text-[#0a7770]">Manage branding →</span>
+                    </span>
+                  </Link>
+                )}
+              </section>
 
               {/* Account Information */}
               <section className="rounded-xl bg-white p-6 shadow-sm">
