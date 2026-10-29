@@ -4,7 +4,9 @@ import { VerificationLookup } from "@/components/verification-lookup";
 const benefits=[
   {number:"01",icon:"◇",title:"Secure records",description:"Maintain an authoritative verification record for every certificate, valuation or report you issue."},
   {number:"02",icon:"▦",title:"Instant QR verification",description:"One scan opens a current public status page without exposing confidential document fields."},
-  {number:"03",icon:"✓",title:"Designed for teams",description:"Use flexible templates, shared organization access and up to 100 certificates in a bulk Excel import."},
+  {number:"03",icon:"▤",title:"Reusable Word report formats",description:"Attach multiple client or bank-specific .docx formats to a shared set of certificate fields, then generate reports on demand."},
+  {number:"04",icon:"⌖",title:"Geotagged valuation references",description:"Pin property locations and revisit your organization's earlier valuations on a private, age-coloured map."},
+  {number:"05",icon:"✓",title:"Designed for teams",description:"Use flexible templates, shared organization access and up to 100 certificates in a bulk Excel import."},
 ];
 
 export default function Home(){
@@ -36,17 +38,16 @@ export default function Home(){
             Create.<br/>Verify.<br/><span className="bg-gradient-to-r from-[#078981] to-[#2b9e91] bg-clip-text text-transparent">Trust.</span>
           </h1>
           <p className="mt-6 max-w-[570px] text-base leading-8 text-[#60738c] sm:text-lg">
-            Professional certificate authentication, made beautifully simple.
-            Create verified records, issue unique QR codes and give clients an easy way to check the status of your work.
+            One professional workspace for verifiable certificates, unique QR codes and reusable Word report formats. For property valuers, geotag past valuations on a private reference map to make future work easier.
           </p>
           <div className="mt-9 flex flex-wrap gap-3">
             <Link href="/signup" className="cv-primary !px-7 !py-3.5">Start issuing certificates →</Link>
             <a href="#verify" className="cv-secondary !px-7 !py-3.5">Verify a Certificate</a>
           </div>
           <div className="mt-9 flex flex-wrap gap-x-6 gap-y-3 text-xs font-semibold text-[#547184]">
-            <span className="flex items-center gap-2"><span className="text-[#0c9b89]">✓</span> Individual & organization accounts</span>
-            <span className="flex items-center gap-2"><span className="text-[#0c9b89]">✓</span> Custom templates</span>
-            <span className="flex items-center gap-2"><span className="text-[#0c9b89]">✓</span> Secure public verification</span>
+            <span className="flex items-center gap-2"><span className="text-[#0c9b89]">✓</span> QR verification</span>
+            <span className="flex items-center gap-2"><span className="text-[#0c9b89]">✓</span> Client-specific Word report formats</span>
+            <span className="flex items-center gap-2"><span className="text-[#0c9b89]">✓</span> Optional property location tagging</span>
           </div>
         </div>
         <div aria-hidden="true" className="relative mx-auto w-full max-w-[455px] py-8">
@@ -106,7 +107,7 @@ export default function Home(){
         <p className="mt-4 text-[#65788b]">Adapt reusable templates to the documents your organization issues.</p>
         <div className="mt-9 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {[
-            ["Valuers","Property valuation reports and professional certificates","⌂"],
+            ["Valuers","Bank-specific Word valuations, QR verification and geotagged property reference maps","⌂"],
             ["Lawyers","Legal opinions and document attestations","§"],
             ["CA / CS","Professional declarations and reports","▤"],
             ["Engineers","Inspection reports and technical assessments","◇"],

@@ -14,6 +14,7 @@ export default function ReportFormatsPage() {
   const [formats, setFormats] = useState<FormatRow[]>([]);
   const [member, setMember] = useState<Member | null>(null);
   const [userId, setUserId] = useState("");
+  const [attachTemplateId, setAttachTemplateId] = useState("");
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
 
@@ -32,8 +33,10 @@ export default function ReportFormatsPage() {
         if (templateResult.error) throw new Error("Could not read templates: " + templateResult.error.message);
         if (formatResult.error) throw new Error("Word format storage is unavailable: " + formatResult.error.message);
         if (!memberResult.data || memberResult.error) throw new Error("This workspace is not available to your account.");
+        const membership = memberResult.data;
         if (!live) return;
         setTemplates(templateResult.data ?? []);
+        setAttachTemplateId((templateResult.data ?? []).find(t => membership.role === "owner" || membership.role === "admin" || (membership.can_manage_templates === true && t.user_id === user.id))?.id ?? "");
         setFormats(formatResult.data ?? []);
         setMember(memberResult.data);
         setUserId(user.id);
@@ -64,6 +67,32 @@ export default function ReportFormatsPage() {
           </Link>}
         </div>
       </div>
+
+      <section aria-label="Attach Word report to a certificate template" className="overflow-hidden rounded-3xl border border-[#96dfd2] bg-gradient-to-r from-[#eafff7] to-white p-5 shadow-sm sm:p-7">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <p className="text-xs font-extrabold uppercase tracking-[.16em] text-[#0e8075]">Attach your existing report</p>
+            <h2 className="mt-2 text-xl font-extrabold text-[#183e4b]">Upload a Word report to a certificate template</h2>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-[#446472]">
+              Already have a bank valuation report in Word? Choose your certificate template, attach the original .docx file and map client name, bank name, property details and other fields visually. It is saved as a reusable format.
+            </p>
+          </div>
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white text-[#0a8177] shadow-sm">
+            <svg width="28" height="28" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 17v3h16v-3M12 3v13m-5-5 5 5 5-5"/><path d="M6 4h12"/></svg>
+          </div>
+        </div>
+        {canCreate && templates.length > 0 && <div className="mt-5 flex flex-wrap items-end gap-3">
+          <label className="min-w-52 flex-1 text-sm font-semibold text-[#285261]">
+            Select certificate template
+            <select className="cv-field mt-2" aria-label="Select template to attach Word report" value={attachTemplateId} onChange={event => setAttachTemplateId(event.target.value)}>
+              {templates.filter(t => member?.role === "owner" || member?.role === "admin" || (member?.can_manage_templates === true && t.user_id === userId)).map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+            </select>
+          </label>
+          {attachTemplateId && <Link href={"/dashboard/templates/" + attachTemplateId + "/report?format=__new__"}
+            className="cv-primary inline-flex items-center justify-center">Attach Word report (.docx) →</Link>}
+        </div>}
+        {!loading && !canCreate && <p className="mt-4 text-sm text-amber-900">Ask your account owner to allow template editing before uploading Word reports.</p>}
+      </section>
 
       <div className="grid gap-4 sm:grid-cols-3">
         {[{ number: templates.length, name: "Certificate templates", caption: "Reusable field sets" },

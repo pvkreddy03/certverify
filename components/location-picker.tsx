@@ -44,19 +44,20 @@ export function LocationPicker({name,value,onChange,disabled=false,required=fals
     try{select({lat:Number(lat),lng:Number(lng),source:"coordinates"});}
     catch(e){setNotice(e instanceof Error?e.message:"Invalid coordinates.");}
   }
-  return <div className="space-y-3 rounded-xl border border-teal-200 bg-teal-50/40 p-3 sm:p-4">
+  return <div className="w-full min-w-0 space-y-3 rounded-xl border border-teal-200 bg-teal-50/40 p-3 sm:p-5">
     <p className="text-sm font-semibold text-slate-900">{name}{required?" *":""}</p>
     <div className="flex flex-wrap gap-2">
       <input aria-label={"Search area for "+name} type="search" value={search} onChange={e=>setSearch(e.target.value)}
+        onKeyDown={event=>{if(event.key==="Enter"){event.preventDefault();event.stopPropagation();if(!disabled)void findPlace();}}}
         placeholder="Area or town, e.g. Kukatpally, Hyderabad" maxLength={100} disabled={disabled||busy}
         className="min-w-0 flex-1 rounded-lg border p-2 text-sm" />
       <button type="button" onClick={()=>{void findPlace();}} disabled={disabled||busy||search.trim().length<2} className="rounded-lg bg-teal-800 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50">Search area</button>
     </div>
     <div className="flex flex-wrap items-center gap-2">
-      <button type="button" onClick={gps} disabled={disabled||busy} className="rounded-lg border bg-white px-3 py-2 text-sm">Use my GPS</button>
+      <button type="button" onClick={gps} disabled={disabled||busy} className="rounded-lg border bg-white px-3 py-2 text-sm">Use My Current Location</button>
       <span className="text-xs text-slate-500">Or tap the map to place your pin</span>
     </div>
-    <GeoMap center={center} value={point} onPick={disabled?undefined:(picked)=>select({...picked,label:point?.label})}/>
+    <GeoMap center={center} value={point} height={500} onPick={disabled?undefined:(picked)=>select({...picked,label:point?.label})}/>
     <div className="grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
       <input aria-label={name+" latitude"} type="number" step="any" value={lat} onChange={e=>setLat(e.target.value)} placeholder="Latitude" disabled={disabled} className="min-w-0 rounded-lg border p-2 text-sm"/>
       <input aria-label={name+" longitude"} type="number" step="any" value={lng} onChange={e=>setLng(e.target.value)} placeholder="Longitude" disabled={disabled} className="min-w-0 rounded-lg border p-2 text-sm"/>

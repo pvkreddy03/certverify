@@ -213,7 +213,7 @@ export default function CertificatesPage() {
 
   return (
     <main className="cv-page">
-      <div className="cv-shell !max-w-5xl cv-entrance">
+      <div className="cv-shell !max-w-6xl cv-entrance">
         <div className="cv-hero mb-7">
           <div className="cv-hero__body">
             <p className="cv-eyebrow mb-3">SINGLE CERTIFICATE</p>
@@ -333,7 +333,7 @@ export default function CertificatesPage() {
 
               <div className="grid gap-6 md:grid-cols-2">
                 {customFields.map((field) => (
-                  <div key={field.id}>
+                  <div key={field.id} className={field.field_type === "location" ? "md:col-span-2 min-w-0" : "min-w-0"}>
                     <label className="mb-2 block text-sm font-medium text-slate-700">
                       {field.field_name}
 
