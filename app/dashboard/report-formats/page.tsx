@@ -35,7 +35,7 @@ export default function ReportFormatsPage() {
         if (!memberResult.data || memberResult.error) throw new Error("This workspace is not available to your account.");
         if (!live) return;
         setTemplates(templateResult.data ?? []);
-        setAttachTemplateId(templateResult.data?.[0]?.id ?? "");
+        setAttachTemplateId((templateResult.data ?? []).find(t => memberResult.data.role === "owner" || memberResult.data.role === "admin" || (memberResult.data.can_manage_templates === true && t.user_id === user.id))?.id ?? "");
         setFormats(formatResult.data ?? []);
         setMember(memberResult.data);
         setUserId(user.id);
