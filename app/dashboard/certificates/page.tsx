@@ -286,7 +286,7 @@ export default function CertificatesPage() {
               {formatLoadError && <p className="mt-1 text-xs text-amber-800">{formatLoadError}</p>}
             </div>
             <Link href={`/dashboard/templates/${selectedTemplateId}/report?format=__new__`}
-              className="rounded-lg border border-[#abd7d1] bg-white px-4 py-2.5 text-sm font-bold text-[#14746c] hover:bg-[#e7faf2]">+ Create Word format</Link>
+              className="rounded-lg border border-[#abd7d1] bg-white px-4 py-2.5 text-sm font-bold text-[#14746c] hover:bg-[#e7faf2]">+ Create report format</Link>
           </div>}
           {formats.length > 0 && <div className="rounded-xl border border-teal-200 bg-teal-50 p-5">
             <label className="flex cursor-pointer items-center gap-3 text-sm font-semibold text-slate-900">

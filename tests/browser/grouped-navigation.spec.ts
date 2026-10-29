@@ -11,7 +11,7 @@ test.beforeEach(async ({ request }) => {
   await request.post("http://127.0.0.1:54329/test/reset");
 });
 
-test("grouped desktop ribbon opens Certificates/Reports and Templates/Word Reports, while Branding and Security are under Settings", async ({ page }) => {
+test("grouped desktop ribbon opens Certificates/Reports and Templates/Report Formats, while Branding and Security are under Settings", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
   await login(page);
   const nav = page.getByRole("navigation", { name: "Customer dashboard pages" });
@@ -28,7 +28,7 @@ test("grouped desktop ribbon opens Certificates/Reports and Templates/Word Repor
   const templates = nav.locator("details").nth(1);
   await templates.locator("summary").click();
   await expect(templates.getByRole("link", { name: "Templates", exact: true })).toBeVisible();
-  await templates.getByRole("link", { name: "Word Reports", exact: true }).click();
+  await templates.getByRole("link", { name: "Report Formats", exact: true }).click();
   await expect(page).toHaveURL(/\/dashboard\/report-formats$/);
 
   await nav.getByRole("link", { name: "Settings", exact: true }).click();
@@ -36,7 +36,7 @@ test("grouped desktop ribbon opens Certificates/Reports and Templates/Word Repor
   await expect(page.getByRole("link", { name: /Manage security/ })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Settings" })).toBeVisible();
   await page.goto("/dashboard");
-  await expect(page.getByText("Manage Word Reports")).toBeVisible();
+  await expect(page.getByText("Manage Report Formats")).toBeVisible();
   await expect(page.getByText("Generate from Excel")).toBeVisible();
   await expect(page.locator("section.cv-hero").getByRole("link", { name: /Bulk Excel import/ })).toHaveCount(0);
 });
@@ -47,7 +47,7 @@ test("mobile ribbon presents the new grouped destinations without duplicate link
   const navigation = page.getByLabel("Navigate to page");
   await expect(navigation).toBeVisible();
   await expect(navigation.locator('optgroup[label="My Certificates"] option')).toHaveCount(2);
-  await expect(navigation.locator('optgroup[label="Templates & Word Reports"] option')).toHaveCount(2);
+  await expect(navigation.locator('optgroup[label="Templates & Formats"] option')).toHaveCount(2);
   await expect(navigation.locator('option[value="/dashboard/certificates/bulk"]')).toHaveCount(0);
   await expect(navigation.locator('option[value="/dashboard/branding"]')).toHaveCount(0);
   await expect(navigation.locator('option[value="/account/security"]')).toHaveCount(0);

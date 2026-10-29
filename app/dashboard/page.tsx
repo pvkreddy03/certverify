@@ -152,7 +152,7 @@ export default function DashboardPage(){
             {href:"/dashboard/certificates/bulk",name:"Generate from Excel",help:"Preview, edit and issue up to 100 certificates",kind:"excel" as IconName},
             {href:"/dashboard/templates",name:"Manage Templates",help:"Design reusable fields and approval-ready formats",kind:"template" as IconName},
             {href:"/dashboard/certificates/list",name:"Certificate Library",help:"Find certificates and download their QR codes",kind:"certificate" as IconName},
-            {href:"/dashboard/report-formats",name:"Manage Word Reports",help:"Attach and edit reusable bank- or client-specific Word formats",kind:"template" as IconName},
+            {href:"/dashboard/report-formats",name:"Manage Report Formats",help:"Attach and edit reusable bank- or client-specific Word formats",kind:"template" as IconName},
           ].map(action=><Link href={action.href} key={action.href}
             className="cv-card cv-card--interactive group flex items-center gap-4 p-5">
             <span className="cv-glow-icon"><Graphic name={action.kind}/></span>
