@@ -99,7 +99,7 @@ export default function VisualReportDesigner() {
       setFields(fieldResult.data ?? []);
       setFormats(available);
       const requested = new URLSearchParams(window.location.search).get("format");
-      const chosen = available.find(item => item.id === requested) ?? available[0];
+      const chosen = requested === "__new__" ? undefined : available.find(item => item.id === requested) ?? available[0];
       if (chosen) {
         const parsed = await openWordDocument(await downloadWordOriginal(chosen.storage_path));
         validateBindings(chosen.bindings, parsed.paragraphs);
@@ -248,11 +248,14 @@ export default function VisualReportDesigner() {
   if (loading) return <main className="cv-page"><div className="cv-shell p-8">Loading Word report designer…</div></main>;
   return <main className="cv-page">
     <div className="cv-shell space-y-5 pb-12">
-      <Link href={"/dashboard/templates/" + id} className="text-sm font-semibold text-teal-800 underline">← Back to Certificate Template</Link>
+      <div className="flex flex-wrap items-center gap-4 text-sm font-semibold">
+        <Link href="/dashboard/report-formats" className="text-teal-800 underline">← All Word report formats</Link>
+        <Link href={"/dashboard/templates/" + id} className="text-slate-600 underline">Edit template fields</Link>
+      </div>
       <div className="cv-hero"><div className="cv-hero__body">
         <p className="cv-eyebrow mb-2">VISUAL WORD REPORT DESIGNER</p>
-        <h1 className="text-3xl font-bold text-white">Build a report without placeholders</h1>
-        <p className="mt-2 text-slate-200">Upload your existing Word report. Highlight a name, number or other text and link it to a certificate field. Reuse the same field in as many locations as needed.</p>
+        <h1 className="text-3xl font-bold text-white">Create and manage Word report formats</h1>
+        <p className="mt-2 text-slate-200">Choose a saved bank or client format, or create a new one. Upload your existing .docx, highlight text and link it to certificate fields. You never need to type placeholders.</p>
       </div></div>
       {message && <p role="status" className="rounded-lg border border-slate-200 bg-white p-4 text-sm text-slate-800">{message}</p>}
       {!allowed && <p className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm">Only the template owner, authorized template editor or account administrator can change this report format.</p>}
