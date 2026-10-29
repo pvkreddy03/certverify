@@ -3,8 +3,8 @@
  */
 export function safeReportFileName(value: string): string {
   const safe = value
-    .replace(/[<>:"/\\|?*\\x00-\\x1F]/g, " ")
-    .replace(/\\s+/g, " ")
+    .replace(/[<>:"/\\|?*\x00-\x1F]/g, " ")
+    .replace(/\s+/g, " ")
     .replace(/[. ]+$/g, "")
     .trim()
     .slice(0, 120);
