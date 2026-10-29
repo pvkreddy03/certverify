@@ -75,6 +75,13 @@ test("map search on Enter moves the view but never submits a certificate; locati
 });
 
 test("Word report hub visibly offers attaching a DOCX to a selected certificate template", async ({ page }) => {
+  await page.route("**/rest/v1/certificate_templates*", async route => {
+    if (route.request().method() !== "GET") return route.continue();
+    await route.fulfill({
+      status: 200, contentType: "application/json",
+      body: JSON.stringify([{ id: templateId, name: "Open Plot", description: "", user_id: "00000000-0000-0000-0000-000000000001" }]),
+    });
+  });
   await page.goto("/login");
   await page.getByLabel("Email address").fill("existing@example.test");
   await page.getByLabel("Password", { exact: true }).fill("test-password");
