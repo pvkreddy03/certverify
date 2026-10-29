@@ -4,10 +4,38 @@ import { PlatformAdminGuide } from "@/components/platform-admin-guide";
 import Link from "next/link";
 import { PlatformMfa } from "@/components/platform-mfa";
 import { platformFetch } from "@/lib/platform/client";
+import { supabase } from "@/lib/supabase";
 import { ACCESS_STATUSES,type AccountDetail,type AccessStatus } from "@/lib/platform/types";
+type ContactProfile = {
+  user_id: string; role: string; status: string; login_email: string | null;
+  display_name: string; contact_email: string | null; mobile: string | null;
+  job_title: string | null; city: string | null; bio: string | null;
+  avatar_path: string | null;
+};
 function Account({ id }: {id:string}) {
   const [detail,setDetail]=useState<AccountDetail|null>(null);const [target,setTarget]=useState<AccessStatus>("suspended");const [reason,setReason]=useState("");
   const [error,setError]=useState("");const [message,setMessage]=useState("");const [confirm,setConfirm]=useState(false);const [busy,setBusy]=useState(false);
+  const [contactProfiles, setContactProfiles] = useState<ContactProfile[]>([]);
+  const [profilePhotos, setProfilePhotos] = useState<Record<string, string>>({});
+  const [profileError, setProfileError] = useState("");
+  useEffect(() => {
+    let live = true;
+    void platformFetch<{ profiles: ContactProfile[] }>(`/api/platform/accounts/${id}/profiles`)
+      .then(async result => {
+        if (!live) return;
+        setContactProfiles(result.profiles ?? []);
+        const photos: Record<string, string> = {};
+        for (const profile of result.profiles ?? []) {
+          if (!profile.avatar_path) continue;
+          const signed = await supabase.storage.from("certverify-user-avatars")
+            .createSignedUrl(profile.avatar_path, 600);
+          if (signed.data?.signedUrl) photos[profile.user_id] = signed.data.signedUrl;
+        }
+        if (live) setProfilePhotos(photos);
+      })
+      .catch(failure => { if (live) setProfileError(failure instanceof Error ? failure.message : "Profile information is unavailable."); });
+    return () => { live = false; };
+  }, [id]);
   useEffect(()=>{let active=true;void platformFetch<AccountDetail>(`/api/platform/accounts/${id}`).then((data)=>{if(active)setDetail(data);}).catch((failure)=>{if(active)setError(failure.message);});return()=>{active=false;};},[id]);
   async function load(page=1) { setBusy(true);setError("");try{setDetail(await platformFetch<AccountDetail>(`/api/platform/accounts/${id}?memberPage=${page}`));}catch(failure){setError(failure instanceof Error ? failure.message : "Account details could not be loaded.");}finally{setBusy(false);}}
   async function change() {
@@ -26,6 +54,31 @@ function Account({ id }: {id:string}) {
       <button type="button" disabled={busy} onClick={()=>{setConfirm(false);void load(detail.member_page);}} className="ml-4 rounded border px-4 py-2">Refresh account</button>
     </form>
     <section className="rounded border bg-white p-6"><h2 className="text-xl font-semibold">Organization and account memberships</h2><p>{detail.total_members} membership records, including removed access.</p><div className="mt-4 overflow-x-auto"><table className="w-full text-left"><thead><tr><th>Email</th><th>Role</th><th>Access</th><th>Email verified</th></tr></thead><tbody>{detail.members.map((member)=><tr key={member.id}><td className="border-b py-3">{member.email || "Unavailable"}</td><td>{member.role}</td><td>{member.status}</td><td>{member.email_confirmed_at ? "Yes" : "No"}</td></tr>)}</tbody></table></div><div className="mt-4 flex gap-4"><button disabled={busy || detail.member_page===1} onClick={()=>{void load(detail.member_page-1);}}>Previous members</button><span>Page {detail.member_page}</span><button disabled={busy || detail.member_page*50>=detail.total_members} onClick={()=>{void load(detail.member_page+1);}}>Next members</button></div></section>
+    <section className="rounded-2xl border border-[#d8e8e9] bg-white p-6">
+      <h2 className="text-xl font-extrabold text-[#1b3849]">User profiles and contact details</h2>
+      <p className="mt-1 text-xs leading-5 text-slate-600">Private information supplied by customers for support. Visible only to MFA-verified CertVerify platform administrators. Contact email does not change their login.</p>
+      {profileError && <p role="alert" className="mt-3 text-sm text-amber-800">{profileError}</p>}
+      {contactProfiles.length === 0 ? <p className="mt-4 text-sm text-slate-500">No user profiles are available for this account yet.</p>
+        : <div className="mt-5 grid gap-4 sm:grid-cols-2">{contactProfiles.map(profile =>
+          <article key={profile.user_id} className="rounded-xl border border-[#e0e9ed] p-4">
+            <div className="flex items-center gap-3">
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#e1f6ee] bg-cover bg-center text-sm font-bold text-[#0b7268]"
+                role="img" aria-label="User profile photo" style={profilePhotos[profile.user_id] ? { backgroundImage: 'url("' + profilePhotos[profile.user_id] + '")' } : undefined}>
+                {profilePhotos[profile.user_id] ? "" : (profile.display_name || profile.login_email || "U").slice(0, 2).toUpperCase()}
+              </span>
+              <div className="min-w-0 flex-1"><p className="font-bold text-[#1d4051]">{profile.display_name || "Profile not completed"}</p>
+                <p className="text-xs text-slate-500">{profile.role} · {profile.status}</p></div>
+            </div>
+            <dl className="mt-4 space-y-2 break-all text-sm">
+              <div><dt className="font-semibold text-[#33576b]">Login email</dt><dd>{profile.login_email || "—"}</dd></div>
+              <div><dt className="font-semibold text-[#33576b]">Contact email</dt><dd>{profile.contact_email || "Not supplied"}</dd></div>
+              <div><dt className="font-semibold text-[#33576b]">Phone</dt><dd>{profile.mobile || "Not supplied"}</dd></div>
+              <div><dt className="font-semibold text-[#33576b]">Profession</dt><dd>{profile.job_title || "—"}</dd></div>
+              <div><dt className="font-semibold text-[#33576b]">City</dt><dd>{profile.city || "—"}</dd></div>
+              {profile.bio && <div><dt className="font-semibold text-[#33576b]">About</dt><dd className="whitespace-pre-wrap">{profile.bio}</dd></div>}
+            </dl>
+          </article>)}</div>}
+    </section>
     <section className="rounded border bg-white p-6"><h2 className="text-xl font-semibold">Recent account activity</h2><p className="text-sm">Latest 50 audited actions. Private certificate fields and internal revocation reasons are excluded.</p>{detail.activity.map((event)=><p key={event.id} className="mt-3 text-sm">{event.action} · {new Date(event.occurred_at).toLocaleString("en-IN")} · actor {event.actor_id}</p>)}</section>
     <Link className="mr-5 text-blue-700" href={`/platform/subscriptions?account=${id}`}>Manage subscription and quotas</Link><Link className="text-blue-700" href={`/platform/audit?account=${id}`}>View immutable administrative history</Link>
   </>}</div>;
