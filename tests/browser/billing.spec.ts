@@ -272,8 +272,10 @@ test("sub-users have no subscription navigation, no order access and no billing 
 test("report setup remains discoverable and accessible without a paid plan; issuance remains gated", async ({ page, request }) => {
   await request.post("http://127.0.0.1:54329/test/billing-reset");
   await login(page);
-  await expect(page.getByRole("link", { name: "Word reports", exact: true })).toBeVisible();
-  await page.getByRole("link", { name: "Word reports", exact: true }).click();
+  const templatesGroup = page.getByRole("navigation", { name: "Customer dashboard pages" }).locator("details").nth(1);
+  await templatesGroup.locator("summary").click();
+  await expect(templatesGroup.getByRole("link", { name: "Word Reports", exact: true })).toBeVisible();
+  await templatesGroup.getByRole("link", { name: "Word Reports", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Word Reports & Formats" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "How to create a Word report format" })).toBeVisible();
   await page.goto("/dashboard/templates");
