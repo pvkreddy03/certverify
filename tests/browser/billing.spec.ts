@@ -266,11 +266,5 @@ test("sub-users have no subscription navigation, no order access and no billing 
   await page.goto("/dashboard/subscription/orders");
   await expect(page.getByRole("heading", { name: "Managed by your organization" })).toBeVisible();
   const account = await page.evaluate(() => window.sessionStorage.getItem("certverify.selected-account"));
-  const { data: { session } } = await page.evaluate(async () => {
-    const raw = window.localStorage.getItem("unused");
-    void raw;
-    return { data: { session: null } };
-  });
-  void session;
   expect(account).toBeTruthy();
 });
