@@ -252,7 +252,7 @@ export default function VisualReportDesigner() {
       const values: Record<string, string> = {};
       for (const field of fields) values[field.field_name] = testValues[field.id] || "[" + field.field_name + "]";
       const result = await generateWordReport(docx, bindings, values);
-      downloadReport(result, "Sample - " + safeReportFileName(formatName.trim() || filename.replace(/\\.docx$/i, "")) + ".docx");
+      downloadReport(result, "Sample - " + safeReportFileName(formatName.trim() || filename.replace(/\.docx$/i, "")) + ".docx");
       setMessage("Sample generated. Open it in Word to review pagination, tables and formatting.");
     } catch (error) { setMessage(error instanceof Error ? error.message : "Could not generate sample."); }
     finally { setBusy(false); }
