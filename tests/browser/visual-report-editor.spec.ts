@@ -58,7 +58,8 @@ test.beforeEach(async ({ request }) => {
 });
 
 test("visually map text in a DOCX, save the template and download a populated Word file", async ({ page }) => {
-  let saved: { id: string; format_name: string; storage_path: string; bindings: Array<{ fieldName: string; start: number; end: number }> } | null = null;
+  let saved: { id: string; format_name: string; template_id: string; account_id: string; file_name: string; storage_path: string; bindings: Array<{ fieldName: string; start: number; end: number }> } | null = null;
+  let insertCount = 0;
   let storedDocx: Buffer | null = null;
   await page.route("**/storage/v1/object/**", async route => {
     if (!route.request().url().includes("/certverify-word-formats/")) return route.continue();
@@ -73,7 +74,7 @@ test("visually map text in a DOCX, save the template and download a populated Wo
   });
   await page.route("**/rest/v1/certificate_templates*", route => route.fulfill({
     status: 200, contentType: "application/json",
-    body: JSON.stringify({ id: templateId, user_id: "00000000-0000-0000-0000-000000000001", account_id: accountId }),
+    body: JSON.stringify({ id: templateId, name: "Open Plot Valuation", user_id: "00000000-0000-0000-0000-000000000001", account_id: accountId }),
   }));
   await page.route("**/rest/v1/certificate_fields*", route => route.fulfill({
     status: 200, contentType: "application/json",
@@ -81,11 +82,17 @@ test("visually map text in a DOCX, save the template and download a populated Wo
   }));
   await page.route("**/rest/v1/cv_report_format_library*", async route => {
     if (route.request().method() === "POST") {
+      insertCount += 1;
       saved = route.request().postDataJSON();
+      await new Promise(resolve => setTimeout(resolve, 120));
       return route.fulfill({ status: 201, contentType: "application/json", body: "" });
     }
-    return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(saved ? [saved] : []) });
+    const single = route.request().url().includes("id=eq.");
+    return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(single ? saved : saved ? [saved] : []) });
   });
+  await page.route("**/rest/v1/certificates*", route => route.fulfill({
+    status: 200, contentType: "application/json", body: "[]",
+  }));
 
   await page.goto("/login");
   await page.getByLabel("Email address").fill("existing@example.test");
@@ -122,15 +129,23 @@ test("visually map text in a DOCX, save the template and download a populated Wo
   const download = page.waitForEvent("download");
   await page.getByRole("button", { name: "Download sample .docx" }).click();
   const file = await download;
-  expect(file.suggestedFilename()).toBe("Sample-Valuation.docx");
+  expect(file.suggestedFilename()).toBe("Sample - SBI Open Plot.docx");
   const { readFile } = await import("node:fs/promises");
   const bytes = await readFile(await file.path());
   expect(bytes.subarray(0, 2).toString()).toBe("PK");
   expect(bytes.toString()).toContain("Client: Alice Rao");
   expect(bytes.toString()).toContain("Applicant");
 
-  await page.getByRole("button", { name: /Save report format/ }).click();
-  await expect(page.getByText("Private Word format and visual field mappings saved. Other formats under this template are unchanged.")).toBeVisible();
+  // Two synchronous clicks used to create two formats before the first request returned.
+  await page.getByRole("button", { name: "Create Report Format" }).evaluate(button => {
+    (button as HTMLButtonElement).click();
+    (button as HTMLButtonElement).click();
+  });
+  await expect(page).toHaveURL(/\/dashboard\/report-formats\/[0-9a-f-]{36}\?created=1$/);
+  await expect(page.getByRole("heading", { name: "SBI Open Plot" })).toBeVisible();
+  await expect(page.getByText("Open Plot Valuation", { exact: true }).first()).toBeVisible();
+  await expect(page.getByText("Report format created successfully.", { exact: false })).toBeVisible();
+  expect(insertCount).toBe(1);
   expect(saved).not.toBeNull();
   expect(saved!.bindings[0]).toMatchObject({ fieldName: "Client Name", start: 8, end: 18 });
   expect(saved!.format_name).toBe("SBI Open Plot");

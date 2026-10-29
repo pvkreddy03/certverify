@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
+import { safeReportFileName } from "@/lib/reports/report-filenames";
 import { supabase } from "@/lib/supabase";
 import { requireSelectedAccountId } from "@/lib/accounts/context";
 import { downloadWordOriginal, listReportFormats, removeUncommittedWord, reportStoragePath, uploadWordOriginal, type ReportFormat } from "@/lib/reports/private-storage";
@@ -58,6 +59,9 @@ function WordParagraph({
 
 export default function VisualReportDesigner() {
   const { id } = useParams<{ id: string }>();
+  const router = useRouter();
+  // Locks synchronously, before React can render a disabled button.
+  const saveInFlight = useRef(false);
   const [docx, setDocx] = useState<VisualDocx | null>(null);
   const [filename, setFilename] = useState("");
   const [formats, setFormats] = useState<ReportFormat[]>([]);
@@ -196,9 +200,11 @@ export default function VisualReportDesigner() {
   }
 
   async function save() {
-    if (!docx || !allowed || busy) return;
+    if (!docx || !allowed || busy || saveInFlight.current) return;
+    saveInFlight.current = true;
     setBusy(true); setMessage("");
     let uploaded: string | null = null;
+    let saved = false;
     try {
       const title = formatName.trim();
       if (title.length < 2 || title.length > 120) throw new Error("Enter a report format name (2–120 characters).");
@@ -206,6 +212,10 @@ export default function VisualReportDesigner() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Session expired. Log in again.");
       const current = formats.find(item => item.id === formatId);
+      // A customer-facing format is identified by its own chosen name, not by the upload filename.
+      // Check here for immediate feedback; a unique database index also prevents concurrent duplicates.
+      const existing = formats.find(item => item.id !== current?.id && item.format_name.trim().toLocaleLowerCase() === title.toLocaleLowerCase());
+      if (existing) throw new Error('A report format named "' + existing.format_name + '" already exists for this template. Open it from the list or choose a different name.');
       const selectedId = current?.id ?? crypto.randomUUID();
       const path = (!current || fileChanged) ? reportStoragePath(id, selectedId) : current.storage_path;
       if (!current || fileChanged) {
@@ -220,14 +230,19 @@ export default function VisualReportDesigner() {
         ? supabase.from("cv_report_format_library").update(payload).eq("id", current.id)
         : supabase.from("cv_report_format_library").insert({ ...payload, id: selectedId, created_by: user.id });
       const { error } = await query;
-      if (error) throw new Error("Could not save Word format. " + error.message);
-      setFormats(await listReportFormats(id));
+      if (error?.code === "23505") throw new Error("That report format name is already used for this template. Choose another name.");
+      if (error) throw new Error("Could not save report format. " + error.message);
+      saved = true;
       setFormatId(selectedId); setFileChanged(false); setDirty(false);
-      setMessage("Private Word format and visual field mappings saved. Other formats under this template are unchanged.");
+      // Replace instead of push: Back cannot resubmit a stale new-format form.
+      router.replace("/dashboard/report-formats/" + selectedId + (current ? "?updated=1" : "?created=1"));
     } catch (error) {
-      if (uploaded) await removeUncommittedWord(uploaded);
-      setMessage(error instanceof Error ? error.message : "Could not save Word format.");
-    } finally { setBusy(false); }
+      if (uploaded && !saved) await removeUncommittedWord(uploaded);
+      setMessage(error instanceof Error ? error.message : "Could not save report format.");
+    } finally {
+      setBusy(false);
+      if (!saved) saveInFlight.current = false;
+    }
   }
 
   async function testDownload() {
@@ -237,7 +252,7 @@ export default function VisualReportDesigner() {
       const values: Record<string, string> = {};
       for (const field of fields) values[field.field_name] = testValues[field.id] || "[" + field.field_name + "]";
       const result = await generateWordReport(docx, bindings, values);
-      downloadReport(result, "Sample-" + filename);
+      downloadReport(result, "Sample - " + safeReportFileName(formatName.trim() || filename.replace(/\.docx$/i, "")) + ".docx");
       setMessage("Sample generated. Open it in Word to review pagination, tables and formatting.");
     } catch (error) { setMessage(error instanceof Error ? error.message : "Could not generate sample."); }
     finally { setBusy(false); }
@@ -274,12 +289,12 @@ export default function VisualReportDesigner() {
             type="button" disabled={busy} onClick={() => void chooseFormat("__new__")}>＋ Add format</button>}
         </div>
         <label className="block text-sm font-semibold">
-          Format name (e.g. SBI – Open Plot, Canara – Open Plot, Visa Report)
+          Client / bank report format name (e.g. SBI – Open Plot, Canara – Open Plot, Visa Report)
           <input aria-label="Word format name" className="cv-field mt-2" maxLength={120} value={formatName}
             disabled={!allowed || busy} onChange={event => { setFormatName(event.target.value); setDirty(true); }}
-            placeholder="SBI – Open Plot"/>
+            placeholder="Example: SBI – Open Plot" required/>
         </label>
-        <p className="text-xs text-slate-500">One certificate template can have many independent Word formats. All reuse your common fields. Only original DOCX files are stored privately; generated reports are not saved.</p>
+        <p className="text-xs text-slate-500">This name is how your saved format will appear in the library and report downloads. The attached Word filename is separate. Names cannot repeat within a template.</p>
       </div>
       <section aria-label="Attach Word document to report format" className="rounded-3xl border-2 border-dashed border-[#8dd7c9] bg-[#eafff7] p-5 sm:p-6">
         <div className="flex items-start gap-4">
@@ -297,11 +312,11 @@ export default function VisualReportDesigner() {
             <input aria-label="Upload Word report" ref={fileRef} type="file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
               className="sr-only" disabled={!allowed || busy} onChange={event => { const file = event.target.files?.[0]; if (file) void upload(file); }}/>
           </label>
-          <span className="min-w-0 flex-1 truncate text-sm font-medium text-[#31544e]">{filename ? "Attached: " + filename : "No Word document attached yet"}</span>
-          <button type="button" disabled={!docx || !allowed || busy} className="cv-primary disabled:opacity-50" onClick={() => void save()}>{busy ? "Working…" : dirty ? "Save report format *" : "Save report format"}</button>
+          <span className="min-w-0 flex-1 truncate text-sm font-medium text-[#31544e]">{filename ? "Original Word file: " + filename : "No Word document attached yet"}</span>
+          <button type="button" disabled={!docx || !allowed || busy} className="cv-primary disabled:opacity-50" onClick={() => void save()}>{busy ? "Saving…" : formatId ? "Save changes" : "Create Report Format"}</button>
           <button type="button" disabled={!docx || busy} className="rounded-xl border border-[#afd9d2] bg-white px-4 py-3 text-sm font-semibold text-[#1e645f] disabled:opacity-50" onClick={() => void testDownload()}>Download sample .docx</button>
         </div>
-        <p className="mt-3 text-xs text-[#5b7971]">The original file is saved once in private Supabase Storage when you click Save report format. Generated reports are downloaded on demand, not stored separately.</p>
+        <p className="mt-3 text-xs text-[#5b7971]">After saving, you will be taken to the named report format with options to edit it or generate a report from a certificate. The original Word file is stored privately once.</p>
       </section>
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_330px]">
         <section className="min-w-0">
