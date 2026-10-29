@@ -18,6 +18,7 @@ type Certificate = {
   created_at: string;
   template_id: string | null;
   template_name: string | null;
+  report_format_id: string | null;
   public_verification_id: string;
   revoked_at: string | null;
   revoked_by: string | null;
@@ -88,7 +89,7 @@ export default function ViewCertificatePage() {
     const { data, error } = await supabase
       .from("certificates")
       .select(
-        "id, certificate_id, status, created_at, template_id, template_name, public_verification_id, revoked_at, revoked_by, revocation_reason, public_revocation_reason, revocation_previous_status"
+        "id, certificate_id, status, created_at, template_id, template_name, report_format_id, public_verification_id, revoked_at, revoked_by, revocation_reason, public_revocation_reason, revocation_previous_status"
       )
       .eq("id", id)
       .single();
@@ -372,7 +373,8 @@ export default function ViewCertificatePage() {
           <CertificateStatusActions certificateId={certificate.id} status={certificate.status} onChanged={loadCertificate} />
 
           {!loadingFields && <DownloadWordReport templateId={certificate.template_id}
-            certificateNumber={certificate.certificate_id} fieldValues={fieldValues} />}
+            certificateNumber={certificate.certificate_id} fieldValues={fieldValues}
+            preferredFormatId={certificate.report_format_id} />}
 
           {/* Certificate Details */}
           <section className="rounded-2xl bg-white p-8 shadow-sm">
