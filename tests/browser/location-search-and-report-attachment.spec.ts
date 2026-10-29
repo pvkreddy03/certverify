@@ -15,7 +15,7 @@ test("map search on Enter moves the view but never submits a certificate; locati
       flyTo() {}
       addControl() {}
       remove() {}
-      constructor(_: Record<string, unknown>) {}
+      constructor(options: Record<string, unknown>) { void options; }
     }
     class FakeMarker {
       setLngLat() { return this; }
