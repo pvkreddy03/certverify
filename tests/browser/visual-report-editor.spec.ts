@@ -93,7 +93,7 @@ test("visually map text in a DOCX, save the template and download a populated Wo
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await expect(page).toHaveURL(/\/dashboard/);
   await page.goto("/dashboard/templates/" + templateId + "/report");
-  await expect(page.getByRole("heading", { name: "Create and manage Word report formats" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Create and manage report formats" })).toBeVisible();
 
   await page.getByRole("textbox", { name: "Word format name" }).fill("SBI Open Plot");
   await page.getByLabel("Upload Word report").setInputFiles({
