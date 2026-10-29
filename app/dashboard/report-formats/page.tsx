@@ -33,9 +33,10 @@ export default function ReportFormatsPage() {
         if (templateResult.error) throw new Error("Could not read templates: " + templateResult.error.message);
         if (formatResult.error) throw new Error("Word format storage is unavailable: " + formatResult.error.message);
         if (!memberResult.data || memberResult.error) throw new Error("This workspace is not available to your account.");
+        const membership = memberResult.data;
         if (!live) return;
         setTemplates(templateResult.data ?? []);
-        setAttachTemplateId((templateResult.data ?? []).find(t => memberResult.data.role === "owner" || memberResult.data.role === "admin" || (memberResult.data.can_manage_templates === true && t.user_id === user.id))?.id ?? "");
+        setAttachTemplateId((templateResult.data ?? []).find(t => membership.role === "owner" || membership.role === "admin" || (membership.can_manage_templates === true && t.user_id === user.id))?.id ?? "");
         setFormats(formatResult.data ?? []);
         setMember(memberResult.data);
         setUserId(user.id);
