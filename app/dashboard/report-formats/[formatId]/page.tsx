@@ -81,8 +81,8 @@ export default function SavedReportFormatPage() {
     void Promise.resolve().then(() => {
       if (active) { setFieldsLoading(true); setFieldsError(""); setValues([]); }
     });
-    void supabase.from("certificate_field_values")
-      .select("field_name,field_value").eq("certificate_id", chosenId).order("display_order")
+    void Promise.resolve(supabase.from("certificate_field_values")
+      .select("field_name,field_value").eq("certificate_id", chosenId).order("display_order"))
       .then(({ data, error: fetchError }) => {
         if (!active) return;
         if (fetchError) setFieldsError("Could not read this certificate's saved report fields.");
