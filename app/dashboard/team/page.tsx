@@ -15,6 +15,7 @@ type TeamMember = {
   status: string;
   joined_at: string;
   can_manage_templates?: boolean;
+  can_access_reference_map?: boolean;
 };
 
 type Account = {
@@ -154,7 +155,7 @@ export default function TeamPage() {
     // Organization RLS limits these records to the selected account.
     const { data: permissionRows, error: permissionError } = await supabase
       .from("account_members")
-      .select("id, can_manage_templates")
+      .select("id, can_manage_templates, can_access_reference_map")
       .eq("account_id", membershipData.account_id);
     if (permissionError) {
       setErrorMessage("Could not load member permissions: " + permissionError.message);
@@ -162,10 +163,11 @@ export default function TeamPage() {
       return;
     }
     const visiblePermissions = Array.isArray(permissionRows) ? permissionRows : (permissionRows ? [permissionRows] : []);
-    const permissionById = new Map(visiblePermissions.map(row => [row.id, row.can_manage_templates]));
+    const permissionById = new Map(visiblePermissions.map(row => [row.id, row]));
     setMembers(((memberData ?? []) as TeamMember[]).map(member => ({
       ...member,
-      can_manage_templates: permissionById.get(member.id) === true,
+      can_manage_templates: permissionById.get(member.id)?.can_manage_templates === true,
+      can_access_reference_map: permissionById.get(member.id)?.can_access_reference_map === true,
     })));
     setLoading(false);
     // This function declaration is hoisted; load invitations after the team fetch.
@@ -482,6 +484,7 @@ export default function TeamPage() {
                 Team Members
               </h2>
 
+              <p className="mt-1 text-sm text-slate-500">The account owner controls each sub-user&apos;s access to the private Reference Map.</p>
               <p className="mt-1 text-sm text-slate-500">
                 {members.length} member
                 {members.length === 1 ? "" : "s"}
@@ -525,7 +528,7 @@ export default function TeamPage() {
                       >
                         {formatStatus(member.status)}
                       </span>
-                      <MemberActions memberId={member.id} role={member.role} actorRole={membership?.role} active={member.status === "active"} canManageTemplates={member.can_manage_templates === true} onChanged={loadTeam} />
+                      <MemberActions memberId={member.id} role={member.role} actorRole={membership?.role} active={member.status === "active"} canManageTemplates={member.can_manage_templates === true} canAccessReferenceMap={member.can_access_reference_map === true} onChanged={loadTeam} />
 
                     </div>
 
