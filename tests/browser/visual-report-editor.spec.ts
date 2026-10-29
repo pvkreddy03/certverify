@@ -58,7 +58,18 @@ test.beforeEach(async ({ request }) => {
 });
 
 test("visually map text in a DOCX, save the template and download a populated Word file", async ({ page }) => {
-  let saved: { bindings: Array<{ fieldName: string; start: number; end: number }>; docx_base64: string } | null = null;
+  let saved: { id: string; format_name: string; storage_path: string; bindings: Array<{ fieldName: string; start: number; end: number }> } | null = null;
+  let storedDocx: Buffer | null = null;
+  await page.route("**/storage/v1/object/**/certverify-word-formats/**", async route => {
+    const method = route.request().method();
+    if (method === "POST") {
+      storedDocx = route.request().postDataBuffer();
+      return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ Key: "fixture" }) });
+    }
+    if (method === "GET" && storedDocx) return route.fulfill({ status: 200,
+      contentType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document", body: storedDocx });
+    return route.fulfill({ status: 404, contentType: "application/json", body: "{}" });
+  });
   await page.route("**/rest/v1/certificate_templates*", route => route.fulfill({
     status: 200, contentType: "application/json",
     body: JSON.stringify({ id: templateId, user_id: "00000000-0000-0000-0000-000000000001", account_id: accountId }),
@@ -67,12 +78,12 @@ test("visually map text in a DOCX, save the template and download a populated Wo
     status: 200, contentType: "application/json",
     body: JSON.stringify([{ id: fieldId, field_name: "Client Name", field_type: "text" }]),
   }));
-  await page.route("**/rest/v1/cv_report_formats*", async route => {
+  await page.route("**/rest/v1/cv_report_format_library*", async route => {
     if (route.request().method() === "POST") {
       saved = route.request().postDataJSON();
       return route.fulfill({ status: 201, contentType: "application/json", body: "" });
     }
-    return route.fulfill({ status: 200, contentType: "application/json", body: saved ? JSON.stringify(saved) : "null" });
+    return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(saved ? [saved] : []) });
   });
 
   await page.goto("/login");
@@ -83,6 +94,7 @@ test("visually map text in a DOCX, save the template and download a populated Wo
   await page.goto("/dashboard/templates/" + templateId + "/report");
   await expect(page.getByRole("heading", { name: "Build a report without placeholders" })).toBeVisible();
 
+  await page.getByRole("textbox", { name: "Word format name" }).fill("SBI Open Plot");
   await page.getByLabel("Upload Word report").setInputFiles({
     name: "Valuation.docx",
     mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -120,4 +132,7 @@ test("visually map text in a DOCX, save the template and download a populated Wo
   await expect(page.getByText("Report format and its visual field mappings saved successfully.")).toBeVisible();
   expect(saved).not.toBeNull();
   expect(saved!.bindings[0]).toMatchObject({ fieldName: "Client Name", start: 8, end: 18 });
+  expect(saved!.format_name).toBe("SBI Open Plot");
+  expect(saved!.storage_path).toContain("/" + templateId + "/");
+  expect(storedDocx?.subarray(0, 2).toString()).toBe("PK");
 });
