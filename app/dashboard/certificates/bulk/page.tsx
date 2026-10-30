@@ -304,7 +304,7 @@ export default function BulkCertificatePage(){
       <p className="text-sm text-slate-600">{sheet.rows.length} filled rows found.{selectedSheetNames.length>1?" Combined from "+selectedSheetNames.length+" matching sheets.":""} Certificate IDs and QR codes are not generated yet.{remaining!==null?" Available organization quota: "+remaining+" certificates.":""}</p>
       <label className="block max-w-xl space-y-1"><span className="font-semibold">Batch name</span>
         <input value={batchName} onChange={e=>setBatchName(e.target.value.slice(0,120))}
-          className="cv-field" placeholder="e.g., October valuation reports"/>
+          className="cv-field" placeholder="e.g., October client certificates"/>
       </label>
       <div className="grid gap-3 md:grid-cols-3">
         {fields.map(f=><label className="block space-y-1 text-sm" key={f.id}>
