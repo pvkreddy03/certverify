@@ -4,12 +4,12 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { requireSelectedAccountId } from "@/lib/accounts/context";
+import { downloadLetterhead, letterheadStoragePath, removeUncommittedLetterhead, uploadLetterhead } from "@/lib/cover-letters/private-storage";
 import {
   canvasToPdf, DEFAULT_BODY, DEFAULT_PLACEMENT, fillCoverText,
   renderCoverPage, savePdf, validatePlacement, type CoverPlacement,
 } from "@/lib/cover-letters/generator";
 
-const BUCKET = "certverify-letterheads";
 const MAX_BYTES = 6 * 1024 * 1024;
 type Letterhead = CoverPlacement & {
   id: string; account_id: string; name: string; file_name: string;
@@ -119,10 +119,10 @@ export default function CoverLetterDesigner() {
     const template = items.find(item => item.id === templateId);
     if (!template || file) return;
     let active = true;
-    void supabase.storage.from(BUCKET).download(template.storage_path).then(({ data, error }) => {
-      if (!active) return;
-      if (error || !data) setMessage("Could not download private letterhead background.");
-      else setBackground(data);
+    void downloadLetterhead(template.storage_path).then(data => {
+      if (active) setBackground(data);
+    }).catch(() => {
+      if (active) setMessage("Could not download private letterhead background.");
     });
     return () => { active = false; };
   }, [templateId, items, file]);
@@ -185,11 +185,9 @@ export default function CoverLetterDesigner() {
       if (!user) throw new Error("Session expired. Sign in again.");
       const accountId = requireSelectedAccountId();
       const id = current?.id ?? crypto.randomUUID();
-      const ext = (file?.type ?? current?.file_type) === "image/png" ? "png" : "jpg";
-      const path = file ? [accountId, id, crypto.randomUUID() + "." + ext].join("/") : current!.storage_path;
+      const path = file ? letterheadStoragePath(id, file.type) : current!.storage_path;
       if (file) {
-        const result = await supabase.storage.from(BUCKET).upload(path, file, { contentType: file.type, upsert: false });
-        if (result.error) throw new Error("Could not save private letterhead: " + result.error.message);
+        await uploadLetterhead(path, file);
         uploaded = path;
       }
       const payload = {
@@ -207,7 +205,7 @@ export default function CoverLetterDesigner() {
       await refresh();
       setMessage("Letterhead and QR placement saved. Reuse this template for every new certificate.");
     } catch (error) {
-      if (uploaded && !success) await supabase.storage.from(BUCKET).remove([uploaded]);
+      if (uploaded && !success) await removeUncommittedLetterhead(uploaded);
       setMessage(error instanceof Error ? error.message : "Could not save letterhead.");
     } finally { setBusy(false); saveLock.current = false; }
   }
