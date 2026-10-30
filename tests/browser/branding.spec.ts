@@ -25,7 +25,7 @@ test("branding requests require independent MFA approval; issued identity stays 
   await admin.getByRole("button",{ name:"Approve branding" }).click();
   await expect(admin.getByRole("heading",{ name:/Updated Professional Company — approved/ })).toBeVisible();
   await page.goto("/dashboard/branding");await expect(page.getByRole("heading",{ name:"Current approved identity" }).locator("..")).toContainText("Updated Professional Company");
-  await page.goto("/dashboard/templates");await expect(page.getByText("Updated Professional Company",{ exact:true })).toBeVisible();
+  await page.goto("/dashboard/templates");await expect(page.getByRole("region",{ name:"Account branding" })).toHaveCount(0);
   await page.goto("/verify/active-fixture");await expect(page.getByText("Test Issuer",{ exact:true })).toBeVisible();
   await expect(page.getByRole("link",{ name:"Powered by CertVerify" })).toHaveAttribute("href","/");
   await context.close();
