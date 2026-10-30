@@ -11,7 +11,7 @@ test.beforeEach(async ({ request }) => {
   await request.post("http://127.0.0.1:54329/test/reset");
 });
 
-test("grouped desktop ribbon opens Certificates/Reports and Templates/Report Formats, while Branding and Security are under Settings", async ({ page }) => {
+test("grouped desktop ribbon opens My Certificates/My Reports and Templates/Report Formats, while Branding and Security are under Settings", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
   await login(page);
   const nav = page.getByRole("navigation", { name: "Customer dashboard pages" });
@@ -21,8 +21,8 @@ test("grouped desktop ribbon opens Certificates/Reports and Templates/Report For
   await expect(nav.getByRole("link", { name: "Security" })).toHaveCount(0);
   const certificates = nav.locator("details").nth(0);
   await certificates.locator("summary").click();
-  await expect(certificates.getByRole("link", { name: "Certificates", exact: true })).toBeVisible();
-  await certificates.getByRole("link", { name: "Reports", exact: true }).click();
+  await expect(certificates.getByRole("link", { name: "My Certificates", exact: true })).toBeVisible();
+  await certificates.getByRole("link", { name: "My Reports", exact: true }).click();
   await expect(page).toHaveURL(/\/dashboard\/reports$/);
   await expect(page.getByRole("heading", { name: "My Reports" })).toBeVisible();
   const templates = nav.locator("details").nth(1);
