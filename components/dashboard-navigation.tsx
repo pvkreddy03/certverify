@@ -20,6 +20,7 @@ const menu: MenuItem[] = [
   { label: "Templates & Formats", icon: "templates", items: [
     { href: "/dashboard/templates", label: "Templates", icon: "templates" },
     { href: "/dashboard/report-formats", label: "Report Formats", icon: "reports" },
+    { href: "/dashboard/cover-letters", label: "Cover Letters", icon: "reports" },
   ] },
   { href: "/dashboard/reference-map", label: "Reference Map", icon: "map" },
   { href: "/dashboard/team", label: "Team", icon: "team", managerOnly: true },
