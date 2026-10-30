@@ -11,12 +11,13 @@ import {
 } from "@/lib/reports/docx-visual";
 
 export function DownloadWordReport({
-  templateId, certificateNumber, fieldValues, preferredFormatId, onlyFormatId,
+  templateId, certificateNumber, fieldValues, preferredFormatId, onlyFormatId, compact = false,
 }: {
   templateId: string | null;
   certificateNumber: string;
   preferredFormatId?: string | null;
   onlyFormatId?: string;
+  compact?: boolean;
   fieldValues: Array<{ field_name: string; field_value: string | null }>;
 }) {
   const [formats, setFormats] = useState<ReportFormat[]>([]);
@@ -57,15 +58,17 @@ export function DownloadWordReport({
       const docx = await openWordDocument(await downloadWordOriginal(selected.storage_path));
       const report = await generateWordReport(docx, bindings, values);
       downloadReport(report, safeReportFileName(selected.format_name) + " - " + safeReportFileName(certificateNumber) + ".docx");
-      setMessage("Word report generated on demand. No generated document has been saved to your database.");
+      setMessage(compact ? "Report downloaded." : "Word report generated on demand. No generated document has been saved to your database.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Could not generate report.");
     } finally { setWorking(false); }
   }
 
   return <section className="rounded-2xl border border-teal-200 bg-teal-50 p-6">
-    <h2 className="text-lg font-bold text-slate-900">{onlyFormatId ? "Generate report using this format" : "Word report (optional)"}</h2>
-    <p className="mt-2 text-sm text-slate-600">{onlyFormatId ? "This download uses the selected client-named report format and certificate data." : "Download any format for this template using the same saved certificate fields."} Generated Word reports are never stored.</p>
+    {!compact && <>
+      <h2 className="text-lg font-bold text-slate-900">{onlyFormatId ? "Generate report using this format" : "Word report (optional)"}</h2>
+      <p className="mt-2 text-sm text-slate-600">{onlyFormatId ? "This download uses the selected client-named report format and certificate data." : "Download any format for this template using the same saved certificate fields."} Generated Word reports are never stored.</p>
+    </>}
     <div className="mt-4 flex flex-wrap items-end gap-3">
       <label className="min-w-52 flex-1 text-sm font-semibold">Report format
         <select aria-label="Report format" disabled={!!onlyFormatId} className="cv-field mt-2" value={selectedId} onChange={event => setSelectedId(event.target.value)}>
@@ -74,10 +77,10 @@ export function DownloadWordReport({
       </label>
       <button type="button" disabled={working} onClick={() => void download()}
         className="rounded-lg bg-teal-800 px-5 py-3 text-sm font-bold text-white hover:bg-teal-900 disabled:opacity-50">
-        {working ? "Generating report…" : "Download Word report"}
+        {working ? "Preparing…" : compact ? "Download Report" : "Download Word report"}
       </button>
-      <Link href={"/dashboard/templates/" + templateId + "/report?format=" + encodeURIComponent(selectedId)}
-        className="text-sm font-semibold text-teal-900 underline">Report designer</Link>
+      {!compact && <Link href={"/dashboard/templates/" + templateId + "/report?format=" + encodeURIComponent(selectedId)}
+        className="text-sm font-semibold text-teal-900 underline">Report designer</Link>}
     </div>
     {message && <p role="status" className="mt-3 text-sm text-slate-800">{message}</p>}
   </section>;
