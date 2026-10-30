@@ -48,6 +48,7 @@ export default function SubscriptionPage() {
   const [report, setReport] = useState<Report | null>(null);
   const [planId, setPlanId] = useState("");
   const [seats, setSeats] = useState(1);
+  const [fromTeam, setFromTeam] = useState(false);
   const [coupon, setCoupon] = useState("");
   const [quote, setQuote] = useState<Quote | null>(null);
   const [quoteNonce, setQuoteNonce] = useState("");
@@ -65,6 +66,7 @@ export default function SubscriptionPage() {
       // Return from Team Management with the current plan selected and one extra
       // seat prefilled. This only prepares a quotation; it never charges or activates.
       const fromTeam = new URLSearchParams(window.location.search).get("addSeats") === "1";
+      setFromTeam(fromTeam);
       const first = (fromTeam
         ? data.plans.find(p => p.id === data.subscription.period?.plan_id &&
             p.terms.eligibility.includes(data.subscription.account_type))
@@ -149,7 +151,7 @@ export default function SubscriptionPage() {
         </div>
       </header>
 
-      {s?.can_manage && new URLSearchParams(typeof window === "undefined" ? "" : window.location.search).get("addSeats") === "1" && <section aria-label="Add team seats" className="rounded-2xl border border-teal-200 bg-[#edfbf7] p-5">
+      {s?.can_manage && fromTeam && <section aria-label="Add team seats" className="rounded-2xl border border-teal-200 bg-[#edfbf7] p-5">
         <h2 className="text-lg font-extrabold text-[#143b48]">Add licensed team seats</h2>
         <p className="mt-2 text-sm text-[#4a6770]">Choose the number of seats below. The exact additional charge is calculated from your subscription plan and shown before you confirm. A scheduled change does not unlock extra invitations until the new billing period begins.</p>
         <Link href="/dashboard/team" className="mt-3 inline-flex text-sm font-bold text-teal-800 underline">← Back to Team Management</Link>
