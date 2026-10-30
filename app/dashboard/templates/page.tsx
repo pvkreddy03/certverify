@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { requireSelectedAccountId } from "@/lib/accounts/context";
+import { DownloadTemplateExcel } from "@/components/download-template-excel";
 
 type Template = {
   id: string;
@@ -268,6 +269,7 @@ export default function TemplatesPage() {
                       className="inline-flex items-center rounded-xl border border-[#c5dbe2] px-4 py-2.5 text-sm font-bold text-[#275367] hover:bg-[#f2f8fa]">
                       Edit Fields
                     </Link>
+                    <DownloadTemplateExcel templateId={template.id} templateName={template.name} />
                   </div>
                 </article>
               ))}
