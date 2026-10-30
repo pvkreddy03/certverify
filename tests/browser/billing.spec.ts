@@ -279,6 +279,9 @@ test("report setup remains discoverable and accessible without a paid plan; issu
   await expect(page.getByRole("heading", { name: "Report Formats" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "How to create a report format" })).toBeVisible();
   await page.goto("/dashboard/templates");
+  // Templates now contains field management only, not document-format controls.
+  await expect(page.locator("main").getByRole("link", { name: "Manage Report Formats" })).toHaveCount(0);
+  await expect(page.locator("main").getByRole("link", { name: "Report Formats" })).toHaveCount(0);
   await expect(page.getByRole("heading", { name: "Subscription required" })).toHaveCount(0);
   await page.goto("/dashboard/certificates");
   await expect(page.getByRole("heading", { name: "Subscription required" })).toBeVisible();
