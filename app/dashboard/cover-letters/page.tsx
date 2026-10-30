@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { requireSelectedAccountId } from "@/lib/accounts/context";
 import {
@@ -29,7 +28,6 @@ function downloadImage(url: string, name: string) {
   document.body.appendChild(link); link.click(); link.remove();
 }
 export default function CoverLetterDesigner() {
-  const search = useSearchParams();
   const [items, setItems] = useState<Letterhead[]>([]);
   const [certificates, setCertificates] = useState<Certificate[]>([]);
   const [certificateId, setCertificateId] = useState("");
@@ -49,7 +47,6 @@ export default function CoverLetterDesigner() {
   const [message, setMessage] = useState("");
   const [previewUrl, setPreviewUrl] = useState("");
   const saveLock = useRef(false);
-  const fileInput = useRef<HTMLInputElement>(null);
 
   const selectedCertificate = certificates.find(c => c.id === certificateId);
   const current = items.find(i => i.id === templateId);
@@ -70,10 +67,10 @@ export default function CoverLetterDesigner() {
     setItems((saved.data ?? []) as Letterhead[]);
     setCertificates((certs.data ?? []) as Certificate[]);
     setCanEdit(["owner", "admin"].includes(member.data.role));
-    const requested = search.get("certificate");
+    const requested = new URLSearchParams(window.location.search).get("certificate");
     setCertificateId(old => old && (certs.data ?? []).some(c => c.id === old) ? old :
       (certs.data ?? []).find(c => c.id === requested)?.id ?? (certs.data ?? [])[0]?.id ?? "");
-  }, [search]);
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -125,9 +122,8 @@ export default function CoverLetterDesigner() {
   }, [templateId, items, file]);
 
   useEffect(() => {
-    const source = current?.body_template ?? layoutBody;
-    setDraft(fillCoverText(source, fields));
-  }, [current?.body_template, fields]);
+    setDraft(fillCoverText(layoutBody, fields));
+  }, [layoutBody, fields]);
 
   function selectTemplate(value: string) {
     setMessage(""); setPreviewUrl(""); setFile(null); setBackground(null); setTemplateId(value);
@@ -260,7 +256,7 @@ export default function CoverLetterDesigner() {
               <input className="cv-field mt-2" value={name} onChange={event => setName(event.target.value)} maxLength={100} placeholder="e.g. Standard valuation cover"/>
             </label>
             <label className="text-sm font-semibold">Letterhead image (JPG or PNG, 6 MB max)
-              <input ref={fileInput} className="cv-field mt-2 block w-full" type="file" accept=".jpg,.jpeg,.png,.pdf,.docx" onChange={event => void handleImage(event.target.files?.[0])}/>
+              <input className="cv-field mt-2 block w-full" type="file" accept=".jpg,.jpeg,.png,.pdf,.docx" onChange={event => void handleImage(event.target.files?.[0])}/>
             </label>
           </div> : <p className="text-sm text-slate-600">Organization owners and admins set the letterhead once. Everyone with certificate access can generate a cover letter.</p>}
           <p className="text-xs text-slate-500">PDF and Word letterhead imports are planned next. Export them to a clear portrait JPG/PNG for accurate placement in this first test.</p>
