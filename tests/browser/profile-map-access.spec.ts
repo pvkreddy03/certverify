@@ -15,8 +15,9 @@ async function signIn(page: import("@playwright/test").Page, email="existing@exa
 test("dashboard round profile icon opens private profile without an active subscription", async ({ page, request }) => {
   await request.post("http://127.0.0.1:54329/test/billing-expire");
   await signIn(page);
-  const profile = page.getByRole("navigation", { name: "Customer dashboard pages" })
-    .getByRole("link", { name: "My Profile" });
+  const profile = page.getByRole("main").getByRole("link", { name: "My Profile" });
+  await expect(page.getByRole("navigation", { name: "Customer dashboard pages" })
+    .getByRole("button", { name: "Sign Out" })).toBeVisible();
   await expect(profile).toBeVisible();
   await profile.click();
   await expect(page).toHaveURL(/\/dashboard\/profile$/);
