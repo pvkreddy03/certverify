@@ -57,6 +57,17 @@ test("grouped desktop ribbon keeps Subscription, Branding and Security under Set
   await expect(page.getByRole("link", { name: /Manage branding/ })).toBeVisible();
   await expect(page.getByRole("link", { name: /Manage security/ })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Settings" })).toBeVisible();
+  await subscription.click();
+  await expect(page).toHaveURL(/\/dashboard\/subscription$/);
+  await expect(nav.getByRole("link", { name: "Settings", exact: true })).toHaveAttribute("aria-current","page");
+  await page.goto("/dashboard/profile");
+  const workspaceDetails = page.locator("details").filter({ has: page.locator("summary", { hasText: "Workspace details" }) });
+  await expect(workspaceDetails).toBeVisible();
+  await workspaceDetails.locator("summary").click();
+  await expect(workspaceDetails.getByText("Account name", { exact: true })).toBeVisible();
+  await expect(workspaceDetails.getByText("Account code", { exact: true })).toBeVisible();
+  await expect(workspaceDetails.getByText("Account type", { exact: true })).toBeVisible();
+  await expect(workspaceDetails.getByText("Your role", { exact: true })).toBeVisible();
   await page.goto("/dashboard");
   await expect(page.getByRole("main").getByRole("link", { name: "My Profile" })).toBeVisible();
   await expect(page.getByRole("main").getByRole("button", { name: "Sign Out" })).toHaveCount(0);
