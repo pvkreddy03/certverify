@@ -15,8 +15,8 @@ const menu: MenuItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: "home" },
   { href: "/dashboard/certificates", label: "Create Certificate", icon: "create" },
   { label: "My Certificates", icon: "certificates", items: [
-    { href: "/dashboard/certificates/list", label: "Certificates", icon: "certificates" },
-    { href: "/dashboard/reports", label: "Reports", icon: "reports" },
+    { href: "/dashboard/certificates/list", label: "My Certificates", icon: "certificates" },
+    { href: "/dashboard/reports", label: "My Reports", icon: "reports" },
   ] },
   { label: "Templates & Formats", icon: "templates", items: [
     { href: "/dashboard/templates", label: "Templates", icon: "templates" },
