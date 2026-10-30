@@ -3,6 +3,7 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+import { selectedAccountId, type AccountMembership } from "@/lib/accounts/context";
 
 const BUCKET = "certverify-user-avatars";
 
@@ -54,6 +55,7 @@ async function compressedWebp(photo: File): Promise<Blob> {
 
 export default function ProfilePage() {
   const [userId, setUserId] = useState("");
+  const [workspace, setWorkspace] = useState<AccountMembership | null>(null);
   const [loginEmail, setLoginEmail] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [contactEmail, setContactEmail] = useState("");
@@ -76,12 +78,18 @@ export default function ProfilePage() {
       try {
         const { data: { user }, error: authError } = await supabase.auth.getUser();
         if (authError || !user) throw new Error("Sign in to view your profile.");
-        const [profile, original] = await Promise.all([
+        const [profile, original, workspaces] = await Promise.all([
           supabase.from("cv_user_contact_profiles").select("*").eq("user_id", user.id).maybeSingle(),
           supabase.from("profiles").select("professional_name").eq("user_id", user.id).maybeSingle(),
+          supabase.rpc("cv_list_accounts"),
         ]);
         if (profile.error) throw new Error("Your profile is temporarily unavailable: " + profile.error.message);
         if (!active) return;
+        if (!workspaces.error) {
+          const selectedId = selectedAccountId();
+          const current = ((workspaces.data ?? []) as AccountMembership[]).find(account => account.id === selectedId) ?? null;
+          setWorkspace(current);
+        }
         const p = profile.data as ContactProfile | null;
         setUserId(user.id);
         setLoginEmail(user.email ?? "");
@@ -218,6 +226,16 @@ export default function ProfilePage() {
           <Link href="/dashboard" className="rounded-xl border border-[#c7dade] px-5 py-3 text-sm font-bold text-[#426170]">Back to dashboard</Link>
         </div>
       </form>}
+      {!loading && workspace && <details className="cv-panel rounded-2xl border border-[#d8e7e7] p-5 sm:p-6">
+        <summary className="cursor-pointer text-sm font-bold text-[#21465b]">Workspace details</summary>
+        <p className="mt-2 text-xs text-slate-500">Read-only information about the workspace currently selected in the navigation ribbon.</p>
+        <dl className="mt-4 grid gap-4 text-sm sm:grid-cols-2">
+          <div><dt className="text-slate-500">Account name</dt><dd className="mt-1 font-semibold text-[#1b3b4c]">{workspace.account_name}</dd></div>
+          <div><dt className="text-slate-500">Account code</dt><dd className="mt-1 font-semibold text-[#1b3b4c]">{workspace.account_code || "Not assigned"}</dd></div>
+          <div><dt className="text-slate-500">Account type</dt><dd className="mt-1 font-semibold text-[#1b3b4c]">{workspace.account_type === "organization" ? "Multi-user organization" : "Individual"}</dd></div>
+          <div><dt className="text-slate-500">Your role</dt><dd className="mt-1 font-semibold text-[#1b3b4c]">{workspace.role === "owner" ? "Owner" : workspace.role === "admin" ? "Administrator" : workspace.role === "member" ? "Member" : "Viewer"}</dd></div>
+        </dl>
+      </details>}
     </div>
   </main>;
 }
