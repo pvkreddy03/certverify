@@ -84,11 +84,11 @@ export default function MyReportsPage() {
             <p className="cv-eyebrow mb-2">MY CERTIFICATES &amp; REPORTS</p>
             <h1 className="text-3xl font-extrabold !text-white">My Reports</h1>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-[#d2e5ec]">
-              Find certificates that can be turned into Word reports. Choose a client or bank format and generate a fresh .docx from the original template and saved certificate data.
+              Find certificates that can be turned into Word reports. Choose a compatible report format and generate a new .docx using your saved certificate data.
             </p>
           </div>
           <Link href="/dashboard/report-formats"
-            className="cv-primary shrink-0 !border-[#35bea9] !bg-[#47d5c2] !text-[#082b35]">Manage Word formats →</Link>
+            className="cv-primary shrink-0 !border-[#35bea9] !bg-[#47d5c2] !text-[#082b35]">Manage Report Formats →</Link>
         </div>
       </header>
 
@@ -119,7 +119,7 @@ export default function MyReportsPage() {
               "No certificates match this search or use a template with a saved Word report format."}
           </p>
           <div className="mt-5 flex flex-wrap justify-center gap-3">
-            <Link className="cv-primary" href="/dashboard/report-formats">Set up Word formats</Link>
+            <Link className="cv-primary" href="/dashboard/report-formats">Set up Report Formats</Link>
             <Link className="rounded-xl border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-600" href="/dashboard/certificates/list">My Certificates</Link>
           </div>
         </div>
