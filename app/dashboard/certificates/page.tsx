@@ -282,7 +282,7 @@ export default function CertificatesPage() {
           {selectedTemplateId && !formatLoading && formats.length === 0 && <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#d9e8e9] bg-[#f3f9f8] px-5 py-4">
             <div>
               <p className="text-sm font-bold text-[#1d4451]">Want to generate a Word report?</p>
-              <p className="mt-1 text-xs text-slate-600">This template has no saved Word formats yet. You can create SBI, Canara, Visa or another .docx layout once, then reuse it.</p>
+              <p className="mt-1 text-xs text-slate-600">This template has no saved report formats yet. You can create a Word layout for a report, opinion, certificate or other professional document, then reuse it.</p>
               {formatLoadError && <p className="mt-1 text-xs text-amber-800">{formatLoadError}</p>}
             </div>
             <Link href={`/dashboard/templates/${selectedTemplateId}/report?format=__new__`}
