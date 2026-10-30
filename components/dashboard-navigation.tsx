@@ -23,7 +23,6 @@ const menu: MenuItem[] = [
   ] },
   { href: "/dashboard/reference-map", label: "Reference Map", icon: "map" },
   { href: "/dashboard/team", label: "Team", icon: "team", managerOnly: true },
-  { href: "/dashboard/subscription", label: "Subscription", icon: "subscription", ownerOnly: true },
   { href: "/dashboard/settings", label: "Settings", icon: "settings" },
 ];
 
@@ -38,7 +37,7 @@ function currentRoute(pathname: string) {
   if (pathname.startsWith("/dashboard/certificates/bulk")) return "/dashboard/certificates";
   if (pathname.startsWith("/dashboard/templates/") && pathname.includes("/report")) return "/dashboard/report-formats";
   if (pathname.startsWith("/dashboard/templates/")) return "/dashboard/templates";
-  if (pathname.startsWith("/dashboard/subscription/")) return "/dashboard/subscription";
+  if (pathname === "/dashboard/subscription" || pathname.startsWith("/dashboard/subscription/")) return "/dashboard/settings";
   if (pathname === "/dashboard/branding" || pathname === "/account/security") return "/dashboard/settings";
   return pathname;
 }
@@ -142,18 +141,18 @@ export function DashboardNavigation({ role, accounts = [], selectedAccountId: se
 
   return (
     <nav aria-label="Customer dashboard pages" className="sticky top-0 z-30 border-b border-white/10 bg-[#0d1b32] text-white shadow-[0_8px_28px_rgba(9,22,44,.10)]">
-      <div className="mx-auto flex max-w-[1480px] flex-wrap items-center gap-3 px-4 py-3 md:px-6">
+      <div className="mx-auto flex max-w-[1480px] flex-nowrap items-center gap-2 px-4 py-3 md:px-6">
         <Link href="/dashboard" aria-label="CertVerify dashboard" className="group mr-1 inline-flex shrink-0 items-center gap-3 rounded-xl px-1 py-1">
           <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#44d2be] to-[#13998e] text-[#092b39] shadow-[0_5px_18px_rgba(44,205,179,.2)]">
             <svg aria-hidden="true" width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m5 12 5 5L20 6"/><path d="M3 3h11M3 21h18"/></svg>
           </span>
-          <span className="hidden flex-col leading-tight sm:flex">
+          <span className="hidden flex-col leading-tight 2xl:flex">
             <span className="text-[16px] font-extrabold tracking-tight">CertVerify<span className="text-[#5be4d0]">.</span></span>
             <span className="text-[10px] font-medium tracking-[.13em] text-[#9ab7c7]">WORKSPACE</span>
           </span>
         </Link>
 
-        <div className="min-w-0 flex-1 md:hidden">
+        <div className="min-w-0 flex-1 xl:hidden">
           <label htmlFor="customer-jump" className="sr-only">Navigate to page</label>
           <select id="customer-jump" aria-label="Navigate to page" value={active}
             onChange={e => window.location.assign(e.target.value)}
@@ -166,13 +165,13 @@ export function DashboardNavigation({ role, accounts = [], selectedAccountId: se
           </select>
         </div>
 
-        <div className="hidden min-w-0 flex-1 flex-wrap items-center gap-1 py-0.5 md:flex">
+        <div className="hidden min-w-0 flex-1 flex-nowrap items-center gap-0.5 py-0.5 xl:flex">
           {visible.map((item, i) => {
             if (isGroup(item)) {
               const highlighted = item.items.some(entry => entry.href === active);
               return <details ref={i === 2 ? firstMenu : secondMenu} key={item.label} className="group relative shrink-0">
                 <summary aria-label={item.label} aria-current={highlighted ? "page" : undefined}
-                  className={"flex cursor-pointer list-none items-center gap-2 rounded-xl px-3 py-2.5 text-[12px] font-semibold whitespace-nowrap marker:content-none [&::-webkit-details-marker]:hidden " +
+                  className={"flex cursor-pointer list-none items-center gap-2 rounded-xl px-2.5 py-2.5 text-[12px] font-semibold whitespace-nowrap marker:content-none [&::-webkit-details-marker]:hidden " +
                     (highlighted ? "bg-[#244759] text-[#86f3dd] ring-1 ring-[#3b6b75]" : "text-[#c1d3df] hover:bg-white/10 hover:text-white")}>
                   <NavigationIcon kind={item.icon}/>{item.label}<Chevron/>
                 </summary>
@@ -197,11 +196,11 @@ export function DashboardNavigation({ role, accounts = [], selectedAccountId: se
         </div>
 
         {accounts.length > 1 && selected && onAccountChange && (
-          <label className="ml-auto flex max-w-56 shrink-0 items-center gap-2 rounded-xl border border-white/15 bg-white/[.07] px-2.5 py-1.5 text-xs font-medium text-[#9ad5cd]">
+          <label className="ml-auto flex max-w-44 shrink-0 items-center gap-2 rounded-xl border border-white/15 bg-white/[.07] px-2.5 py-1.5 text-xs font-medium text-[#9ad5cd]">
             <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M7 8h10M7 12h10M7 16h7"/></svg>
             <span className="sr-only">Workspace</span>
             <select aria-label="Workspace" value={selected} onChange={e => onAccountChange(e.target.value)}
-              className="min-w-0 max-w-[160px] bg-transparent py-1 text-sm font-semibold text-white outline-none [&_option]:text-slate-900">
+              className="min-w-0 max-w-[130px] bg-transparent py-1 text-sm font-semibold text-white outline-none [&_option]:text-slate-900">
               {accounts.map(account => <option value={account.id} key={account.id}>{account.account_name}</option>)}
             </select>
           </label>

@@ -6,9 +6,6 @@ import { supabase } from "@/lib/supabase";
 import { requireSelectedAccountId } from "@/lib/accounts/context";
 
 type Account = {
-  id: string;
-  account_name: string;
-  account_code: string;
   account_type: string;
 };
 
@@ -68,9 +65,7 @@ export default function SettingsPage() {
     const { data: accountData, error: accountError } =
       await supabase
         .from("accounts")
-        .select(
-          "id, account_name, account_code, account_type"
-        )
+        .select("account_type")
         .eq("id", membershipData.account_id)
         .maybeSingle();
 
@@ -91,8 +86,7 @@ export default function SettingsPage() {
       return;
     }
 
-    const { data:branding }=await supabase.rpc("cv_current_branding");
-    setAccount({ ...accountData,account_name:branding?.company_name ?? accountData.account_name });
+    setAccount(accountData);
 
     setMembership({
       role: membershipData.role,
@@ -168,25 +162,6 @@ export default function SettingsPage() {
     );
   }
 
-  function formatAccountType(accountType: string) {
-    if (accountType === "organization") {
-      return "Multi-user Organization";
-    }
-
-    return "Individual";
-  }
-
-  function formatRole(role: string) {
-    if (
-      role === "owner" ||
-      role === "admin"
-    ) {
-      return "Main Admin";
-    }
-
-    return "Sub-user";
-  }
-
   return (
     <main className="cv-page min-h-screen px-4 py-10 sm:px-6">
       <div className="mx-auto max-w-5xl">
@@ -233,8 +208,20 @@ export default function SettingsPage() {
                   <span className="mt-4 block text-sm font-bold text-[#0a7770]">Edit profile →</span>
                 </span>
               </Link>
+              {membership.role === "owner" && <Link href="/dashboard/subscription" className="cv-card cv-card--interactive flex items-start gap-4 rounded-2xl p-6">
+                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#e7f2fb] text-[#2454a0]">
+                  <svg aria-hidden="true" viewBox="0 0 24 24" width="25" height="25" fill="none" stroke="currentColor" strokeWidth="1.8">
+                    <rect x="2" y="5" width="20" height="14" rx="3"/><path d="M2 10h20M7 15h4"/>
+                  </svg>
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-lg font-bold text-[#1c394b]">Subscriptions</span>
+                  <span className="mt-1 block text-sm leading-6 text-slate-600">Manage plans, licensed seats, billing and your payment history.</span>
+                  <span className="mt-4 block text-sm font-bold text-[#0a7770]">Manage subscriptions →</span>
+                </span>
+              </Link>}
               {/* Security settings remain available to every signed-in member.
-                   Organization branding stays restricted to account managers. */}
+                   Subscriptions are owner-only; branding is manager-only. */}
               <section aria-label="Settings options" className="grid gap-4 sm:grid-cols-2">
                 <Link href="/account/security" className="cv-card cv-card--interactive flex items-start gap-4 rounded-2xl p-6">
                   <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#e5f6f0] text-[#0a847a]">
@@ -258,61 +245,6 @@ export default function SettingsPage() {
                     </span>
                   </Link>
                 )}
-              </section>
-
-              {/* Account Information */}
-              <section className="rounded-xl bg-white p-6 shadow-sm">
-                <h2 className="text-xl font-semibold text-slate-900">
-                  Account
-                </h2>
-
-                <div className="mt-6 grid gap-5 sm:grid-cols-2">
-
-                  <div>
-                    <p className="text-sm text-slate-500">
-                      Account Name
-                    </p>
-
-                    <p className="mt-1 font-medium text-slate-900">
-                      {account.account_name}
-                    </p>
-                  </div>
-
-                  <div>
-                    <p className="text-sm text-slate-500">
-                      Account Code
-                    </p>
-
-                    <p className="mt-1 font-medium text-slate-900">
-                      {account.account_code}
-                    </p>
-                  </div>
-
-                  <div>
-                    <p className="text-sm text-slate-500">
-                      Account Type
-                    </p>
-
-                    <p className="mt-1 font-medium text-slate-900">
-                      {formatAccountType(
-                        account.account_type
-                      )}
-                    </p>
-                  </div>
-
-                  <div>
-                    <p className="text-sm text-slate-500">
-                      Your Role
-                    </p>
-
-                    <p className="mt-1 font-medium text-slate-900">
-                      {formatRole(
-                        membership.role
-                      )}
-                    </p>
-                  </div>
-
-                </div>
               </section>
 
               {/* Multi-user Upgrade */}
@@ -365,34 +297,6 @@ export default function SettingsPage() {
                   </section>
                 )}
 
-              {/* Organization Status */}
-              {account.account_type ===
-                "organization" && (
-                <section className="rounded-xl bg-white p-6 shadow-sm">
-
-                  <h2 className="text-xl font-semibold text-slate-900">
-                    Organization
-                  </h2>
-
-                  <p className="mt-2 text-slate-600">
-                    Your account is enabled for
-                    multi-user access.
-                  </p>
-
-                  <div className="mt-5 rounded-lg bg-green-50 p-4">
-                    <p className="font-medium text-green-800">
-                      Multi-user enabled
-                    </p>
-
-                    <p className="mt-1 text-sm text-green-700">
-                      {formatRole(
-                        membership.role
-                      )}
-                    </p>
-                  </div>
-
-                </section>
-              )}
 
             </div>
           )}
