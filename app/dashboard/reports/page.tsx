@@ -83,23 +83,11 @@ export default function MyReportsPage() {
           <div>
             <p className="cv-eyebrow mb-2">MY CERTIFICATES &amp; REPORTS</p>
             <h1 className="text-3xl font-extrabold !text-white">My Reports</h1>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-[#d2e5ec]">
-              Find certificates that can be turned into Word reports. Choose a compatible report format and generate a new .docx using your saved certificate data.
-            </p>
           </div>
           <Link href="/dashboard/report-formats"
             className="cv-primary shrink-0 !border-[#35bea9] !bg-[#47d5c2] !text-[#082b35]">Manage Report Formats →</Link>
         </div>
       </header>
-
-      <section className="cv-panel flex flex-wrap items-center justify-between gap-4 p-5">
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-bold text-[#193b4e]">Reports are generated only when you download them</p>
-          <p className="mt-1 text-xs leading-5 text-slate-600">CertVerify keeps the original Word formats and certificate data, not individual generated report files. A certificate may be downloaded again in another compatible format.</p>
-        </div>
-        <Link className="rounded-xl border border-[#c5dbe0] px-5 py-3 text-sm font-semibold text-[#28615f] hover:bg-[#f3faf9]"
-          href="/dashboard/certificates/list">View certificates</Link>
-      </section>
 
       {message && <p role="alert" className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">{message}</p>}
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -141,7 +129,7 @@ export default function MyReportsPage() {
                 </span>
                 <button type="button" aria-expanded={expanded} onClick={() => void choose(record.id)}
                   className="rounded-xl bg-[#0c756b] px-4 py-3 text-sm font-bold text-white hover:bg-[#085f57]">
-                  {expanded ? "Close report" : "Generate Word report"}
+                  {expanded ? "Close" : "Download Report"}
                 </button>
               </div>
               {expanded && <div className="border-t border-[#e2eeec] bg-[#f9fcfc] p-5">
@@ -149,14 +137,14 @@ export default function MyReportsPage() {
                   : chosen && <DownloadWordReport key={chosen.id} templateId={chosen.template_id}
                     certificateNumber={chosen.certificate_id}
                     preferredFormatId={chosen.report_format_id}
-                    fieldValues={fields}/>}
+                    fieldValues={fields} compact/>}
                 <Link className="mt-3 inline-flex text-sm font-semibold text-[#0a7770] underline"
                   href={"/dashboard/certificates/" + record.id}>Open certificate &amp; QR</Link>
               </div>}
             </article>;
           })}
         </section>}
-      <p className="text-xs text-slate-500">Showing up to 500 recent certificates in this workspace; use My Certificates to access older records. No generated Word report files are retained.</p>
+
     </div>
   </main>;
 }
