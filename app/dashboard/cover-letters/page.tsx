@@ -94,7 +94,8 @@ export default function CoverLetterDesigner() {
         for (const field of (data ?? []) as CertificateField[]) next[field.field_name] = field.field_value ?? "";
         if (record) {
           next["Certificate Number"] = record.certificate_id;
-          next["Date"] = new Date(record.created_at).toLocaleDateString("en-IN");
+          next["Date"] = new Date().toLocaleDateString("en-IN");
+          next["Certificate Date"] = new Date(record.created_at).toLocaleDateString("en-IN");
           next["Status"] = record.status;
         }
         setFields(next);
@@ -211,7 +212,7 @@ export default function CoverLetterDesigner() {
     } finally { setBusy(false); saveLock.current = false; }
   }
 
-  async function generate(type: "pdf" | "jpeg") {
+  async function generate(type: "pdf" | "jpeg" | "preview") {
     if (busy) return;
     setBusy(true); setMessage("");
     try {
@@ -225,8 +226,8 @@ export default function CoverLetterDesigner() {
       const safeName = ("Cover Letter - " + selectedCertificate.certificate_id).replace(/[^a-z0-9 _.()-]/gi, "_");
       setPreviewUrl(canvas.toDataURL("image/jpeg", 0.88));
       if (type === "pdf") savePdf(canvasToPdf(canvas), safeName);
-      else downloadImage(canvas.toDataURL("image/jpeg", 0.95), safeName);
-      setMessage("Generated for " + selectedCertificate.certificate_id + ". This document is not stored on the server.");
+      else if (type === "jpeg") downloadImage(canvas.toDataURL("image/jpeg", 0.95), safeName);
+      setMessage((type === "preview" ? "Preview generated for " : "Downloaded for ") + selectedCertificate.certificate_id + ". The finished document is not stored on the server.");
     } catch (error) { setMessage(error instanceof Error ? error.message : "Could not generate the cover letter."); }
     finally { setBusy(false); }
   }
@@ -257,7 +258,7 @@ export default function CoverLetterDesigner() {
               <input className="cv-field mt-2" value={name} onChange={event => setName(event.target.value)} maxLength={100} placeholder="e.g. Standard valuation cover"/>
             </label>
             <label className="text-sm font-semibold">Letterhead image (JPG or PNG, 6 MB max)
-              <input className="cv-field mt-2 block w-full" type="file" accept=".jpg,.jpeg,.png,.pdf,.docx" onChange={event => void handleImage(event.target.files?.[0])}/>
+              <input className="cv-field mt-2 block w-full" type="file" accept=".jpg,.jpeg,.png" onChange={event => void handleImage(event.target.files?.[0])}/>
             </label>
           </div> : <p className="text-sm text-slate-600">Organization owners and admins set the letterhead once. Everyone with certificate access can generate a cover letter.</p>}
           <p className="text-xs text-slate-500">PDF and Word letterhead imports are planned next. Export them to a clear portrait JPG/PNG for accurate placement in this first test.</p>
@@ -330,6 +331,8 @@ export default function CoverLetterDesigner() {
                 <textarea className="cv-field mt-2 min-h-64 w-full whitespace-pre-wrap text-sm" aria-label="Editable final cover letter" value={draft}
                   onChange={event => setDraftOverride(event.target.value)}/>
               </label>
+              <button disabled={busy || !imageUrl || !certificateId} type="button" onClick={() => void generate("preview")}
+                className="w-full rounded-xl border border-slate-400 px-4 py-3 text-sm font-bold text-slate-700 disabled:opacity-50">Preview finished letter</button>
               <button disabled={busy || !imageUrl || !certificateId} type="button" onClick={() => void generate("pdf")}
                 className="cv-primary w-full disabled:opacity-50">{busy ? "Generating…" : "Download print-ready PDF"}</button>
               <button disabled={busy || !imageUrl || !certificateId} type="button" onClick={() => void generate("jpeg")}
