@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
+import type { SubscriptionStatus } from "@/lib/billing/types";
 import { supabase } from "@/lib/supabase";
 import { useEmailCooldown } from "@/lib/auth/email-cooldown";
 import { isValidEmail, INVALID_EMAIL_MESSAGE } from "@/lib/auth/email-validation";
@@ -53,6 +55,9 @@ export default function TeamPage() {
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
 
+  const [seatCapacity, setSeatCapacity] = useState<SubscriptionStatus | null>(null);
+  const [seatError, setSeatError] = useState("");
+
   const [showUpgradeModal, setShowUpgradeModal] =
     useState(false);
 
@@ -70,6 +75,8 @@ export default function TeamPage() {
   async function loadTeam() {
     setLoading(true);
     setErrorMessage("");
+    setSeatError("");
+    setSeatCapacity(null);
 
     const {
       data: { user },
@@ -169,6 +176,23 @@ export default function TeamPage() {
       can_manage_templates: permissionById.get(member.id)?.can_manage_templates === true,
       can_access_reference_map: permissionById.get(member.id)?.can_access_reference_map === true,
     })));
+    // Financial subscription details are owner-only; keep team management usable if
+    // the subscription read temporarily fails or is restricted for administrators.
+    if (membershipData.role === "owner") {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) throw new Error("Your session has expired.");
+        const response = await fetch("/api/billing", {
+          headers: accountHeaders({ Authorization: "Bearer " + session.access_token }),
+          cache: "no-store",
+        });
+        if (!response.ok) throw new Error("Seat capacity is temporarily unavailable.");
+        const details = await response.json() as { subscription: SubscriptionStatus };
+        setSeatCapacity(details.subscription);
+      } catch {
+        setSeatError("Could not check your licensed seat count. Subscription details remain available under Plans.");
+      }
+    }
     setLoading(false);
     // This function declaration is hoisted; load invitations after the team fetch.
     // eslint-disable-next-line react-hooks/immutability
@@ -263,6 +287,10 @@ export default function TeamPage() {
     }
 
     if (account.account_type === "organization") {
+      if (membership?.role === "owner" && seatCapacity?.period &&
+          seatCapacity.allocated_seats >= seatCapacity.period.licensed_seats) {
+        return; // Do not open an invitation form when no licensed seat is available.
+      }
       if (!isMainAdmin()) {
         return;
       }
@@ -358,8 +386,9 @@ export default function TeamPage() {
 
       if (!response.ok) {
         setInviteError(
-          result?.error ||
-            "The invitation could not be sent."
+          response.status === 409 && /seat|quota|limit/i.test(result?.error || "")
+            ? "All licensed user seats are occupied. Ask the organization owner to add seats under Subscription before inviting another member."
+            : result?.error || "The invitation could not be sent."
         );
 
         setSendingInvite(false);
@@ -430,6 +459,14 @@ export default function TeamPage() {
     return status;
   }
 
+  const licensedSeats = seatCapacity?.period?.licensed_seats ?? null;
+  const allocatedSeats = seatCapacity?.allocated_seats ?? null;
+  const seatsFull = licensedSeats !== null && allocatedSeats !== null && allocatedSeats >= licensedSeats;
+  const seatChange = seatCapacity?.requests?.find(item =>
+    ["scheduled", "awaiting_payment", "quoted"].includes(item.status) && item.seats > (licensedSeats ?? 0)
+  );
+  const seatUpgradeUrl = "/dashboard/subscription?addSeats=1#plan-checkout";
+
   return (
     <main className="cv-page min-h-screen px-4 py-10 sm:px-6">
       <div className="mx-auto max-w-6xl">
@@ -446,21 +483,54 @@ export default function TeamPage() {
             </p>
           </div>
 
-          {account && (
-            <button
-              type="button"
-              onClick={handleAddUserClick}
-              disabled={
-                account.account_type === "organization" &&
-                !isMainAdmin()
-              }
-              className="rounded-lg bg-blue-600 px-5 py-3 font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300"
-            >
+          {account && <div className="flex flex-wrap items-center gap-2">
+            {account.account_type === "organization" && membership?.role === "owner" && seatsFull &&
+              <Link href={seatUpgradeUrl} className="inline-flex items-center rounded-xl bg-[#0b776d] px-5 py-3 text-sm font-extrabold text-white hover:bg-[#075c53]">
+                + Add More Seats
+              </Link>}
+            <button type="button" onClick={handleAddUserClick}
+              disabled={(account.account_type === "organization" && !isMainAdmin()) || (account.account_type === "organization" && membership?.role === "owner" && seatsFull)}
+              title={seatsFull ? "No seats available. Add licensed seats first." : "Invite another user"}
+              className="rounded-xl bg-blue-600 px-5 py-3 text-sm font-bold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300">
               + Add User
             </button>
-          )}
+          </div>}
         </div>
 
+        {account?.account_type === "organization" && membership?.role === "owner" && seatCapacity?.period && licensedSeats !== null && allocatedSeats !== null &&
+          <section aria-label="Team seat capacity" className={"mb-6 rounded-2xl border p-5 sm:p-6 " +
+            (seatsFull ? "border-[#f6d594] bg-[#fffaf0]" : "border-[#b8e7dc] bg-[#f2fcf8]")}>
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <p className="text-xs font-extrabold uppercase tracking-wider text-[#55727a]">Licensed user seats</p>
+                <h2 className="mt-1 text-xl font-extrabold text-[#17394b]">{allocatedSeats} of {licensedSeats} seats used</h2>
+                <p className="mt-1 text-sm text-[#496773]">{Math.max(0,licensedSeats-allocatedSeats)} available · active members and unexpired invitations count toward your total.</p>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                {seatsFull && <span role="status" className="rounded-full border border-amber-300 bg-amber-100 px-3 py-1.5 text-xs font-bold text-amber-900">Seat limit reached</span>}
+                <Link href={seatUpgradeUrl} className="rounded-xl border border-[#81cdbf] bg-white px-4 py-2.5 text-sm font-bold text-[#136d64]">
+                  {seatsFull ? "Add More Seats →" : "Manage Seats →"}
+                </Link>
+              </div>
+            </div>
+            <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-[#e0e9eb]" aria-hidden="true">
+              <div className={"h-full rounded-full " + (seatsFull ? "bg-amber-500" : "bg-teal-500")}
+                style={{ width: (licensedSeats > 0 ? Math.min(100,(allocatedSeats/licensedSeats)*100) : 0) + "%" }}/>
+            </div>
+            {seatChange && <p className="mt-3 text-sm font-semibold text-[#7a582d]">
+              {seatChange.status === "awaiting_payment"
+                ? "Your extra-seat request is awaiting verified payment."
+                : seatChange.status === "scheduled"
+                  ? "A seat change is scheduled. Additional seats become available when the new billing period begins."
+                  : "An extra-seat quotation is pending."}
+              {" "}Current invitations remain limited to {licensedSeats} active seats.
+            </p>}
+            {seatsFull && !seatChange && <p className="mt-3 text-sm text-[#735b37]">
+              You can add seats through Subscription, or free an existing seat by removing a member or revoking an unexpired invitation.
+              Plan changes are subject to the quoted terms and may begin at the next billing period.
+            </p>}
+          </section>}
+        {seatError && membership?.role === "owner" && <p role="status" className="mb-5 text-sm text-amber-900">{seatError} <Link className="underline" href="/dashboard/subscription">View Plans</Link></p>}
         {/* Loading */}
         {loading && (
           <div className="rounded-xl bg-white p-8 text-slate-600 shadow-sm">
