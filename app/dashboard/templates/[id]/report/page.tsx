@@ -270,7 +270,7 @@ export default function VisualReportDesigner() {
       <div className="cv-hero"><div className="cv-hero__body">
         <p className="cv-eyebrow mb-2">VISUAL WORD REPORT DESIGNER</p>
         <h1 className="text-3xl font-bold text-white">Create and manage report formats</h1>
-        <p className="mt-2 text-slate-200">Choose a saved bank or client format, or create a new one. Upload your existing .docx, highlight text and link it to certificate fields. You never need to type placeholders.</p>
+        <p className="mt-2 text-slate-200">Choose an existing report format or create a new one. Upload your .docx, highlight text and link it to template fields. You never need to type placeholders.</p>
       </div></div>
       {message && <p role="status" className="rounded-lg border border-slate-200 bg-white p-4 text-sm text-slate-800">{message}</p>}
       {!allowed && <p className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm">Only the template owner, authorized template editor or account administrator can change this report format.</p>}
@@ -289,10 +289,10 @@ export default function VisualReportDesigner() {
             type="button" disabled={busy} onClick={() => void chooseFormat("__new__")}>＋ Add format</button>}
         </div>
         <label className="block text-sm font-semibold">
-          Client / bank report format name (e.g. SBI – Open Plot, Canara – Open Plot, Visa Report)
+          Report format name (e.g. Client Report – Standard, Legal Opinion, Audit Summary)
           <input aria-label="Word format name" className="cv-field mt-2" maxLength={120} value={formatName}
             disabled={!allowed || busy} onChange={event => { setFormatName(event.target.value); setDirty(true); }}
-            placeholder="Example: SBI – Open Plot" required/>
+            placeholder="Example: Client Report – Standard" required/>
         </label>
         <p className="text-xs text-slate-500">This name is how your saved format will appear in the library and report downloads. The attached Word filename is separate. Names cannot repeat within a template.</p>
       </div>

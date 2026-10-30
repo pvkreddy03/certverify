@@ -86,7 +86,7 @@ export default function DashboardPage(){
               <Graphic name="shield" className="h-4 w-4"/> Secure document authentication
             </span>
             <h2 className="mt-5 max-w-[690px] text-white">One trusted record.<br/><span className="text-[#79ead7]">Every certificate.</span></h2>
-            <p className="mt-4 max-w-2xl text-sm leading-7 sm:text-base">Create verifiable certificates and unique QR codes, generate Word reports using bank- or client-specific formats, and keep geotagged property valuations on your private reference map—all from one professional workspace.</p>
+            <p className="mt-4 max-w-2xl text-sm leading-7 sm:text-base">Create verifiable certificates and unique QR codes, generate reports using reusable document formats, and optionally organize location-tagged records on your private reference map—all from one professional workspace.</p>
             <div className="mt-5 flex flex-wrap gap-2 text-xs font-semibold text-white/90">
               <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1.5">✓ QR verification</span>
               <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1.5">✓ Multiple Word formats</span>
@@ -152,7 +152,7 @@ export default function DashboardPage(){
             {href:"/dashboard/certificates/bulk",name:"Generate from Excel",help:"Preview, edit and issue up to 100 certificates",kind:"excel" as IconName},
             {href:"/dashboard/templates",name:"Manage Templates",help:"Design reusable fields and approval-ready formats",kind:"template" as IconName},
             {href:"/dashboard/certificates/list",name:"Certificate Library",help:"Find certificates and download their QR codes",kind:"certificate" as IconName},
-            {href:"/dashboard/report-formats",name:"Manage Report Formats",help:"Attach and edit reusable bank- or client-specific Word formats",kind:"template" as IconName},
+            {href:"/dashboard/report-formats",name:"Manage Report Formats",help:"Attach and manage reusable Word layouts for different documents and clients",kind:"template" as IconName},
           ].map(action=><Link href={action.href} key={action.href}
             className="cv-card cv-card--interactive group flex items-center gap-4 p-5">
             <span className="cv-glow-icon"><Graphic name={action.kind}/></span>
