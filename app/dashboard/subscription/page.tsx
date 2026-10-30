@@ -48,6 +48,7 @@ export default function SubscriptionPage() {
   const [report, setReport] = useState<Report | null>(null);
   const [planId, setPlanId] = useState("");
   const [seats, setSeats] = useState(1);
+  const [fromTeam, setFromTeam] = useState(false);
   const [coupon, setCoupon] = useState("");
   const [quote, setQuote] = useState<Quote | null>(null);
   const [quoteNonce, setQuoteNonce] = useState("");
@@ -62,9 +63,20 @@ export default function SubscriptionPage() {
     void brandingFetch("/api/billing").then((data: Report) => {
       if (!active) return;
       setReport(data);
-      const first = data.plans.find(p => p.terms.eligibility.includes(data.subscription.account_type));
+      // Return from Team Management with the current plan selected and one extra
+      // seat prefilled. This only prepares a quotation; it never charges or activates.
+      const fromTeam = new URLSearchParams(window.location.search).get("addSeats") === "1";
+      setFromTeam(fromTeam);
+      const first = (fromTeam
+        ? data.plans.find(p => p.id === data.subscription.period?.plan_id &&
+            p.terms.eligibility.includes(data.subscription.account_type))
+        : undefined) ?? data.plans.find(p => p.terms.eligibility.includes(data.subscription.account_type));
       setPlanId(first?.id ?? "");
-      setSeats(Math.max(first?.terms.included_seats ?? 1, data.subscription.allocated_seats));
+      const minimumSeats = Math.max(first?.terms.included_seats ?? 1, data.subscription.allocated_seats);
+      const requestedSeats = fromTeam ? Math.max(minimumSeats, (data.subscription.period?.licensed_seats ?? 0) + 1) : minimumSeats;
+      setSeats(first?.terms.max_seats === null || first?.terms.max_seats === undefined
+        ? requestedSeats : Math.min(requestedSeats,first.terms.max_seats));
+      if (fromTeam) setMessage("Add more team seats: review the licensed-user count, get a quotation, and confirm only if the terms are suitable. Seats become usable only after the updated subscription takes effect.");
     }).catch((error) => {
       if (active) setMessage(error instanceof Error ? error.message : "Could not load plans.");
     }).finally(() => { if (active) setLoading(false); });
@@ -139,6 +151,11 @@ export default function SubscriptionPage() {
         </div>
       </header>
 
+      {s?.can_manage && fromTeam && <section aria-label="Add team seats" className="rounded-2xl border border-teal-200 bg-[#edfbf7] p-5">
+        <h2 className="text-lg font-extrabold text-[#143b48]">Add licensed team seats</h2>
+        <p className="mt-2 text-sm text-[#4a6770]">Choose the number of seats below. The exact additional charge is calculated from your subscription plan and shown before you confirm. A scheduled change does not unlock extra invitations until the new billing period begins.</p>
+        <Link href="/dashboard/team" className="mt-3 inline-flex text-sm font-bold text-teal-800 underline">← Back to Team Management</Link>
+      </section>}
       <nav aria-label="Subscription sections" className="flex gap-2 border-b border-slate-200 pb-2 text-sm font-semibold">
         <span aria-current="page" className="rounded-xl bg-[#113c4f] px-5 py-3 text-white">Plans &amp; subscription</span>
         <Link className="rounded-xl px-5 py-3 text-slate-600 hover:bg-slate-100" href="/dashboard/subscription/orders">My Orders</Link>
@@ -249,7 +266,7 @@ export default function SubscriptionPage() {
                 <input type="number" min={Math.max(1, chosen.terms.included_seats)} max={chosen.terms.max_seats ?? 10000}
                   value={seats} onChange={event => { setSeats(Number(event.target.value)); setQuote(null); }}
                   className="cv-field mt-2" />
-                <span className="mt-1 block text-xs font-normal text-slate-500">{chosen.terms.included_seats} included; extra seats priced in the quotation.</span>
+                <span className="mt-1 block text-xs font-normal text-slate-500">{chosen.terms.included_seats} included; extra seats priced in the quotation. If your selected plan has reached its maximum, choose a higher-capacity plan or contact support.</span>
               </label>
               <label className="block text-sm font-semibold text-[#345265]">
                 Have an offer code?

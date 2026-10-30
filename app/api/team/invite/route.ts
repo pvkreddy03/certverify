@@ -35,6 +35,10 @@ export async function POST(request: Request) {
         const { data, error } = await client.rpc("cv_prepare_invitation", {
           p_email: email, p_token_hash: hash, p_previous_id: previousId,
         });
+        if (error?.message?.includes("User seat quota exceeded"))
+          throw new RequestError(
+            "User seat limit reached. The organization owner must add licensed seats under Subscription, or free a seat by removing a member or pending invitation.", 409,
+          );
         if (error || !data) throw new RequestError(
           "Invitation could not be created. Check for an active membership or pending invitation, then retry.", 409,
         );
