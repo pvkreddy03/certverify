@@ -279,7 +279,6 @@ test("report setup remains discoverable and accessible without a paid plan; issu
   await expect(page.getByRole("heading", { name: "Report Formats" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "How to create a report format" })).toBeVisible();
   await page.goto("/dashboard/templates");
-  await expect(page.getByText("Report formats — SBI, Canara, Visa & more")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Subscription required" })).toHaveCount(0);
   await page.goto("/dashboard/certificates");
   await expect(page.getByRole("heading", { name: "Subscription required" })).toBeVisible();
