@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+import { ProfileAvatarLink } from "@/components/profile-avatar-link";
 
 type RecentCertificate={id:string;certificate_id:string;status:string;created_at:string};
 type IconName="certificate"|"template"|"scan"|"excel"|"arrow"|"shield";
@@ -60,11 +61,6 @@ export default function DashboardPage(){
     return ()=>{active=false;};
   },[]);
 
-  async function handleLogout(){
-    await supabase.auth.signOut();
-    window.location.assign("/login");
-  }
-
   return <main className="cv-page">
     <div className="cv-shell space-y-8 cv-entrance">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -75,7 +71,7 @@ export default function DashboardPage(){
         </div>
         <div className="flex items-center gap-3">
           {email&&<span className="hidden max-w-[220px] truncate rounded-full border border-[#e4edf1] bg-white px-4 py-2 text-xs font-medium text-[#6d7b92] md:inline">{email}</span>}
-          <button type="button" onClick={handleLogout} className="cv-secondary !px-4 !py-2.5 text-sm">Sign out</button>
+          <ProfileAvatarLink />
         </div>
       </div>
 

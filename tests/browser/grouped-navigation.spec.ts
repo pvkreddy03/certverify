@@ -15,6 +15,8 @@ test("grouped desktop ribbon opens My Certificates/My Reports and Templates/Repo
   await page.setViewportSize({ width: 1440, height: 1000 });
   await login(page);
   const nav = page.getByRole("navigation", { name: "Customer dashboard pages" });
+  await expect(nav.getByRole("button", { name: "Sign Out" })).toBeVisible();
+  await expect(nav.getByRole("link", { name: "My Profile" })).toHaveCount(0);
   await expect(nav.getByRole("link", { name: "Create Certificate" })).toBeVisible();
   await expect(nav.getByRole("link", { name: "Bulk Excel" })).toHaveCount(0);
   await expect(nav.getByRole("link", { name: "Branding" })).toHaveCount(0);
@@ -36,6 +38,8 @@ test("grouped desktop ribbon opens My Certificates/My Reports and Templates/Repo
   await expect(page.getByRole("link", { name: /Manage security/ })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Settings" })).toBeVisible();
   await page.goto("/dashboard");
+  await expect(page.getByRole("main").getByRole("link", { name: "My Profile" })).toBeVisible();
+  await expect(page.getByRole("main").getByRole("button", { name: "Sign Out" })).toHaveCount(0);
   await expect(page.getByText("Manage Report Formats")).toBeVisible();
   await expect(page.getByText("Generate from Excel")).toBeVisible();
   await expect(page.locator("section.cv-hero").getByRole("link", { name: /Bulk Excel import/ })).toHaveCount(0);
@@ -46,6 +50,7 @@ test("mobile ribbon presents the new grouped destinations without duplicate link
   await login(page);
   const navigation = page.getByLabel("Navigate to page");
   await expect(navigation).toBeVisible();
+  await expect(page.getByRole("navigation", { name: "Customer dashboard pages" }).getByRole("button", { name: "Sign Out" })).toBeVisible();
   await expect(navigation.locator('optgroup[label="My Certificates"] option')).toHaveCount(2);
   await expect(navigation.locator('optgroup[label="Templates & Formats"] option')).toHaveCount(2);
   await expect(navigation.locator('option[value="/dashboard/certificates/bulk"]')).toHaveCount(0);
@@ -53,6 +58,8 @@ test("mobile ribbon presents the new grouped destinations without duplicate link
   await expect(navigation.locator('option[value="/account/security"]')).toHaveCount(0);
   await navigation.selectOption("/dashboard/reports");
   await expect(page).toHaveURL(/\/dashboard\/reports$/);
+  await page.getByRole("navigation", { name: "Customer dashboard pages" }).getByRole("button", { name: "Sign Out" }).click();
+  await expect(page).toHaveURL(/\/login$/);
 });
 
 test("security stays accessible to a sub-user while organization branding stays manager-only", async ({ page }) => {
