@@ -5,7 +5,7 @@ const benefits=[
   {number:"01",icon:"◇",title:"Secure records",description:"Keep a verifiable record for professional certificates, reports and other issued documents."},
   {number:"02",icon:"▦",title:"Instant QR verification",description:"One scan opens a current public status page without exposing confidential document fields."},
   {number:"03",icon:"▤",title:"Reusable Word report formats",description:"Create reusable .docx layouts for professional reports, certificates and opinions, then generate documents from shared record fields."},
-  {number:"04",icon:"⌖",title:"Geotagged valuation references",description:"Pin property locations and revisit your organization's earlier valuations on a private, age-coloured map."},
+  {number:"04",icon:"⌖",title:"Optional location references",description:"Tag places connected to field work and revisit authorized location-based records on a private map."},
   {number:"05",icon:"✓",title:"Designed for teams",description:"Use flexible templates, shared organization access and up to 100 certificates in a bulk Excel import."},
 ];
 
