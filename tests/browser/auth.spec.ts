@@ -163,14 +163,16 @@ test("organization staff can create certificates under company billing without t
   await expect(page.getByRole("heading", { name: "Choose or change a subscription" })).toHaveCount(0);
 });
 
-test("organization owner retains team and subscription management in single ribbon", async ({ page }) => {
+test("organization owner manages team from the ribbon and subscriptions through Settings", async ({ page }) => {
   await page.goto("/login");
   await page.getByLabel("Email address").fill("existing@example.test");
   await page.getByLabel("Password", { exact: true }).fill("test-password");
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
   const navigation=page.getByRole("navigation", { name: "Customer dashboard pages" });
   await expect(navigation.getByRole("link", { name: "Team", exact: true })).toBeVisible();
-  await expect(navigation.getByRole("link", { name: "Subscription", exact: true })).toBeVisible();
+  await expect(navigation.getByRole("link", { name: "Subscription", exact: true })).toHaveCount(0);
+  await navigation.getByRole("link", { name: "Settings", exact: true }).click();
+  await expect(page.getByRole("link", { name: /Manage subscriptions/ })).toBeVisible();
   await expect(page.getByText("Current account", { exact: true })).toHaveCount(0);
   await expect(page.getByText("owner", { exact: true })).toHaveCount(0);
 });
