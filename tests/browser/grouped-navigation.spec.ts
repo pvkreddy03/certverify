@@ -11,7 +11,7 @@ test.beforeEach(async ({ request }) => {
   await request.post("http://127.0.0.1:54329/test/reset");
 });
 
-test("grouped desktop ribbon opens My Certificates/My Reports and Templates/Report Formats, while Branding and Security are under Settings", async ({ page }) => {
+test("grouped desktop ribbon keeps Subscription, Branding and Security under Settings", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
   await login(page);
   const nav = page.getByRole("navigation", { name: "Customer dashboard pages" });
@@ -21,6 +21,7 @@ test("grouped desktop ribbon opens My Certificates/My Reports and Templates/Repo
   await expect(nav.getByRole("link", { name: "Bulk Excel" })).toHaveCount(0);
   await expect(nav.getByRole("link", { name: "Branding" })).toHaveCount(0);
   await expect(nav.getByRole("link", { name: "Security" })).toHaveCount(0);
+  await expect(nav.getByRole("link", { name: "Subscription", exact: true })).toHaveCount(0);
   const certificates = nav.locator("details").nth(0);
   await certificates.locator("summary").click();
   await expect(certificates.getByRole("link", { name: "My Certificates", exact: true })).toBeVisible();
@@ -34,6 +35,25 @@ test("grouped desktop ribbon opens My Certificates/My Reports and Templates/Repo
   await expect(page).toHaveURL(/\/dashboard\/report-formats$/);
 
   await nav.getByRole("link", { name: "Settings", exact: true }).click();
+  const settings = page.getByRole("main");
+  const profile = settings.getByRole("link", { name: /My Profile/ });
+  const subscription = settings.getByRole("link", { name: /Subscriptions/ });
+  const security = settings.getByRole("link", { name: /Security Options/ });
+  const branding = settings.getByRole("link", { name: /Organization Branding/ });
+  await expect(profile).toBeVisible();
+  await expect(subscription).toBeVisible();
+  await expect(security).toBeVisible();
+  await expect(branding).toBeVisible();
+  const orderedCards = await settings.locator("a.cv-card").allTextContents();
+  expect(orderedCards.slice(0,4).map(text => text.replace(/\s+/g," ").trim())).toEqual([
+    expect.stringContaining("My Profile"),
+    expect.stringContaining("Subscriptions"),
+    expect.stringContaining("Security Options"),
+    expect.stringContaining("Organization Branding"),
+  ]);
+  await expect(settings.getByText("Account Code", { exact: true })).toHaveCount(0);
+  await expect(settings.getByText("Account Type", { exact: true })).toHaveCount(0);
+  await expect(settings.getByText("Your Role", { exact: true })).toHaveCount(0);
   await expect(page.getByRole("link", { name: /Manage branding/ })).toBeVisible();
   await expect(page.getByRole("link", { name: /Manage security/ })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Settings" })).toBeVisible();
@@ -56,6 +76,7 @@ test("mobile ribbon presents the new grouped destinations without duplicate link
   await expect(navigation.locator('option[value="/dashboard/certificates/bulk"]')).toHaveCount(0);
   await expect(navigation.locator('option[value="/dashboard/branding"]')).toHaveCount(0);
   await expect(navigation.locator('option[value="/account/security"]')).toHaveCount(0);
+  await expect(navigation.locator('option[value="/dashboard/subscription"]')).toHaveCount(0);
   await navigation.selectOption("/dashboard/reports");
   await expect(page).toHaveURL(/\/dashboard\/reports$/);
   await page.getByRole("navigation", { name: "Customer dashboard pages" }).getByRole("button", { name: "Sign Out" }).click();
@@ -68,4 +89,5 @@ test("security stays accessible to a sub-user while organization branding stays 
   await expect(page.getByRole("heading", { name: "Settings" })).toBeVisible();
   await expect(page.getByRole("link", { name: /Manage security/ })).toBeVisible();
   await expect(page.getByRole("link", { name: /Manage branding/ })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: /Manage subscriptions/ })).toHaveCount(0);
 });
