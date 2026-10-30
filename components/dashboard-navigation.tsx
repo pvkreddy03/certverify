@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import { ProfileAvatarLink } from "@/components/profile-avatar-link";
 import { chooseAccount, selectedAccountId, type AccountMembership } from "@/lib/accounts/context";
 
 type NavItem = { href: string; label: string; icon: string; ownerOnly?: boolean; managerOnly?: boolean };
@@ -77,6 +76,8 @@ function Chevron() {
 export function DashboardNavigation({ role, accounts = [], selectedAccountId: selected, onAccountChange }: Props) {
   const pathname = usePathname();
   const [resolvedRole, setResolvedRole] = useState<AccountMembership["role"] | null>(null);
+  const [signingOut, setSigningOut] = useState(false);
+  const [signOutError, setSignOutError] = useState("");
   const firstMenu = useRef<HTMLDetailsElement>(null);
   const secondMenu = useRef<HTMLDetailsElement>(null);
   const active = currentRoute(pathname);
@@ -124,6 +125,20 @@ export function DashboardNavigation({ role, accounts = [], selectedAccountId: se
   } : item).filter(item => isGroup(item) ? item.items.length > 0 : permitted(item, membershipRole));
 
   const mobileGroups = visible.flatMap(item => isGroup(item) ? [{ group: item.label, options: item.items }] : [{ group: "", options: [item] }]);
+
+  async function handleSignOut() {
+    if (signingOut) return;
+    setSigningOut(true);
+    setSignOutError("");
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      window.location.assign("/login");
+    } catch {
+      setSignOutError("Sign out failed. Please try again.");
+      setSigningOut(false);
+    }
+  }
 
   return (
     <nav aria-label="Customer dashboard pages" className="sticky top-0 z-30 border-b border-white/10 bg-[#0d1b32] text-white shadow-[0_8px_28px_rgba(9,22,44,.10)]">
@@ -191,7 +206,17 @@ export function DashboardNavigation({ role, accounts = [], selectedAccountId: se
             </select>
           </label>
         )}
-        <ProfileAvatarLink />
+        <div className="ml-auto flex shrink-0 items-center">
+          <button type="button" onClick={() => void handleSignOut()} disabled={signingOut}
+            aria-label="Sign Out" title="Sign Out"
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/20 bg-white/[.09] px-3 py-2.5 text-xs font-bold text-white transition hover:border-[#67e0cf]/60 hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#67e0cf] disabled:opacity-60">
+            <svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M10 17l5-5-5-5m5 5H3M12 3h7a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-7"/>
+            </svg>
+            <span>{signingOut ? "Signing out…" : "Sign Out"}</span>
+          </button>
+        </div>
+        {signOutError && <p role="alert" className="w-full text-right text-xs font-semibold text-rose-200">{signOutError}</p>}
       </div>
     </nav>
   );
