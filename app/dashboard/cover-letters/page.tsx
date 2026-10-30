@@ -39,7 +39,7 @@ export default function CoverLetterDesigner() {
   const [name, setName] = useState("");
   const [layout, setLayout] = useState<CoverPlacement>(empty);
   const [layoutBody, setLayoutBody] = useState(DEFAULT_BODY);
-  const [draft, setDraft] = useState("");
+  const [draftOverride, setDraftOverride] = useState<string | null>(null);
   const [positionMode, setPositionMode] = useState<"qr" | "text">("qr");
   const [canEdit, setCanEdit] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -50,6 +50,7 @@ export default function CoverLetterDesigner() {
 
   const selectedCertificate = certificates.find(c => c.id === certificateId);
   const current = items.find(i => i.id === templateId);
+  const draft = draftOverride ?? fillCoverText(layoutBody, fields);
   const refresh = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("Sign in to use your letterhead library.");
@@ -74,7 +75,7 @@ export default function CoverLetterDesigner() {
 
   useEffect(() => {
     let active = true;
-    void refresh().catch(error => {
+    void Promise.resolve().then(() => refresh()).catch(error => {
       if (active) setMessage(error instanceof Error ? error.message : "Could not load cover letters.");
     }).finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
@@ -102,11 +103,15 @@ export default function CoverLetterDesigner() {
   }, [certificateId, certificates]);
 
   useEffect(() => {
-    const source = file ?? background;
-    if (!source) { setImageUrl(""); return; }
-    const url = URL.createObjectURL(source);
-    setImageUrl(url);
-    return () => URL.revokeObjectURL(url);
+    let active = true;
+    let url = "";
+    void Promise.resolve().then(() => {
+      if (!active) return;
+      const source = file ?? background;
+      url = source ? URL.createObjectURL(source) : "";
+      setImageUrl(url);
+    });
+    return () => { active = false; if (url) URL.revokeObjectURL(url); };
   }, [file, background]);
 
   useEffect(() => {
@@ -121,10 +126,6 @@ export default function CoverLetterDesigner() {
     return () => { active = false; };
   }, [templateId, items, file]);
 
-  useEffect(() => {
-    setDraft(fillCoverText(layoutBody, fields));
-  }, [layoutBody, fields]);
-
   function selectTemplate(value: string) {
     setMessage(""); setPreviewUrl(""); setFile(null); setBackground(null); setTemplateId(value);
     const chosen = items.find(item => item.id === value);
@@ -136,10 +137,10 @@ export default function CoverLetterDesigner() {
         text_width: chosen.text_width, text_height: chosen.text_height,
       });
       setLayoutBody(chosen.body_template);
-      setDraft(fillCoverText(chosen.body_template, fields));
+      setDraftOverride(null);
     } else {
       setName(""); setLayout(empty()); setLayoutBody(DEFAULT_BODY);
-      setDraft(fillCoverText(DEFAULT_BODY, fields));
+      setDraftOverride(null);
     }
   }
 
@@ -319,7 +320,7 @@ export default function CoverLetterDesigner() {
             <section className="cv-panel space-y-4 rounded-2xl p-5">
               <h2 className="text-lg font-extrabold text-[#173b4b]">4. Fill and download</h2>
               <label className="block text-sm font-semibold">Certificate
-                <select className="cv-field mt-2" aria-label="Certificate for cover letter" value={certificateId} onChange={event => setCertificateId(event.target.value)}>
+                <select className="cv-field mt-2" aria-label="Certificate for cover letter" value={certificateId} onChange={event => { setCertificateId(event.target.value); setDraftOverride(null); }}>
                   {certificates.length === 0 && <option value="">No certificates available</option>}
                   {certificates.map(c => <option key={c.id} value={c.id}>{c.certificate_id} · {c.status}</option>)}
                 </select>
@@ -327,7 +328,7 @@ export default function CoverLetterDesigner() {
               <p className="text-xs text-slate-500">This letter uses the selected certificate&apos;s public verification QR. Revoked certificates remain marked revoked on the public verification page.</p>
               <label className="block text-sm font-semibold">Final letter text — editable
                 <textarea className="cv-field mt-2 min-h-64 w-full whitespace-pre-wrap text-sm" aria-label="Editable final cover letter" value={draft}
-                  onChange={event => setDraft(event.target.value)}/>
+                  onChange={event => setDraftOverride(event.target.value)}/>
               </label>
               <button disabled={busy || !imageUrl || !certificateId} type="button" onClick={() => void generate("pdf")}
                 className="cv-primary w-full disabled:opacity-50">{busy ? "Generating…" : "Download print-ready PDF"}</button>
