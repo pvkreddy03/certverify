@@ -65,7 +65,7 @@ export default function ReportFormatsPage() {
             <p className="cv-eyebrow mb-2">DOCUMENT AUTOMATION</p>
             <h1 className="text-3xl font-bold !text-white">Report Formats</h1>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-[#d2e5ec]">
-              Build one certificate template with shared fields, then attach separate Word report formats for each bank, client or purpose. Generate finished reports only when needed.
+              Create reusable Word report formats for different clients, document types or workflows, all using the same certificate fields. Generate finished documents when needed.
             </p>
           </div>
           {canCreate && <Link href="/dashboard/templates?create=1" className="cv-primary shrink-0 !border-[#35bea9] !bg-[#47d5c2] !text-[#082b35]">
@@ -80,7 +80,7 @@ export default function ReportFormatsPage() {
             <p className="text-xs font-extrabold uppercase tracking-[.16em] text-[#0e8075]">Attach your existing report</p>
             <h2 className="mt-2 text-xl font-extrabold text-[#183e4b]">Upload a Word report to a certificate template</h2>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-[#446472]">
-              Already have a bank valuation report in Word? Choose your certificate template, attach the original .docx file and map client name, bank name, property details and other fields visually. It is saved as a reusable format.
+              Already have a report, certificate or professional document in Word? Select the relevant template, upload your .docx file and link names, dates, reference numbers or other fields visually. Save it as a reusable format.
             </p>
           </div>
           <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white text-[#0a8177] shadow-sm">
@@ -120,7 +120,7 @@ export default function ReportFormatsPage() {
           </div>
           <label className="text-sm font-semibold text-[#345c69]">Find by format name or template
             <input type="search" className="cv-field mt-2" aria-label="Find report format"
-              placeholder="e.g. SBI – Open Plot" value={formatSearch} onChange={event => setFormatSearch(event.target.value)}/>
+              placeholder="e.g. Client Report – Standard" value={formatSearch} onChange={event => setFormatSearch(event.target.value)}/>
           </label>
         </div>
         {visibleFormats.length === 0 ? <p className="cv-panel rounded-xl p-5 text-sm text-slate-600">No saved formats match that search.</p>
@@ -145,9 +145,9 @@ export default function ReportFormatsPage() {
       <div className="cv-panel rounded-2xl border-l-4 border-l-[#13a48f] p-5 sm:p-6">
         <h2 className="text-lg font-bold text-[#173648]">How to create a report format</h2>
         <ol className="mt-3 grid gap-3 text-sm leading-6 text-[#3a5262] md:grid-cols-3">
-          <li><strong className="text-[#088a7e]">1. Choose a template.</strong> For example, Open Plot Valuation. Add common certificate fields once.</li>
-          <li><strong className="text-[#088a7e]">2. Add report format.</strong> Upload SBI.docx, Canara.docx or another existing document and visually link its text to the fields.</li>
-          <li><strong className="text-[#088a7e]">3. Generate when needed.</strong> Open an issued certificate, select the bank format and download the filled Word report.</li>
+          <li><strong className="text-[#088a7e]">1. Choose a template.</strong> For example, Client Record or Compliance Certificate. Add common fields once.</li>
+          <li><strong className="text-[#088a7e]">2. Add report format.</strong> Upload an existing report, opinion or certificate in .docx format and visually connect its text to the fields.</li>
+          <li><strong className="text-[#088a7e]">3. Generate when needed.</strong> Open an issued certificate, select the appropriate format and download the completed Word document.</li>
         </ol>
       </div>
 
@@ -158,13 +158,13 @@ export default function ReportFormatsPage() {
             <svg width="32" height="32" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M6 3h9l5 5v13H6zM15 3v6h5M9 13h8M9 17h8"/></svg>
           </div>
           <h2 className="mt-4 text-xl font-bold text-[#19364c]">Start with a certificate template</h2>
-          <p className="mx-auto mt-2 max-w-lg text-sm leading-6 text-slate-600">A template defines the fields used by all of its Word formats. You can create formats for SBI, Canara, visa reports and other purposes under one template.</p>
+          <p className="mx-auto mt-2 max-w-lg text-sm leading-6 text-slate-600">A template defines the fields shared by its formats. Create as many layouts as needed for different document types, clients or professional workflows.</p>
           {canCreate ? <Link className="cv-primary mt-5 inline-flex" href="/dashboard/templates?create=1">Create template →</Link>
             : <p className="mt-4 text-sm text-amber-800">Ask your organization owner to create a template or grant you permission.</p>}
         </div>
       : <section className="space-y-4">
           <div className="flex flex-wrap items-end justify-between gap-2">
-            <h2 className="text-xl font-bold text-[#173648]">Your templates and report formats</h2>
+            <h2 className="text-xl font-bold text-[#173648]">Formats grouped by template</h2>
             <span className="text-sm text-slate-500">{templates.length} template{templates.length === 1 ? "" : "s"}</span>
           </div>
           <div className="grid gap-5 lg:grid-cols-2">
