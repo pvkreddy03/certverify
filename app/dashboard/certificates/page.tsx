@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import { IssuerBranding } from "@/components/issuer-branding";
+
 import { LocationPicker } from "@/components/location-picker";
 import {parseGeoLocation} from "@/lib/geo/location";
 import { listReportFormats, type ReportFormat } from "@/lib/reports/private-storage";
@@ -30,7 +30,7 @@ export default function CertificatesPage() {
   const router = useRouter();
   const submitLocked = useRef(false);
   const [createdRecordId, setCreatedRecordId] = useState<string | null>(null);
-  const [certificateId, setCertificateId] = useState("");
+
   const [replacementId, setReplacementId] = useState<string | null>(null);
   useEffect(() => {
     const replaces = new URLSearchParams(window.location.search).get("replaces");
@@ -129,7 +129,7 @@ export default function CertificatesPage() {
     submitLocked.current = true;
     setMessage("");
     setSaving(true);
-    setCertificateId("");
+
 
     const {
       data: { user },
@@ -194,7 +194,7 @@ export default function CertificatesPage() {
         await createCertificateFieldValues(fieldValues);
       }
 
-      setCertificateId(newCertificateId);
+
       // Replace the form history entry to prevent another submission on Back.
       router.replace(`/dashboard/certificates/${certificate.id}?created=1`);
     } catch (error) {
@@ -222,7 +222,7 @@ export default function CertificatesPage() {
           </h1>
 
           <p className="mt-3 text-[#d0e5eb]">
-            Choose your template, enter certificate details, and generate a unique verification ID.
+            Select a template and enter the required details. Your verification ID and QR code are created automatically when you save.
           </p>
           </div>
         </div>
@@ -235,7 +235,7 @@ export default function CertificatesPage() {
           </div>
           <Link href="/dashboard/certificates/bulk" className="cv-primary text-sm">Import Excel →</Link>
         </div>
-        <IssuerBranding />
+
         {replacementId && <p className="mb-6 rounded border border-blue-200 bg-blue-50 p-4">This new certificate will be linked to the revoked original. The original remains revoked and its history is preserved.</p>}
         <form
           onSubmit={handleSubmit}
@@ -274,9 +274,7 @@ export default function CertificatesPage() {
               ))}
               <option value="__create__">＋ Create a new template…</option>
             </select>
-            <Link href="/dashboard/templates?create=1&from=certificate" className="mt-2 inline-block text-sm font-semibold text-blue-700 hover:underline">
-              + Create and configure a new template
-            </Link>
+
           </div>
 
           {selectedTemplateId && !formatLoading && formats.length === 0 && <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#d9e8e9] bg-[#f3f9f8] px-5 py-4">
@@ -303,26 +301,6 @@ export default function CertificatesPage() {
               </select>
             </label>}
           </div>}
-
-          {/* Certificate ID */}
-          <div>
-            <label className="mb-2 block text-sm font-medium text-slate-700">
-              Certificate ID
-            </label>
-
-            <input
-              type="text"
-              value={certificateId}
-              readOnly
-              placeholder="Generated when certificate is saved"
-              className="cv-field !bg-[#f3f6fa] text-[#748399]"
-            />
-
-            <p className="mt-2 text-xs text-slate-500">
-              Certificate ID is automatically generated when you save the
-              certificate.
-            </p>
-          </div>
 
           {/* Custom Fields */}
           {customFields.length > 0 && (
