@@ -1,0 +1,32 @@
+name: Cover-letter browser verification
+on:
+  push:
+    branches: [feature/cover-letter-qr-designer-20261030]
+    paths:
+      - "app/dashboard/cover-letters/**"
+      - "lib/cover-letters/**"
+      - "tests/browser/cover-letter-pdf.spec.ts"
+      - ".github/workflows/cover-letter-browser.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  cover-letter-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Test real PDF and Word rendering, QR placement, field autofill and report merge
+        run: npx playwright test tests/browser/cover-letter-pdf.spec.ts --reporter=line
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: cover-letter-playwright-failure
+          path: test-results/
+          retention-days: 3
