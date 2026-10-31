@@ -240,7 +240,7 @@ test("certificate details downloads one complete PDF using a report-linked cover
  await page.getByRole("combobox",{name:"Attach report to PDF (optional)"}).selectOption("none");
  await expect(cover).toHaveValue(generalId);
  const plain=page.waitForEvent("download");
- await page.getByRole("button",{name:"Download Cover Letter"}).click();
+ await page.getByRole("button",{name:"Download Cover Letter (PDF)"}).click();
  expect((await PDFDocument.load(await readFile(await (await plain).path()))).getPageCount()).toBe(1);
  expect(savedCopies).toBe(0);
 });
