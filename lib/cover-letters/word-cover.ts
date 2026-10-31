@@ -44,7 +44,10 @@ async function letterheadWithQR(args:{
     publicVerificationUrl(args.verificationId,window.location.origin),
     {width:900,margin:2,errorCorrectionLevel:"M"}));
   ctx.fillStyle="#ffffff";ctx.fillRect(x,y,size,size);ctx.drawImage(image,x,y,size,size);
-  return Uint8Array.from(atob(canvas.toDataURL("image/jpeg",.93).split(",")[1]),char=>char.charCodeAt(0));
+  const binary=atob(canvas.toDataURL("image/jpeg",.93).split(",")[1]);
+  const bytes=new Uint8Array(binary.length);
+  for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
+  return bytes;
 }
 
 /** The saved letterhead image and QR are precisely positioned on A4 behind
