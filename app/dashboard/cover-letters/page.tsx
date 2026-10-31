@@ -9,7 +9,6 @@ import { createPrintableDocument, detectKind, inspectFile, previewFirstPage, FIL
 import { downloadLetterhead, letterheadStoragePath, removeUncommittedLetterhead, uploadLetterhead } from "@/lib/cover-letters/private-storage";
 import { downloadWordOriginal } from "@/lib/reports/private-storage";
 import { generateWordReport, openWordDocument, type ReportBinding } from "@/lib/reports/docx-visual";
-import { savedCoverPath, uploadSavedCover, rollbackSavedCover } from "@/lib/cover-letters/saved-covers";
 
 type Letterhead = CoverPlacement & {
   id: string; account_id: string; name: string; file_name: string; file_type: string;
@@ -22,7 +21,6 @@ type Certificate = {
 type Template = { id: string; name: string };
 type Format = { id: string; format_name: string; template_id: string; storage_path: string; bindings: ReportBinding[] };
 type Field = { field_name: string; field_value: string | null };
-type OutputMode = "qr" | "manual" | "auto";
 
 const formatError = (error: unknown) => error instanceof Error ? error.message : "Something went wrong. Please try again.";
 const blank = (): CoverPlacement => ({ ...DEFAULT_PLACEMENT });
@@ -39,7 +37,6 @@ export default function CoverLettersPage() {
   const [templateId, setTemplateId] = useState("");
   const [certificateId, setCertificateId] = useState("");
   const [name, setName] = useState("");
-  const [coverLetterName, setCoverLetterName] = useState("");
   const [linkedTemplateId, setLinkedTemplateId] = useState("");
   const [defaultFormatId, setDefaultFormatId] = useState("");
   const [file, setFile] = useState<File | null>(null);
@@ -48,8 +45,7 @@ export default function CoverLettersPage() {
   const [previewPage, setPreviewPage] = useState("");
   const [layout, setLayout] = useState<CoverPlacement>(blank);
   const [bodyTemplate, setBodyTemplate] = useState("");
-  const [mode, setMode] = useState<OutputMode>("qr");
-  const [manualText, setManualText] = useState("");
+  const [textOpen, setTextOpen] = useState(true);
   const [editedAuto, setEditedAuto] = useState<string | null>(null);
   const [placement, setPlacement] = useState<"qr" | "text">("qr");
   const [includeReport, setIncludeReport] = useState(false);
@@ -75,7 +71,7 @@ export default function CoverLettersPage() {
   const linkedFormats = formats.filter(f => f.template_id === linkedTemplateId);
   const matched = !linkedTemplateId || certificate?.template_id === linkedTemplateId;
   const finalAutoText = editedAuto ?? fillCoverText(bodyTemplate, fields);
-  const body = mode === "qr" ? "" : mode === "manual" ? manualText : finalAutoText;
+  const body = textOpen ? finalAutoText : "";
   const availableFieldNames = useMemo(() => Object.keys(fields).sort((a, b) => a.localeCompare(b)), [fields]);
 
   const loadLibrary = useCallback(async () => {
@@ -171,12 +167,12 @@ export default function CoverLettersPage() {
 
   async function openTemplate(id: string) {
     const candidate = saved.find(item => item.id === id);
-    setTemplateId(id); setMessage(""); setPreviewPage(""); setCoverLetterName("");
+    setTemplateId(id); setMessage(""); setPreviewPage("");
     setFile(null); setOriginal(null); setEditedAuto(null); setPrintUrl("");
     setSetupExpanded(false); setIncludeReport(false);
     if (!candidate) {
       setName(""); setLayout(blank()); setLinkedTemplateId(""); setDefaultFormatId("");
-      setBodyTemplate(""); setMode("qr"); setSettingUp(false); return;
+      setBodyTemplate(""); setTextOpen(true); setSettingUp(false); return;
     }
     setName(candidate.name);
     setLinkedTemplateId(candidate.template_id ?? "");
@@ -186,7 +182,7 @@ export default function CoverLettersPage() {
       text_x: candidate.text_x, text_y: candidate.text_y, text_width: candidate.text_width, text_height: candidate.text_height,
     });
     setBodyTemplate(candidate.body_template);
-    setMode("qr");
+    setTextOpen(true);
     try {
       const data = await downloadLetterhead(candidate.storage_path);
       setOriginal(data);
@@ -276,55 +272,26 @@ export default function CoverLettersPage() {
     const word = await openWordDocument(await downloadWordOriginal(selected.storage_path));
     return generateWordReport(word, selected.bindings, values);
   }
-  async function generate(action: "preview" | "download" | "save") {
-    if (busy || saveLock.current) return;
+  async function generate(download: boolean) {
+    if (busy) return;
     setBusy(true); setMessage("");
-    if (action === "save") saveLock.current = true;
     try {
-      if (!chosenSource || !previewPage) throw new Error("Choose a letterhead first.");
-      if (!certificate) throw new Error("Choose an issued certificate.");
-      if (!matched) throw new Error("This letterhead is linked to a different certificate template. Select a matching certificate.");
+      if (!chosenSource || !previewPage) throw new Error("Choose a letterhead format first.");
+      if (!certificate) throw new Error("Choose an issued certificate for this example.");
+      if (!matched) throw new Error("This cover format belongs to a different certificate template.");
       if (includeReport && !chosenReportFormat) throw new Error("Choose a Word report format.");
-      const clean = coverLetterName.trim();
-      if (action === "save" && (clean.length < 2 || clean.length > 120))
-        throw new Error("Name this cover letter (2–120 characters) before saving.");
-      if (action === "save" && (!current || !!file))
-        throw new Error("Save your reusable letterhead and QR position first, then create the finished cover letter.");
       const report = includeReport ? await prepareReport() : null;
       const output = await createPrintableDocument({
         background: chosenSource, kind, verificationId: certificate.public_verification_id,
         body, placement: layout, report,
       });
-      if (action === "save") {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) throw new Error("Sign in to save the cover letter.");
-        const id = crypto.randomUUID();
-        const path = savedCoverPath(id, user.id);
-        await uploadSavedCover(path, output);
-        let persisted = false;
-        try {
-          const { error } = await supabase.from("cv_saved_cover_letters").insert({
-            id, account_id: requireSelectedAccountId(), certificate_id: certificate.id,
-            letterhead_id: current!.id, name: clean, output_mode: mode,
-            includes_report: includeReport, report_format_id: includeReport ? chosenReportFormat : null,
-            pdf_storage_path: path, created_by: user.id,
-          });
-          if (error) throw new Error("Could not save cover letter: " + error.message);
-          persisted = true;
-        } finally {
-          if (!persisted) await rollbackSavedCover(path);
-        }
-        window.location.assign("/dashboard/my-cover-letters?saved=1");
-        return;
-      }
       const url = URL.createObjectURL(output);
       if (lastPdf.current) URL.revokeObjectURL(lastPdf.current);
       lastPdf.current = url; setPrintUrl(url);
-      if (action === "download") savePdf(output, "Cover Letter - " + safeFile(certificate.certificate_id));
-      setMessage(includeReport ? "Cover letter and report created as one PDF. Check pages before printing." :
-        "Cover letter created. The verification QR is ready to scan.");
+      if (download) savePdf(output, "Cover Letter - " + safeFile(certificate.certificate_id));
+      setMessage("Example PDF generated on demand. Only the reusable cover format is stored.");
     } catch (error) { setMessage(formatError(error)); }
-    finally { setBusy(false); saveLock.current = false; }
+    finally { setBusy(false); }
   }
 
   useEffect(() => () => { if (lastPdf.current) URL.revokeObjectURL(lastPdf.current); }, []);
@@ -338,8 +305,8 @@ export default function CoverLettersPage() {
       <div className="flex flex-wrap items-center justify-between gap-2"><Link href="/dashboard" className="text-sm font-semibold text-teal-800 underline">← Dashboard</Link><Link href="/dashboard/my-cover-letters" className="text-sm font-bold text-teal-800 underline">My Cover Letters</Link></div>
       <header className="cv-hero"><div className="cv-hero__body">
         <p className="cv-eyebrow mb-2">ONE-TIME SETUP · REPEATABLE PRINTING</p>
-        <h1 className="text-3xl font-extrabold !text-white">Letterhead + Verification QR</h1>
-        <p className="mt-2 text-sm text-[#d2e5ec]">Upload PDF, Word or an image. Place the QR once. Print plain, type a letter, or automatically fill your saved certificate details.</p>
+        <h1 className="text-3xl font-extrabold !text-white">Cover Letter Format Designer</h1>
+        <p className="mt-2 text-sm text-[#d2e5ec]">Upload a PDF, Word or image letterhead, choose its QR position and save the reusable format once. Generate covers directly from any compatible certificate.</p>
       </div></header>
       {message && <p role="status" className="rounded-xl border border-[#addbd6] bg-white p-4 text-sm text-[#214d5f]">{message}</p>}
       {loading ? <p role="status" className="cv-panel p-8">Loading letterhead library…</p> : <>
@@ -398,7 +365,7 @@ export default function CoverLettersPage() {
                 <div className="pointer-events-none absolute flex items-center justify-center border-2 border-[#008b80] bg-white/95 text-center text-[11px] font-extrabold text-teal-800 shadow"
                   style={{ left: layout.qr_x * 100 + "%", top: layout.qr_y * 100 + "%",
                     width: layout.qr_size * 100 + "%", aspectRatio: "1" }}>QR</div>
-                {mode !== "qr" && <div className="pointer-events-none absolute overflow-hidden border-2 border-dashed border-amber-600 bg-amber-50/50 p-1 text-[10px] text-slate-800"
+                {textOpen && <div className="pointer-events-none absolute overflow-hidden border-2 border-dashed border-amber-600 bg-amber-50/50 p-1 text-[10px] text-slate-800"
                   style={{left:layout.text_x*100+"%",top:layout.text_y*100+"%",width:layout.text_width*100+"%",height:layout.text_height*100+"%"}}>
                   Text area
                 </div>}
@@ -421,7 +388,7 @@ export default function CoverLettersPage() {
 
           <div className="space-y-5">
             <section className="cv-panel rounded-2xl p-5">
-              <h2 className="text-lg font-extrabold text-[#173b4b]">3. Choose certificate</h2>
+              <h2 className="text-lg font-extrabold text-[#173b4b]">3. Preview with a certificate</h2>
               <label className="mt-3 block text-sm font-semibold">Issued certificate
                 <select className="cv-field mt-2" value={certificateId} aria-label="Certificate for verification QR"
                   onChange={e => { setCertificateId(e.target.value); setEditedAuto(null); setReportFormatId(""); setPrintUrl(""); }}>
@@ -430,35 +397,23 @@ export default function CoverLettersPage() {
                 </select>
               </label>
               {!matched && <p role="alert" className="mt-2 rounded-lg bg-amber-50 p-3 text-sm text-amber-800">This letterhead is mapped to another certificate template. Choose a matching certificate.</p>}
-              <h3 className="mt-5 text-sm font-bold text-slate-800">What should appear on the letter?</h3>
-              <div className="mt-2 grid grid-cols-3 gap-2">
-                {([
-                  ["qr","QR only"], ["manual","Type letter"], ["auto","Auto-fill"],
-                ] as const).map(([id,label]) => <button type="button" key={id} aria-pressed={mode===id}
-                  onClick={() => { setMode(id); setPrintUrl(""); }}
-                  className={"rounded-xl border px-2 py-3 text-xs font-bold " + (mode===id ? "border-teal-700 bg-teal-800 text-white" : "border-slate-200 bg-white text-slate-600 hover:bg-teal-50")}>
-                  {label}
-                </button>)}
+              <div className="mt-4 rounded-xl border border-[#dae7e7] p-3">
+                <button type="button" aria-expanded={textOpen}
+                  className="flex w-full items-center justify-between gap-2 text-left text-sm font-semibold text-teal-900"
+                  onClick={() => setTextOpen(!textOpen)}>
+                  <span>Example cover-letter text (optional)</span>
+                  <span>{textOpen ? "Hide text · plain QR" : "Show text"}</span>
+                </button>
+                {textOpen && <textarea className="cv-field mt-3 min-h-44 w-full text-sm"
+                  aria-label="Example cover-letter text" value={finalAutoText}
+                  onChange={e => setEditedAuto(e.target.value)}
+                  placeholder="Paste any text here, or save reusable auto-fill wording in the format settings below."/>}
+                {!textOpen && <p className="mt-2 text-xs text-slate-500">The example will contain only the original letterhead and QR.</p>}
               </div>
-              {mode==="qr" && <p className="mt-3 rounded-xl bg-[#effaf7] p-3 text-sm text-[#175f5e]">Print your original letterhead with just the verification QR. No text entry needed.</p>}
-              {mode==="manual" && <label className="mt-3 block text-sm font-semibold">Your letter — type anything
-                <textarea value={manualText} onChange={e => setManualText(e.target.value)} className="cv-field mt-2 min-h-44 w-full text-sm"
-                  placeholder="Enter your covering letter. This wording applies only to this download."/>
-              </label>}
-              {mode==="auto" && <>
-                {!bodyTemplate.trim() && <p className="mt-3 text-sm text-amber-800">Auto-fill wording is not saved yet. Open the one-time settings below to link certificate fields.</p>}
-                <label className="mt-3 block text-sm font-semibold">Auto-filled letter — you can edit it
-                  <textarea className="cv-field mt-2 min-h-48 w-full text-sm" value={finalAutoText} onChange={e => setEditedAuto(e.target.value)}
-                    placeholder="Choose a saved auto-fill template below."/>
-                </label>
-              </>}
             </section>
 
             <section className="cv-panel rounded-2xl p-5">
-              <h2 className="text-lg font-extrabold text-[#173b4b]">4. Name, save or print</h2>
-              <label className="mt-3 block text-sm font-semibold">Cover letter name
-                <input aria-label="Cover letter name" className="cv-field mt-2" maxLength={120} value={coverLetterName} onChange={e => setCoverLetterName(e.target.value)} placeholder={certificate ? "Cover Letter - " + certificate.certificate_id : "e.g. SBI Valuation Cover"}/>
-              </label>
+              <h2 className="text-lg font-extrabold text-[#173b4b]">4. Preview output (not saved)</h2>
               <label className="mt-3 flex items-center gap-2 text-sm font-semibold">
                 <input type="checkbox" checked={includeReport} onChange={e => setIncludeReport(e.target.checked)} disabled={visibleFormats.length===0} />
                 Include the Word report after the letter
@@ -470,19 +425,14 @@ export default function CoverLettersPage() {
                 </select>
               </label>}
               <div className="mt-4 grid gap-2 sm:grid-cols-2">
-                <button type="button" className={buttonClass} disabled={!allowed || busy} onClick={() => void generate("preview")}>Preview PDF</button>
-                <button type="button" className="cv-primary disabled:opacity-40" disabled={!allowed || busy} onClick={() => void generate("download")}>{busy ? "Preparing…" : "Download PDF"}</button>
+                <button type="button" className={buttonClass} disabled={!allowed || busy} onClick={() => void generate(false)}>Preview PDF</button>
+                <button type="button" className="cv-primary disabled:opacity-40" disabled={!allowed || busy} onClick={() => void generate(true)}>{busy ? "Preparing…" : "Download PDF"}</button>
               </div>
-              <button type="button" className="cv-primary mt-3 w-full disabled:opacity-40"
-                disabled={!allowed || busy} onClick={() => void generate("save")}>
-                {busy ? "Saving…" : "Save Cover Letter → My Cover Letters"}
-              </button>
-              {!current && <p className="mt-2 text-xs font-medium text-amber-800">To save a finished letter, first save its reusable letterhead and QR placement.</p>}
               {printUrl && <div className="mt-4 space-y-3">
                 <a className="inline-flex rounded-xl bg-[#e0f7ee] px-4 py-3 text-sm font-bold text-teal-900" href={printUrl} target="_blank" rel="noopener noreferrer">Open PDF to print</a>
                 <iframe title="Your finished printable PDF" className="h-96 w-full rounded-lg border" src={printUrl}/>
               </div>}
-              <p className="mt-3 text-xs leading-5 text-slate-500">Preview and Download do not save a record. Choose Save Cover Letter to keep a named PDF in My Cover Letters. Always check the PDF and scan the QR before sending.</p>
+              <p className="mt-3 text-xs leading-5 text-slate-500">Only the named reusable cover format is saved. Preview and Download create temporary PDFs; no certificate-specific cover letter is retained.</p>
             </section>
           </div>
         </div>
@@ -490,9 +440,9 @@ export default function CoverLettersPage() {
         {canManage && <section className="cv-panel rounded-2xl p-5 sm:p-6">
           <button type="button" onClick={() => setSetupExpanded(!setupExpanded)} aria-expanded={setupExpanded}
             className="flex w-full items-center justify-between text-left font-extrabold text-[#173b4b]">
-            Optional one-time setup: auto-fill and report linking <span>{setupExpanded ? "−" : "+"}</span>
+            Format auto-fill and report linking (optional) <span>{setupExpanded ? "−" : "+"}</span>
           </button>
-          <p className="mt-2 text-sm text-slate-500">Most users never need to open this again. The organization administrator sets it up once.</p>
+          <p className="mt-2 text-sm text-slate-500">The organization administrator links fields and report formats once. Users download covers directly from Certificate Details.</p>
           {setupExpanded && <div className="mt-5 space-y-4 border-t border-slate-100 pt-5">
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="text-sm font-semibold">Link letterhead to a certificate template (optional)
@@ -523,7 +473,7 @@ export default function CoverLettersPage() {
             </label>
           </div>}
           <button type="button" className="cv-primary mt-4 disabled:opacity-40" disabled={busy || !previewPage || !canManage}
-            onClick={() => void saveLayout()}>{busy ? "Saving…" : current ? "Save reusable layout → My Cover Letters" : "Save letterhead → My Cover Letters"}</button>
+            onClick={() => void saveLayout()}>{busy ? "Saving…" : current ? "Save format → My Cover Letters" : "Save format → My Cover Letters"}</button>
         </section>}
       </>}
     </div>
