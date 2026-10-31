@@ -113,6 +113,11 @@ export default function CoverLettersPage() {
         await createPreview(data,sourceKind);
       }
     }
+    const requestedTemplate = new URLSearchParams(window.location.search).get("template");
+    if (requestedTemplate && (tmpl.data ?? []).some(item => item.id === requestedTemplate) &&
+        !new URLSearchParams(window.location.search).get("letterhead")) {
+      setLinkedTemplateId(requestedTemplate);
+    }
     const requested = new URLSearchParams(window.location.search).get("certificate");
     setCertificateId(previous => previous && (certs.data ?? []).some(item => item.id === previous) ? previous :
       (certs.data ?? []).find(item => item.id === requested)?.id ?? (certs.data ?? [])[0]?.id ?? "");
