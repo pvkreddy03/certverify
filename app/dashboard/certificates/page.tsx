@@ -51,7 +51,7 @@ export default function CertificatesPage() {
   const [formatLoadError, setFormatLoadError] = useState("");
   const [includeWordReport, setIncludeWordReport] = useState(false);
   const [selectedFormatId, setSelectedFormatId] = useState("");
-  const [coverFormats, setCoverFormats] = useState<LinkedCoverFormat[]>([]);
+  const [coverFormats, setCoverFormats] = useState<(LinkedCoverFormat & {is_default?:boolean})[]>([]);
   const [coverLoading, setCoverLoading] = useState(false);
   const [coverLoadError, setCoverLoadError] = useState("");
   const [includeCoverLetter, setIncludeCoverLetter] = useState(false);
@@ -74,13 +74,13 @@ export default function CertificatesPage() {
       setSelectedCoverFormatId("");
     });
     void Promise.resolve(supabase.from("cv_cover_letter_templates")
-      .select("id,name,template_id,report_format_id")
+      .select("id,name,template_id,report_format_id,is_default")
       .eq("account_id", requireSelectedAccountId())
       .order("name"))
       .then(({ data, error }) => {
         if (!live) return;
         if (error) throw new Error(error.message);
-        setCoverFormats((data ?? []) as LinkedCoverFormat[]);
+        setCoverFormats((data ?? []) as (LinkedCoverFormat & {is_default?:boolean})[]);
       })
       .catch(error => {
         if (!live) return;
@@ -361,11 +361,11 @@ export default function CertificatesPage() {
             <label className="flex cursor-pointer items-center gap-3 text-sm font-semibold text-slate-900">
               <input type="checkbox" checked={includeCoverLetter} disabled={saving || coverLoading}
                 onChange={event => setIncludeCoverLetter(event.target.checked)} />
-              Prepare a Cover Letter too (optional)
+              Use a specialized cover letter (optional)
             </label>
             <p className="mt-2 text-xs text-slate-600">
-              Select the saved letterhead and QR placement now. The completed cover is generated from this certificate later—no duplicate PDF is stored.
-              {includeWordReport && " Download the cover and full Word report as one PDF from Certificate Details."}
+              Every certificate automatically receives your default letterhead and saved QR placement. Leave this unchecked unless this certificate needs a different, template-specific cover. Both Word and PDF downloads are available later.
+              {includeWordReport && " The PDF can combine the cover and full report in one download."}
             </p>
             {coverLoading && <p role="status" className="mt-2 text-xs text-slate-600">Loading matching cover-letter formats…</p>}
             {coverLoadError && <p role="alert" className="mt-2 text-xs text-amber-800">Could not load cover formats: {coverLoadError}</p>}
@@ -381,16 +381,19 @@ export default function CertificatesPage() {
             </label>}
             {!coverLoading && compatibleCoverFormats.length === 0 && <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-white p-3">
               <p className="max-w-md text-xs text-slate-600">
-                {coverFormats.length ? "No saved cover format matches the current template and Word report selection." :
-                  "No cover-letter format is saved yet. Set up a reusable letterhead with a QR position once."}
+                {coverFormats.length ? "No specialized cover matches this selection. The default plain letterhead still works." :
+                  "You can issue certificates now using a plain QR cover, or upload your letterhead once for automatic use."}
               </p>
               <Link href={"/dashboard/cover-letters?template=" + encodeURIComponent(selectedTemplateId)}
                 className="rounded-lg border border-teal-700 px-3 py-2 text-xs font-bold text-teal-800">
-                + Create Cover Letter Format
+                Upload / Manage Letterhead
               </Link>
             </div>}
           </div>}
 
+          {selectedTemplateId && coverFormats.some(item => item.is_default) && !includeCoverLetter && <p className="text-xs text-teal-800">
+            Your account's default letterhead will be applied automatically. No extra cover-letter selection needed.
+          </p>}
           {selectedTemplateId && fieldsLoading && <p role="status" className="rounded-lg bg-slate-50 px-4 py-3 text-sm text-slate-700">Loading certificate fields…</p>}
           {fieldsLoadError && <div role="alert" className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
             Could not load required certificate fields: {fieldsLoadError}. Choose the template again before saving.
