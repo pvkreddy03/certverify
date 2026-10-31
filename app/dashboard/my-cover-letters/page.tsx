@@ -7,7 +7,7 @@ import { supabase } from "@/lib/supabase";
 
 type Cover = {
   id: string; name: string; file_name: string; file_type: string; created_at: string;
-  template_id: string | null; report_format_id: string | null;
+  template_id: string | null; report_format_id: string | null; is_default: boolean;
 };
 type Named = { id: string; name?: string; format_name?: string };
 const errorText = (error: unknown) => error instanceof Error ? error.message : "Unable to load cover-letter formats.";
@@ -30,7 +30,7 @@ export default function MyCoverLettersPage() {
     const account = requireSelectedAccountId();
     const [heads, tmpl, fmts, member] = await Promise.all([
       supabase.from("cv_cover_letter_templates")
-        .select("id,name,file_name,file_type,created_at,template_id,report_format_id")
+        .select("id,name,file_name,file_type,created_at,template_id,report_format_id,is_default")
         .eq("account_id", account).order("name"),
       supabase.from("certificate_templates").select("id,name").eq("account_id",account),
       supabase.from("cv_report_format_library").select("id,format_name").eq("account_id",account),
@@ -76,6 +76,18 @@ export default function MyCoverLettersPage() {
     finally { setBusyId(""); }
   }
 
+  async function makeDefault(item: Cover) {
+    if (!canManage || busyId || item.template_id || item.report_format_id) return;
+    setBusyId(item.id); setMessage("");
+    try {
+      const { error } = await supabase.rpc("cv_choose_default_letterhead", {p_letterhead:item.id});
+      if (error) throw new Error(error.message);
+      setCovers(previous => previous.map(row=>({...row,is_default:row.id===item.id})));
+      setMessage("Default letterhead updated. All ordinary certificate downloads will use this QR placement.");
+    } catch(error) { setMessage(errorText(error)); }
+    finally { setBusyId(""); }
+  }
+
   return <main className="cv-page">
     <div className="cv-shell space-y-5 pb-14">
       <Link href="/dashboard" className="text-sm font-semibold text-teal-800 underline">← Dashboard</Link>
@@ -83,7 +95,7 @@ export default function MyCoverLettersPage() {
         <div>
           <p className="cv-eyebrow mb-2">SAVED REUSABLE FORMATS</p>
           <h1 className="text-3xl font-extrabold !text-white">My Cover Letters</h1>
-          <p className="mt-2 text-sm text-[#d2e5ec]">Save each letterhead and its QR placement once. Generate a fresh cover with certificate details whenever needed.</p>
+          <p className="mt-2 text-sm text-[#d2e5ec]">Your default plain letterhead and QR position apply to every certificate. Optional specialized cover formats can be added for templates or reports.</p>
         </div>
         {canManage && <Link href="/dashboard/cover-letters"
           className="cv-primary !border-[#35bea9] !bg-[#47d5c2] !text-[#082b35]">+ Create Cover Letter Format</Link>}
@@ -96,7 +108,7 @@ export default function MyCoverLettersPage() {
       {loading ? <p role="status" className="cv-panel rounded-xl p-6">Loading cover formats…</p> :
         <section className="cv-panel rounded-2xl p-5 sm:p-6">
           <h2 className="text-lg font-extrabold text-[#173b4b]">Reusable cover-letter formats ({matching.length})</h2>
-          <p className="mt-1 text-xs text-slate-500">Only original formats and layout settings are stored. Downloaded cover letters and completed reports are not retained.</p>
+          <p className="mt-1 text-xs text-slate-500">Use Set as default on your usual plain letterhead. Other formats are optional; downloaded covers and reports are not stored.</p>
           {matching.length===0 ? <div className="mt-4 rounded-xl border border-dashed border-slate-300 bg-slate-50 px-6 py-8 text-center">
             <p className="text-sm font-semibold text-slate-600">{covers.length ? "No formats match your search." : "No reusable cover-letter formats saved yet."}</p>
             {canManage && !covers.length && <Link href="/dashboard/cover-letters"
@@ -109,6 +121,7 @@ export default function MyCoverLettersPage() {
                 </svg>
               </span>
               <div className="min-w-[190px] flex-1">
+                {item.is_default && <p className="mb-1 text-xs font-bold text-teal-700">✓ Default letterhead for all certificates</p>}
                 {renameId===item.id ? <div className="flex flex-wrap items-center gap-2">
                   <input aria-label="Rename cover format" className="cv-field !w-auto min-w-[190px] flex-1" maxLength={100}
                     value={renameValue} onChange={e=>setRenameValue(e.target.value)}
@@ -123,6 +136,11 @@ export default function MyCoverLettersPage() {
                   {" · "}{item.file_type.includes("pdf") ? "PDF" : item.file_type.includes("word") ? "Word" : "Image"}
                 </p>
               </div>
+              {canManage && !item.is_default && !item.template_id && !item.report_format_id &&
+                <button type="button" disabled={!!busyId} onClick={()=>void makeDefault(item)}
+                  className="rounded-xl border border-teal-700 bg-teal-50 px-4 py-2.5 text-sm font-bold text-teal-900 disabled:opacity-50">
+                  Set as default
+                </button>}
               {canManage && renameId!==item.id && <button type="button" className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold"
                 onClick={()=>{setRenameId(item.id);setRenameValue(item.name);}}>Rename</button>}
               {canManage && <Link href={"/dashboard/cover-letters?letterhead="+item.id} className="rounded-xl border border-teal-700 px-4 py-2.5 text-sm font-bold text-teal-800">Edit format</Link>}
