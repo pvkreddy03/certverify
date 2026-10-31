@@ -4,6 +4,9 @@ on:
     branches: [feature/cover-letter-qr-designer-20261030]
     paths:
       - "app/dashboard/cover-letters/**"
+      - "app/dashboard/certificates/**"
+      - "app/dashboard/reports/**"
+      - "components/download-cover-letter.tsx"
       - "app/dashboard/my-cover-letters/**"
       - "components/dashboard-navigation.tsx"
       - "lib/cover-letters/**"
