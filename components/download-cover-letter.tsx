@@ -39,7 +39,7 @@ export function DownloadCoverLetter({
   const [reports, setReports] = useState<WordFormat[]>([]);
   const [coverId, setCoverId] = useState("");
   const [reportId, setReportId] = useState("");
-  const [includeReport, setIncludeReport] = useState(true);
+  const [includeReport, setIncludeReport] = useState(!!preferredReportId);
   const [textOpen, setTextOpen] = useState(true);
   const [manualText, setManualText] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -156,7 +156,7 @@ export function DownloadCoverLetter({
     {loading ? <p role="status" className="mt-4 text-sm text-slate-500">Loading available formats…</p>
       : <div className="mt-4 space-y-4">
         {reports.length > 0 && <label className="block text-sm font-semibold text-slate-800">
-          Word report to include
+          Attach report to PDF (optional)
           <select aria-label="Word report to include" className="cv-field mt-2" value={includeReport ? selectedReportId ?? "" : "none"}
             onChange={event => {
               const value = event.target.value;
