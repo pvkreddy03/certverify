@@ -41,7 +41,11 @@ test("Create Certificate offers saved general/template/report linked cover forma
      inserted=route.request().postDataJSON();
      return route.fulfill({status:201,contentType:"application/json",body:JSON.stringify({id:certificate})});
    }
-   return route.fulfill({status:200,contentType:"application/json",body:JSON.stringify([])});
+   return route.fulfill({status:200,contentType:"application/json",body:JSON.stringify({
+      id:certificate,certificate_id:"CV-TEST-2026-100",status:"Active",created_at:"2026-10-31T08:00:00Z",
+      template_id:template,template_name:"Property Valuation",report_format_id:report,
+      public_verification_id:"30000000-0000-0000-0000-000000000001",
+    })});
  });
  await login(page);
  await page.goto("/dashboard/certificates");
@@ -62,6 +66,8 @@ test("Create Certificate offers saved general/template/report linked cover forma
 });
 
 test("Create Certificate gives a reusable cover setup link and does not force generated PDF storage",async ({page})=>{
+ await page.route("**/rest/v1/certificate_templates*",route=>route.fulfill({status:200,contentType:"application/json",
+   body:JSON.stringify([{id:template,name:"Property Valuation"}])}));
  await page.route("**/rest/v1/cv_cover_letter_templates*",route=>route.fulfill({status:200,contentType:"application/json",body:"[]"}));
  await login(page);
  await page.goto("/dashboard/certificates");
