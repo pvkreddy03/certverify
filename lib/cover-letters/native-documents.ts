@@ -92,8 +92,17 @@ export async function renderWordPages(file: Blob): Promise<HTMLCanvasElement[]> 
     if (sections.length > MAX_PAGES) throw new Error("Word document is more than 30 pages.");
     const result: HTMLCanvasElement[] = [];
     for (const section of sections) {
-      const bounds = section.getBoundingClientRect();
-      if (bounds.width < 100 || bounds.height < 100) throw new Error("Word page dimensions are invalid.");
+      // Some legitimate Word files (e.g. old letterheads and minimal DOCX files)
+      // have no explicit page dimensions. The HTML element can be only a few
+      // lines high; pad that page to A4 instead of rejecting or stretching it.
+      let bounds = section.getBoundingClientRect();
+      if (bounds.width < 500) section.style.width = "794px";
+      bounds = section.getBoundingClientRect();
+      const desiredHeight = bounds.width * 297 / 210;
+      if (bounds.height < desiredHeight) section.style.minHeight = desiredHeight + "px";
+      section.style.backgroundColor = "#ffffff";
+      bounds = section.getBoundingClientRect();
+      if (bounds.width < 500 || bounds.height < 600) throw new Error("Word page dimensions are invalid.");
       const bitmap = await toCanvas(section, {
         pixelRatio: Math.min(2, 1500 / bounds.width), backgroundColor: "#ffffff",
         cacheBust: false, skipFonts: false,
