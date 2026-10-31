@@ -157,7 +157,7 @@ export function DownloadCoverLetter({
       : <div className="mt-4 space-y-4">
         {reports.length > 0 && <label className="block text-sm font-semibold text-slate-800">
           Attach report to PDF (optional)
-          <select aria-label="Word report to include" className="cv-field mt-2" value={includeReport ? selectedReportId ?? "" : "none"}
+          <select aria-label="Attach report to PDF (optional)" className="cv-field mt-2" value={includeReport ? selectedReportId ?? "" : "none"}
             onChange={event => {
               const value = event.target.value;
               setIncludeReport(value !== "none");
