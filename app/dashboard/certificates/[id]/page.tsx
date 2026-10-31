@@ -9,6 +9,7 @@ import { publicVerificationUrl } from "@/lib/certificates/public-verification-ur
 import { IssuerBranding } from "@/components/issuer-branding";
 import { CertificateStatusActions } from "@/components/certificate-status-actions";
 import { DownloadWordReport } from "@/components/download-word-report";
+import { DownloadCoverLetter } from "@/components/download-cover-letter";
 import {geoUrl,parseGeoLocation} from "@/lib/geo/location";
 
 type Certificate = {
@@ -376,16 +377,14 @@ export default function ViewCertificatePage() {
             certificateNumber={certificate.certificate_id} fieldValues={fieldValues}
             preferredFormatId={certificate.report_format_id} />}
 
-          <section className="rounded-2xl border border-teal-200 bg-white p-6 shadow-sm">
-            <div className="flex flex-wrap items-center justify-between gap-4">
-              <div>
-                <h2 className="text-lg font-bold text-slate-900">Printable cover letter</h2>
-                <p className="mt-1 text-sm text-slate-600">Use a saved letterhead. The verification QR and certificate fields are filled automatically, and you can edit the letter before printing.</p>
-              </div>
-              <Link href={"/dashboard/cover-letters?certificate=" + encodeURIComponent(certificate.id)}
-                className="rounded-xl bg-teal-800 px-5 py-3 text-sm font-bold text-white hover:bg-teal-900">Create Cover Letter</Link>
-            </div>
-          </section>
+          {!loadingFields && <DownloadCoverLetter
+            certificateId={certificate.id}
+            certificateNumber={certificate.certificate_id}
+            verificationId={certificate.public_verification_id}
+            templateId={certificate.template_id}
+            preferredReportId={certificate.report_format_id}
+            fieldValues={fieldValues}
+          />}
 
           {/* Certificate Details */}
           <section className="rounded-2xl bg-white p-8 shadow-sm">
