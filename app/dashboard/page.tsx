@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { ProfileAvatarLink } from "@/components/profile-avatar-link";
+import { requireSelectedAccountId } from "@/lib/accounts/context";
 
 type RecentCertificate={id:string;certificate_id:string;status:string;created_at:string};
 type IconName="certificate"|"template"|"scan"|"excel"|"arrow"|"shield";
@@ -37,6 +38,8 @@ export default function DashboardPage(){
   const [verificationCount,setVerificationCount]=useState<number|null>(null);
   const [recent,setRecent]=useState<RecentCertificate[]>([]);
   const [loading,setLoading]=useState(true);
+  const [showLetterheadSetup,setShowLetterheadSetup]=useState(false);
+  const [setupAccountId,setSetupAccountId]=useState("");
 
   useEffect(()=>{
     let active=true;
@@ -61,6 +64,29 @@ export default function DashboardPage(){
     return ()=>{active=false;};
   },[]);
 
+  useEffect(() => {
+    let active=true;
+    async function checkFirstSetup(){
+      const {data:{user}}=await supabase.auth.getUser();
+      if(!user)return;
+      const accountId=requireSelectedAccountId();
+      const key="cv-letterhead-setup-skipped:"+accountId;
+      if(window.localStorage.getItem(key))return;
+      const [heads,member]=await Promise.all([
+        supabase.from("cv_cover_letter_templates").select("id,is_default").eq("account_id",accountId).limit(50),
+        supabase.from("account_members").select("role").eq("account_id",accountId).eq("user_id",user.id).eq("status","active").maybeSingle(),
+      ]);
+      if(!active || heads.error || member.error)return;
+      if(!["owner","admin"].includes(member.data?.role??""))return;
+      if(!(heads.data??[]).some(item=>item.is_default)){
+        setSetupAccountId(accountId);
+        setShowLetterheadSetup(true);
+      }
+    }
+    void checkFirstSetup().catch(()=>{ /* Optional onboarding must not block normal work. */ });
+    return()=>{active=false;};
+  },[]);
+
   return <main className="cv-page">
     <div className="cv-shell space-y-8 cv-entrance">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -75,6 +101,25 @@ export default function DashboardPage(){
         </div>
       </div>
 
+      {showLetterheadSetup && <section aria-label="One-time letterhead setup" className="rounded-2xl border border-teal-200 bg-teal-50 p-5 sm:p-6">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="max-w-2xl">
+            <h2 className="text-lg font-extrabold text-teal-950">Set up your letterhead once (optional)</h2>
+            <p className="mt-2 text-sm leading-6 text-teal-900">
+              Upload your usual letterhead and click where the verification QR should appear.
+              CertVerify will use this automatically for every certificate, in Word or PDF.
+              You can skip setup and add your letterhead later.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Link href="/dashboard/cover-letters" className="rounded-lg bg-teal-800 px-4 py-2.5 text-sm font-bold text-white">Upload letterhead</Link>
+            <button type="button" className="rounded-lg border border-teal-400 bg-white px-4 py-2.5 text-sm font-semibold text-teal-900"
+              onClick={()=>{window.localStorage.setItem("cv-letterhead-setup-skipped:"+setupAccountId,"1");setShowLetterheadSetup(false);}}>
+              Not now
+            </button>
+          </div>
+        </div>
+      </section>}
       <section className="cv-hero">
         <div className="cv-hero__body relative grid gap-8 lg:grid-cols-[minmax(0,1fr)_240px] lg:items-center">
           <div>
