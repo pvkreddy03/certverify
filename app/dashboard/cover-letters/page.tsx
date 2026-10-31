@@ -457,7 +457,7 @@ export default function CoverLettersPage() {
           {setupExpanded && <div className="mt-5 space-y-4 border-t border-slate-100 pt-5">
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="text-sm font-semibold">Link letterhead to a certificate template (optional)
-                <select className="cv-field mt-2" value={linkedTemplateId}
+                <select className="cv-field mt-2" value={linkedTemplateId} disabled={!!current?.is_default}
                   onChange={e => { setLinkedTemplateId(e.target.value); setDefaultFormatId(""); }}>
                   <option value="">Any certificate template</option>
                   {templates.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}
@@ -470,6 +470,9 @@ export default function CoverLettersPage() {
                 </select>
               </label>
             </div>
+            {current?.is_default && <p className="text-xs font-semibold text-teal-800">
+              This is your universal default letterhead. Create a separate format for a specific certificate template or report.
+            </p>}
             <p className="text-xs text-slate-600">Auto-fill uses the same saved fields as your certificate template and report format. Field mappings are reused—no duplicate data entry.</p>
             <label className="block text-sm font-semibold">Reusable letter wording
               <textarea className="cv-field mt-2 min-h-48 w-full font-mono text-sm" value={bodyTemplate}
