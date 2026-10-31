@@ -20,6 +20,7 @@ type Certificate = {
   template_id: string | null;
   template_name: string | null;
   report_format_id: string | null;
+  cover_letter_format_id: string | null;
   public_verification_id: string;
   revoked_at: string | null;
   revoked_by: string | null;
@@ -90,7 +91,7 @@ export default function ViewCertificatePage() {
     const { data, error } = await supabase
       .from("certificates")
       .select(
-        "id, certificate_id, status, created_at, template_id, template_name, report_format_id, public_verification_id, revoked_at, revoked_by, revocation_reason, public_revocation_reason, revocation_previous_status"
+        "id, certificate_id, status, created_at, template_id, template_name, report_format_id, cover_letter_format_id, public_verification_id, revoked_at, revoked_by, revocation_reason, public_revocation_reason, revocation_previous_status"
       )
       .eq("id", id)
       .single();
@@ -319,7 +320,7 @@ export default function ViewCertificatePage() {
         </div>
 
         {justCreated && <p role="status" className="mb-6 rounded-xl border border-emerald-200 bg-emerald-50 p-5 font-medium text-emerald-900">
-          ✓ Certificate saved successfully. Your QR code is below — download PNG or JPEG to insert it into your letterhead or report.
+          ✓ Certificate saved successfully. Your QR is ready. Download the cover letter, complete report, or QR below.
         </p>}
         {errorMessage && (
           <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -383,6 +384,7 @@ export default function ViewCertificatePage() {
             verificationId={certificate.public_verification_id}
             templateId={certificate.template_id}
             preferredReportId={certificate.report_format_id}
+            preferredCoverId={certificate.cover_letter_format_id}
             fieldValues={fieldValues}
           />}
 
