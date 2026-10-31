@@ -353,7 +353,7 @@ export default function CertificatesPage() {
 
           {selectedTemplateId && <div className="rounded-xl border border-[#b8ded8] bg-[#f1faf8] p-5">
             <label className="flex cursor-pointer items-center gap-3 text-sm font-semibold text-slate-900">
-              <input type="checkbox" checked={includeCoverLetter} disabled={saving || coverLoading || compatibleCoverFormats.length === 0}
+              <input type="checkbox" checked={includeCoverLetter} disabled={saving || coverLoading}
                 onChange={event => setIncludeCoverLetter(event.target.checked)} />
               Prepare a Cover Letter too (optional)
             </label>
