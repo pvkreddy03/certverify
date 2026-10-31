@@ -5,7 +5,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { requireSelectedAccountId } from "@/lib/accounts/context";
 import { DEFAULT_PLACEMENT, fillCoverText, savePdf, type CoverPlacement, validatePlacement } from "@/lib/cover-letters/generator";
-import { createPrintableDocument, detectKind, inspectFile, MAX_FILE_BYTES, previewFirstPage, renderPdfPage, type DocumentKind } from "@/lib/cover-letters/native-documents";
+import { createPrintableDocument, detectKind, inspectFile, MAX_FILE_BYTES, previewFirstPage, type DocumentKind } from "@/lib/cover-letters/native-documents";
 import { downloadLetterhead, letterheadStoragePath, removeUncommittedLetterhead, uploadLetterhead } from "@/lib/cover-letters/private-storage";
 import { downloadWordOriginal } from "@/lib/reports/private-storage";
 import { generateWordReport, openWordDocument, type ReportBinding } from "@/lib/reports/docx-visual";
@@ -143,6 +143,7 @@ export default function CoverLettersPage() {
       setPreviewPage(canvas.toDataURL("image/jpeg", 0.86));
     } catch (error) {
       if (token === latestPreview.current) { setPreviewPage(""); setMessage(formatError(error)); }
+      throw error;
     } finally { if (token === latestPreview.current) setSettingUp(false); }
   }
 
@@ -192,7 +193,7 @@ export default function CoverLettersPage() {
     const x = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
     const y = Math.max(0, Math.min(1, (event.clientY - rect.top) / rect.height));
     setLayout(previous => placement === "qr"
-      ? { ...previous, qr_x: Math.min(x, 1 - previous.qr_size), qr_y: Math.min(y, 1 - previous.qr_size * rect.width / rect.height) }
+      ? { ...previous, qr_x: Math.min(x, 1 - previous.qr_size), qr_y: Math.min(y, 1 - previous.qr_size) }
       : { ...previous, text_x: Math.min(x, 1 - previous.text_width), text_y: Math.min(y, 1 - previous.text_height) });
   }
   function pointerDown(event: React.PointerEvent<HTMLDivElement>) {
@@ -245,7 +246,7 @@ export default function CoverLettersPage() {
   }
 
   async function prepareReport(): Promise<Blob> {
-    const selected = visibleFormats.find(item => item.id === reportFormatId);
+    const selected = visibleFormats.find(item => item.id === (reportFormatId || defaultReport));
     if (!selected) throw new Error("Choose the report format to include.");
     const values = { ...fields };
     const missing = [...new Set(selected.bindings.map(item => item.fieldName).filter(key => !(key in values)))];
@@ -260,7 +261,7 @@ export default function CoverLettersPage() {
       if (!chosenSource || !previewPage) throw new Error("Choose a letterhead first.");
       if (!certificate) throw new Error("Choose an issued certificate.");
       if (!matched) throw new Error("This letterhead is linked to a different certificate template. Select a matching certificate.");
-      if (includeReport && !reportFormatId) throw new Error("Choose a Word report format.");
+      if (includeReport && !chosenReportFormat) throw new Error("Choose a Word report format.");
       const report = includeReport ? await prepareReport() : null;
       const output = await createPrintableDocument({
         background: chosenSource, kind, verificationId: certificate.public_verification_id,
