@@ -30,7 +30,7 @@ test("My Cover Letters lists named PDFs and letterheads, supports renaming and r
   await page.route("**/rest/v1/cv_saved_cover_letters*", async route => {
     if (route.request().method()==="PATCH") {
       name = route.request().postDataJSON().name;
-      return route.fulfill({status:200,contentType:"application/json",body:JSON.stringify([{id:saved,name}])});
+      return route.fulfill({status:200,contentType:"application/json",body:JSON.stringify({id:saved,name})});
     }
     return route.fulfill({status:200,contentType:"application/json",
       body:JSON.stringify([{id:saved,account_id:a,certificate_id:cert,letterhead_id:head,
@@ -40,7 +40,7 @@ test("My Cover Letters lists named PDFs and letterheads, supports renaming and r
   await page.route("**/rest/v1/cv_cover_letter_templates*", route => route.fulfill({status:200,contentType:"application/json",
     body:JSON.stringify([{id:head,name:"Office Letterhead",file_type:"application/pdf",created_at:"2026-10-31T02:00:00Z"}])}));
   await page.route("**/rest/v1/certificates*", route => route.fulfill({status:200,contentType:"application/json",
-    body:JSON.stringify([{id:cert,certificate_id:"CV-TEST-001"}])}));
+    body:JSON.stringify([{id:cert,certificate_id:"CV-TEST-001",status:"Active",created_at:"2026-10-31T02:00:00Z"}])}));
   await page.route("**/storage/v1/object/**", route => route.fulfill({status:200,contentType:"application/pdf",body:pdfBytes}));
   await login(page);
   await page.goto("/dashboard/my-cover-letters");
