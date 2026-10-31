@@ -224,7 +224,7 @@ test("certificate details downloads one complete PDF using a report-linked cover
  const wordBytes=await readFile(await wordFile.path());
  expect(wordBytes.subarray(0,4).toString("latin1")).toBe("PK\x03\x04");
  expect(wordBytes.includes(Buffer.from("word/header1.xml"))).toBe(true);
- expect(wordBytes.includes(Buffer.from("word/media/letterhead.jpg"))).toBe(true);
+ expect(wordBytes.includes(Buffer.from("word/media/letterhead.png"))).toBe(true);
  expect(wordBytes.includes(Buffer.from("To Example Customer"))).toBe(true);
 
  const download=page.waitForEvent("download");
