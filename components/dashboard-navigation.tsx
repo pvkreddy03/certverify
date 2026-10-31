@@ -21,7 +21,7 @@ const menu: MenuItem[] = [
   { label: "Templates & Formats", icon: "templates", items: [
     { href: "/dashboard/templates", label: "Templates", icon: "templates" },
     { href: "/dashboard/report-formats", label: "Report Formats", icon: "reports" },
-    { href: "/dashboard/cover-letters", label: "Create Cover Letter", icon: "reports" },
+    { href: "/dashboard/cover-letters", label: "Create Cover Letter Format", icon: "reports" },
     { href: "/dashboard/my-cover-letters", label: "My Cover Letters", icon: "reports" },
   ] },
   { href: "/dashboard/reference-map", label: "Reference Map", icon: "map" },
