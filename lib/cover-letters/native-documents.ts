@@ -55,7 +55,7 @@ async function canvasForImage(file: Blob): Promise<HTMLCanvasElement> {
 export async function renderPdfPage(file: Blob, pageNumber = 1): Promise<HTMLCanvasElement> {
   const pdfjs = await import("pdfjs-dist");
   pdfjs.GlobalWorkerOptions.workerSrc = new URL("pdfjs-dist/build/pdf.worker.min.mjs", import.meta.url).toString();
-  const job = pdfjs.getDocument({ data: new Uint8Array(await file.arrayBuffer()), isEvalSupported: false });
+  const job = pdfjs.getDocument({ data: new Uint8Array(await file.arrayBuffer()) });
   try {
     const pdf = await job.promise;
     if (pdf.numPages > MAX_PAGES) throw new Error("For safety, PDF files can contain at most 30 pages.");
