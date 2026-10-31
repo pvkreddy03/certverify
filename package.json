@@ -25,7 +25,11 @@
     "qrcode": "^1.5.4",
     "react": "19.2.8",
     "react-dom": "19.2.8",
-    "sharp": "^0.35.5"
+    "sharp": "^0.35.5",
+    "docx-preview": "0.4.1",
+    "html-to-image": "1.11.13",
+    "pdf-lib": "1.17.1",
+    "pdfjs-dist": "6.4.299"
   },
   "devDependencies": {
     "@playwright/test": "^1.64.0",
