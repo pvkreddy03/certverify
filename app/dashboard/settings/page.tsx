@@ -247,6 +247,19 @@ export default function SettingsPage() {
                 )}
               </section>
 
+              <Link href="/dashboard/my-cover-letters" className="cv-card cv-card--interactive flex items-start gap-4 rounded-2xl p-6">
+                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#e5f6f0] text-[#087a6f]">
+                  <svg aria-hidden="true" width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                    <path d="M6 2h8l5 5v15H6zM14 2v6h5M9 12h7M9 16h7"/>
+                  </svg>
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-lg font-bold text-[#1c394b]">Letterhead &amp; QR Placement</span>
+                  <span className="mt-1 block text-sm leading-6 text-slate-600">Set or change the default letterhead once for every certificate. Specialized cover formats are optional.</span>
+                  <span className="mt-4 block text-sm font-bold text-[#0a7770]">Manage letterhead →</span>
+                </span>
+              </Link>
+
               {/* Multi-user Upgrade */}
               {account.account_type ===
                 "individual" &&
