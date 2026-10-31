@@ -12,7 +12,7 @@ import { generateWordReport, openWordDocument, type ReportBinding } from "@/lib/
 
 type Letterhead = CoverPlacement & {
   id: string; account_id: string; name: string; file_name: string; file_type: string;
-  storage_path: string; body_template: string; template_id: string | null; report_format_id: string | null;
+  storage_path: string; body_template: string; template_id: string | null; report_format_id: string | null; is_default: boolean;
 };
 type Certificate = {
   id: string; certificate_id: string; public_verification_id: string; template_id: string | null;
@@ -248,7 +248,12 @@ export default function CoverLettersPage() {
       const accountId = requireSelectedAccountId();
       const path = file ? letterheadStoragePath(id, FILE_TYPES[kind]) : current!.storage_path;
       if (file) { await uploadLetterhead(path, file); uploadedPath = path; }
+      // The first account-wide letterhead becomes the automatic default.
+      // Later formats are optional specialized layouts selected per certificate.
+      const defaultForAccount = !linkedTemplateId && !defaultFormatId &&
+        (!!current?.is_default || !saved.some(item => item.is_default));
       const payload = {
+        is_default: defaultForAccount,
         name: clean, account_id: accountId, file_name: file?.name ?? current!.file_name,
         file_type: file ? FILE_TYPES[kind] : current!.file_type, storage_path: path,
         body_template: bodyTemplate, template_id: linkedTemplateId || null,
@@ -257,7 +262,7 @@ export default function CoverLettersPage() {
       const { error } = current
         ? await supabase.from("cv_cover_letter_templates").update(payload).eq("id", id)
         : await supabase.from("cv_cover_letter_templates").insert({ ...payload, id, created_by: user.id });
-      if (error) throw new Error(error.code === "23505" ? "A letterhead with that name already exists." : "Could not save: " + error.message);
+      if (error) throw new Error(error.code === "23505" ? "A letterhead with that name already exists, or another default already exists. Choose your default in My Cover Letters." : "Could not save: " + error.message);
       success = true;
       if (file) setOriginal(file);
       setFile(null); setTemplateId(id);
@@ -311,7 +316,7 @@ export default function CoverLettersPage() {
       <header className="cv-hero"><div className="cv-hero__body">
         <p className="cv-eyebrow mb-2">ONE-TIME SETUP · REPEATABLE PRINTING</p>
         <h1 className="text-3xl font-extrabold !text-white">Cover Letter Format Designer</h1>
-        <p className="mt-2 text-sm text-[#d2e5ec]">Upload a PDF, Word or image letterhead, choose its QR position and save the reusable format once. Generate covers directly from any compatible certificate.</p>
+        <p className="mt-2 text-sm text-[#d2e5ec]">Set up your usual letterhead and QR position once for every certificate. Special template-linked or report-linked formats are optional and can be added later.</p>
       </div></header>
       {message && <p role="status" className="rounded-xl border border-[#addbd6] bg-white p-4 text-sm text-[#214d5f]">{message}</p>}
       {loading ? <p role="status" className="cv-panel p-8">Loading letterhead library…</p> : <>
@@ -337,6 +342,7 @@ export default function CoverLettersPage() {
               <span className="mt-1 block text-xs font-normal text-slate-500">12 MB maximum. Your original file stays private.</span>
             </label>
           </div>}
+          {!current && !saved.some(item=>item.is_default) && <p className="mt-3 text-sm text-teal-800">Your first general letterhead will automatically be used for certificates. You can change it later under My Cover Letters.</p>}
           {!canManage && <p className="mt-3 text-sm text-slate-500">Your organization administrator can add letterheads. You can print using any existing letterhead you have access to.</p>}
         </section>
 
