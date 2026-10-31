@@ -215,7 +215,7 @@ test("certificate details downloads one complete PDF using a report-linked cover
  await expect(cover).toHaveValue(generalId); // default is plain, not a report-linked template
  await cover.selectOption(linkedId); // optional advanced cover
  await expect(page.getByRole("textbox",{name:"Letter text"})).toHaveValue("To Example Customer\nRef CV-2026-001");
- await expect(page.getByRole("combobox",{name:"Word report to include"})).toHaveValue(reportId);
+ await expect(page.getByRole("combobox",{name:"Attach report to PDF (optional)"})).toHaveValue(reportId);
  // Word output is a genuine DOCX with a full-page QR letterhead image and editable text.
  const wordEvent=page.waitForEvent("download");
  await page.getByRole("button",{name:"Download Cover Letter (Word)"}).click();
@@ -237,7 +237,7 @@ test("certificate details downloads one complete PDF using a report-linked cover
  // Closing the text area means plain cover with QR, no separate Plain mode.
  await page.getByRole("button",{name:/Letter text — edit/}).click();
  await expect(page.getByText("Plain letterhead + verification QR")).toBeVisible();
- await page.getByRole("combobox",{name:"Word report to include"}).selectOption("none");
+ await page.getByRole("combobox",{name:"Attach report to PDF (optional)"}).selectOption("none");
  await expect(cover).toHaveValue(generalId);
  const plain=page.waitForEvent("download");
  await page.getByRole("button",{name:"Download Cover Letter"}).click();
