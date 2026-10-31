@@ -9,6 +9,7 @@ import { createPrintableDocument, detectKind } from "@/lib/cover-letters/native-
 import { downloadLetterhead } from "@/lib/cover-letters/private-storage";
 import { downloadWordOriginal } from "@/lib/reports/private-storage";
 import { generateWordReport, openWordDocument, type ReportBinding } from "@/lib/reports/docx-visual";
+import { matchingCoverFormats } from "@/lib/cover-letters/format-options";
 
 type CoverFormat = CoverPlacement & {
   id: string; name: string; file_name: string; file_type: string;
@@ -26,22 +27,12 @@ type Props = {
   verificationId: string;
   templateId: string | null;
   preferredReportId: string | null;
+  preferredCoverId: string | null;
   fieldValues: Field[];
 };
 
-export function matchingCoverFormats(available: CoverFormat[], templateId: string | null, reportFormatId: string | null) {
-  return available.filter(item =>
-    (item.template_id === null || item.template_id === templateId) &&
-    (item.report_format_id === null || item.report_format_id === reportFormatId)
-  ).sort((a, b) => {
-    // Exact report formats come first, then template-specific, then reusable generic.
-    const rank = (format: CoverFormat) => (format.report_format_id ? 4 : 0) + (format.template_id ? 2 : 0);
-    return rank(b) - rank(a) || a.name.localeCompare(b.name);
-  });
-}
-
 export function DownloadCoverLetter({
-  certificateNumber, certificateCreatedAt, verificationId, templateId, preferredReportId, fieldValues,
+  certificateNumber, certificateCreatedAt, verificationId, templateId, preferredReportId, preferredCoverId, fieldValues,
 }: Props) {
   const [covers, setCovers] = useState<CoverFormat[]>([]);
   const [reports, setReports] = useState<WordFormat[]>([]);
@@ -88,7 +79,7 @@ export function DownloadCoverLetter({
   const selectedReportId = includeReport ? reportId || reports[0]?.id || null : null;
   const choices = useMemo(() => matchingCoverFormats(covers, templateId, selectedReportId),
     [covers, templateId, selectedReportId]);
-  const chosen = choices.find(item => item.id === coverId) ?? choices[0];
+  const chosen = choices.find(item => item.id === coverId) ?? choices.find(item => item.id === preferredCoverId) ?? choices[0];
   const values = useMemo(() => {
     const output: Record<string, string> = {};
     for (const item of fieldValues) output[item.field_name] = item.field_value ?? "";
