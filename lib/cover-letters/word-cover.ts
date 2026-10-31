@@ -44,7 +44,7 @@ async function letterheadWithQR(args:{
     publicVerificationUrl(args.verificationId,window.location.origin),
     {width:900,margin:2,errorCorrectionLevel:"M"}));
   ctx.fillStyle="#ffffff";ctx.fillRect(x,y,size,size);ctx.drawImage(image,x,y,size,size);
-  const binary=atob(canvas.toDataURL("image/jpeg",.93).split(",")[1]);
+  const binary=atob(canvas.toDataURL("image/png").split(",")[1]);
   const bytes=new Uint8Array(binary.length);
   for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
   return bytes;
@@ -96,7 +96,7 @@ export async function createWordCoverLetter(args:{
     '<wp:effectExtent l="0" t="0" r="0" b="0"/><wp:wrapNone/>',
     '<wp:docPr id="1" name="Letterhead with verification QR"/><wp:cNvGraphicFramePr/>',
     '<a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">',
-    '<pic:pic><pic:nvPicPr><pic:cNvPr id="0" name="letterhead.jpg"/><pic:cNvPicPr/></pic:nvPicPr>',
+    '<pic:pic><pic:nvPicPr><pic:cNvPr id="0" name="letterhead.png"/><pic:cNvPicPr/></pic:nvPicPr>',
     '<pic:blipFill><a:blip r:embed="rId1"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill>',
     '<pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="7560000" cy="10692000"/></a:xfrm>',
     '<a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr>',
@@ -110,7 +110,7 @@ export async function createWordCoverLetter(args:{
       '<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">',
       '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>',
       '<Default Extension="xml" ContentType="application/xml"/>',
-      '<Default Extension="jpg" ContentType="image/jpeg"/>',
+      '<Default Extension="png" ContentType="image/png"/>',
       '<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>',
       '<Override PartName="/word/header1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.header+xml"/>',
       '</Types>'
@@ -119,11 +119,11 @@ export async function createWordCoverLetter(args:{
     ["word/document.xml",doc],
     ["word/_rels/document.xml.rels",relsStart+'<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/header" Target="header1.xml"/>'+relsEnd],
     ["word/header1.xml",header],
-    ["word/_rels/header1.xml.rels",relsStart+'<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/letterhead.jpg"/>'+relsEnd],
+    ["word/_rels/header1.xml.rels",relsStart+'<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/letterhead.png"/>'+relsEnd],
   ];
   return packageWordParts([
     ...parts.map(part=>({name:part[0],bytes:encoder.encode(part[1])})),
-    {name:"word/media/letterhead.jpg",bytes:jpeg},
+    {name:"word/media/letterhead.png",bytes:jpeg},
   ]);
 }
 export function downloadWordCover(blob:Blob,filename:string){
