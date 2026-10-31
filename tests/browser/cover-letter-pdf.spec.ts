@@ -169,14 +169,17 @@ test("certificate details downloads one complete PDF using a report-linked cover
  });
  const pdfBytes=await samplePdf();
  let savedCopies=0;
- await page.route("**/rest/v1/certificates*",route=>route.fulfill({
+ await page.route("**/rest/v1/certificates*",route=>{
+  if(!route.request().url().includes("id=eq.")) return route.continue();
+  return route.fulfill({
    status:200,contentType:"application/json",body:JSON.stringify({
      id:certificate,certificate_id:"CV-2026-001",status:"Active",created_at:"2026-10-31T00:00:00Z",
      template_id:template,template_name:"Property Valuation",report_format_id:reportId,
      public_verification_id:verify,revoked_at:null,revoked_by:null,revocation_reason:null,
      public_revocation_reason:null,revocation_previous_status:null,
    }),
- }));
+ });
+ });
  await page.route("**/rest/v1/certificate_field_values*",route=>route.fulfill({
    status:200,contentType:"application/json",body:JSON.stringify([
      {id:"42000000-0000-0000-0000-000000000001",certificate_id:certificate,
