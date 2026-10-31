@@ -5,7 +5,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { requireSelectedAccountId } from "@/lib/accounts/context";
 import { DEFAULT_PLACEMENT, fillCoverText, savePdf, type CoverPlacement, validatePlacement } from "@/lib/cover-letters/generator";
-import { createPrintableDocument, detectKind, inspectFile, previewFirstPage, type DocumentKind } from "@/lib/cover-letters/native-documents";
+import { createPrintableDocument, detectKind, inspectFile, previewFirstPage, FILE_TYPES, type DocumentKind } from "@/lib/cover-letters/native-documents";
 import { downloadLetterhead, letterheadStoragePath, removeUncommittedLetterhead, uploadLetterhead } from "@/lib/cover-letters/private-storage";
 import { downloadWordOriginal } from "@/lib/reports/private-storage";
 import { generateWordReport, openWordDocument, type ReportBinding } from "@/lib/reports/docx-visual";
@@ -223,11 +223,11 @@ export default function CoverLettersPage() {
       if (!user) throw new Error("Sign in to save letterhead.");
       const id = current?.id ?? crypto.randomUUID();
       const accountId = requireSelectedAccountId();
-      const path = file ? letterheadStoragePath(id, file.type) : current!.storage_path;
+      const path = file ? letterheadStoragePath(id, FILE_TYPES[kind]) : current!.storage_path;
       if (file) { await uploadLetterhead(path, file); uploadedPath = path; }
       const payload = {
         name: clean, account_id: accountId, file_name: file?.name ?? current!.file_name,
-        file_type: file?.type ?? current!.file_type, storage_path: path,
+        file_type: file ? FILE_TYPES[kind] : current!.file_type, storage_path: path,
         body_template: bodyTemplate, template_id: linkedTemplateId || null,
         report_format_id: defaultFormatId || null, ...layout,
       };
