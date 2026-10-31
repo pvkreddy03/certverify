@@ -131,9 +131,9 @@ export default function MyReportsPage() {
                   className="rounded-xl bg-[#0c756b] px-4 py-3 text-sm font-bold text-white hover:bg-[#085f57]">
                   {expanded ? "Close" : "Download Report"}
                 </button>
-                <Link href={"/dashboard/cover-letters?certificate=" + record.id}
+                <Link href={"/dashboard/certificates/" + record.id}
                   className="rounded-xl border border-teal-700 px-4 py-3 text-sm font-bold text-teal-800 hover:bg-teal-50">
-                  Cover Letter + QR
+                  Download Cover Letter
                 </Link>
               </div>
               {expanded && <div className="border-t border-[#e2eeec] bg-[#f9fcfc] p-5">
