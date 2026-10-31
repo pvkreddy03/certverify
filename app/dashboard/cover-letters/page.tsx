@@ -5,7 +5,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { requireSelectedAccountId } from "@/lib/accounts/context";
 import { DEFAULT_PLACEMENT, fillCoverText, savePdf, type CoverPlacement, validatePlacement } from "@/lib/cover-letters/generator";
-import { createPrintableDocument, detectKind, inspectFile, MAX_FILE_BYTES, previewFirstPage, type DocumentKind } from "@/lib/cover-letters/native-documents";
+import { createPrintableDocument, detectKind, inspectFile, previewFirstPage, type DocumentKind } from "@/lib/cover-letters/native-documents";
 import { downloadLetterhead, letterheadStoragePath, removeUncommittedLetterhead, uploadLetterhead } from "@/lib/cover-letters/private-storage";
 import { downloadWordOriginal } from "@/lib/reports/private-storage";
 import { generateWordReport, openWordDocument, type ReportBinding } from "@/lib/reports/docx-visual";
@@ -235,6 +235,7 @@ export default function CoverLettersPage() {
         : await supabase.from("cv_cover_letter_templates").insert({ ...payload, id, created_by: user.id });
       if (error) throw new Error(error.code === "23505" ? "A letterhead with that name already exists." : "Could not save: " + error.message);
       success = true;
+      if (file) setOriginal(file);
       setFile(null); setTemplateId(id);
       await loadLibrary();
       setSetupExpanded(false);
