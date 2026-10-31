@@ -2,7 +2,7 @@ import { requireSelectedAccountId } from "@/lib/accounts/context";
 import { supabase } from "@/lib/supabase";
 
 const BUCKET = "certverify-letterheads";
-import { DOCX_MIME, PDF_MIME, MAX_FILE_BYTES } from "@/lib/cover-letters/native-documents";
+import { DOCX_MIME, PDF_MIME, MAX_FILE_BYTES, FILE_TYPES, inspectFile } from "@/lib/cover-letters/native-documents";
 const MAX_BYTES = MAX_FILE_BYTES;
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -27,8 +27,8 @@ function assertWorkspacePath(path: string) {
 export async function uploadLetterhead(path: string, file: File) {
   assertWorkspacePath(path);
   if (!file.size || file.size > MAX_BYTES) throw new Error("Letterhead must be 12 MB or smaller.");
-  if (!["image/jpeg", "image/png", PDF_MIME, DOCX_MIME].includes(file.type)) throw new Error("Choose a PDF, DOCX, JPG or PNG letterhead.");
-  const { error } = await supabase.storage.from(BUCKET).upload(path, file, { contentType: file.type, upsert: false });
+  const type = FILE_TYPES[await inspectFile(file)];
+  const { error } = await supabase.storage.from(BUCKET).upload(path, file, { contentType: type, upsert: false });
   if (error) throw new Error("Could not upload private letterhead: " + error.message);
 }
 export async function downloadLetterhead(path: string): Promise<Blob> {
