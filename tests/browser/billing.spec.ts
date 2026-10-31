@@ -272,7 +272,7 @@ test("sub-users have no subscription navigation, no order access and no billing 
 test("report setup remains discoverable and accessible without a paid plan; issuance remains gated", async ({ page, request }) => {
   await request.post("http://127.0.0.1:54329/test/billing-reset");
   await login(page);
-  const templatesGroup = page.getByRole("navigation", { name: "Customer dashboard pages" }).locator("details").nth(1);
+  const templatesGroup = page.getByRole("navigation", { name: "Customer dashboard pages" }).locator('details:has(> summary[aria-label="Templates & Formats"])');
   await templatesGroup.locator("summary").click();
   await expect(templatesGroup.getByRole("link", { name: "Report Formats", exact: true })).toBeVisible();
   await templatesGroup.getByRole("link", { name: "Report Formats", exact: true }).click();
