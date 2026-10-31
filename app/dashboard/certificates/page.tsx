@@ -117,6 +117,8 @@ export default function CertificatesPage() {
   const [saving, setSaving] = useState(false);
 
   const [customFields, setCustomFields] = useState<CertificateField[]>([]);
+  const [fieldsLoading, setFieldsLoading] = useState(false);
+  const [fieldsLoadError, setFieldsLoadError] = useState("");
   const [customFieldValues, setCustomFieldValues] = useState<
     Record<string, string>
   >({});
@@ -141,27 +143,29 @@ export default function CertificatesPage() {
   }, []);
 
   useEffect(() => {
-    async function loadCustomFields() {
-      if (!selectedTemplateId) {
-        setCustomFields([]);
-        setCustomFieldValues({});
-        return;
-      }
-
-      try {
-        const fields = await getCertificateFields(selectedTemplateId);
-        setCustomFields(fields);
-        setCustomFieldValues({});
-      } catch (error) {
-        setMessage(
-          error instanceof Error
-            ? error.message
-            : "Could not load certificate fields."
-        );
-      }
+    let active = true;
+    if (!selectedTemplateId) {
+      void Promise.resolve().then(() => {
+        if (active) {
+          setCustomFields([]); setCustomFieldValues({}); setFieldsLoading(false); setFieldsLoadError("");
+        }
+      });
+      return () => { active = false; };
     }
-
-    loadCustomFields();
+    void Promise.resolve().then(() => {
+      if (active) {
+        setFieldsLoading(true); setFieldsLoadError("");
+        setCustomFields([]); setCustomFieldValues({});
+      }
+    });
+    void getCertificateFields(selectedTemplateId).then(fields => {
+      if (!active) return;
+      setCustomFields(fields); setCustomFieldValues({});
+    }).catch(error => {
+      if (!active) return;
+      setFieldsLoadError(error instanceof Error ? error.message : "Could not load certificate fields.");
+    }).finally(() => { if (active) setFieldsLoading(false); });
+    return () => { active = false; };
   }, [selectedTemplateId]);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -186,6 +190,7 @@ export default function CertificatesPage() {
 
     let insertedId: string | null = null;
     try {
+      if (!selectedTemplateId || fieldsLoading || fieldsLoadError) throw new Error("Certificate fields are not ready. Select a template and try again.");
       if (includeCoverLetter && (coverLoading || !effectiveCoverFormatId)) {
         throw new Error("Choose a compatible saved cover-letter format before saving.");
       }
@@ -305,6 +310,7 @@ export default function CertificatesPage() {
                   return;
                 }
                 setSelectedTemplateId(e.target.value);
+                setMessage("");
               }}
               disabled={loadingTemplates || saving}
               required
@@ -383,6 +389,11 @@ export default function CertificatesPage() {
                 + Create Cover Letter Format
               </Link>
             </div>}
+          </div>}
+
+          {selectedTemplateId && fieldsLoading && <p role="status" className="rounded-lg bg-slate-50 px-4 py-3 text-sm text-slate-700">Loading certificate fields…</p>}
+          {fieldsLoadError && <div role="alert" className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            Could not load required certificate fields: {fieldsLoadError}. Choose the template again before saving.
           </div>}
 
           {/* Custom Fields */}
@@ -464,7 +475,7 @@ export default function CertificatesPage() {
           {/* Save Button */}
           <button
             type="submit"
-            disabled={saving || loadingTemplates || Boolean(createdRecordId)}
+            disabled={saving || loadingTemplates || fieldsLoading || Boolean(fieldsLoadError) || Boolean(createdRecordId)}
             className="cv-primary disabled:cursor-not-allowed disabled:opacity-50"
           >
             {saving ? "Saving..." : "Save Certificate"}
