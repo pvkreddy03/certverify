@@ -14,7 +14,7 @@ type Letterhead = { id: string; name: string; file_type: string; created_at: str
 type Certificate = { id: string; certificate_id: string };
 
 function describeMode(mode: SavedLetter["output_mode"]) {
-  return mode === "qr" ? "QR only" : mode === "auto" ? "Auto-filled" : "Manual letter";
+  return mode === "qr" ? "QR only" : mode === "auto" ? "Auto-filled" : mode === "manual" ? "Manual letter" : "Cover letter";
 }
 function errorText(error: unknown) { return error instanceof Error ? error.message : "Please try again."; }
 
@@ -64,8 +64,8 @@ export default function MyCoverLettersPage() {
   const search = query.trim().toLowerCase();
   const matchedLetters = letters.filter(item =>
     [item.name, certificateNames.get(item.certificate_id) ?? "", describeMode(item.output_mode)]
-      .some(text => text.toLowerCase().includes(search)));
-  const matchedLetterheads = letterheads.filter(item => item.name.toLowerCase().includes(search));
+      .some(text => (text ?? "").toLowerCase().includes(search)));
+  const matchedLetterheads = letterheads.filter(item => (item.name ?? "").toLowerCase().includes(search));
 
   async function download(item: SavedLetter) {
     if (busyId) return;
