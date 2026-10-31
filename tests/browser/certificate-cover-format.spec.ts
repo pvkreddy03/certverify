@@ -41,6 +41,7 @@ test("Create Certificate offers saved general/template/report linked cover forma
      inserted=route.request().postDataJSON();
      return route.fulfill({status:201,contentType:"application/json",body:JSON.stringify({id:certificate})});
    }
+   if(!route.request().url().includes("id=eq.")) return route.continue();
    return route.fulfill({status:200,contentType:"application/json",body:JSON.stringify({
       id:certificate,certificate_id:"CV-TEST-2026-100",status:"Active",created_at:"2026-10-31T08:00:00Z",
       template_id:template,template_name:"Property Valuation",report_format_id:report,
