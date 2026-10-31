@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { PDFDocument, StandardFonts } from "pdf-lib";
+import { readFile } from "node:fs/promises";
 
 const account="10000000-0000-0000-0000-000000000001";
 const template="41000000-0000-0000-0000-000000000001";
@@ -154,4 +155,77 @@ test("Word DOCX upload, certificate autofill and optional merged Word report", a
   await page.getByRole("checkbox",{name:"Include the Word report after the letter"}).check();
   await page.getByRole("button",{name:"Preview PDF"}).click();
   await expect(page.getByRole("link",{name:"Open PDF to print"})).toBeVisible({timeout:30000});
+});
+
+
+test("certificate details downloads one complete PDF using a report-linked cover format and certificate auto-fill",async ({page})=>{
+ const reportId="55000000-0000-0000-0000-000000000001";
+ const generalId="74000000-0000-0000-0000-000000000001";
+ const linkedId="74000000-0000-0000-0000-000000000002";
+ const head=(id:string,name:string,report_format_id:string|null,body_template:string)=>({
+   id,name,report_format_id,template_id:template,body_template,
+   file_type:"application/pdf",file_name:"letterhead.pdf",storage_path:account+"/"+id+"/72000000-0000-0000-0000-000000000001.pdf",
+   qr_x:0.79,qr_y:0.75,qr_size:0.16,text_x:0.13,text_y:0.28,text_width:0.72,text_height:0.42,
+ });
+ const pdfBytes=await samplePdf();
+ let savedCopies=0;
+ await page.route("**/rest/v1/certificates*",route=>route.fulfill({
+   status:200,contentType:"application/json",body:JSON.stringify({
+     id:certificate,certificate_id:"CV-2026-001",status:"Active",created_at:"2026-10-31T00:00:00Z",
+     template_id:template,template_name:"Property Valuation",report_format_id:reportId,
+     public_verification_id:verify,revoked_at:null,revoked_by:null,revocation_reason:null,
+     public_revocation_reason:null,revocation_previous_status:null,
+   }),
+ }));
+ await page.route("**/rest/v1/certificate_field_values*",route=>route.fulfill({
+   status:200,contentType:"application/json",body:JSON.stringify([
+     {id:"42000000-0000-0000-0000-000000000001",certificate_id:certificate,
+       field_name:"Client Name",field_value:"Example Customer",field_type:"text",is_public:true,display_order:1},
+   ]),
+ }));
+ await page.route("**/rest/v1/cv_cover_letter_templates*",route=>route.fulfill({
+   status:200,contentType:"application/json",body:JSON.stringify([
+     head(generalId,"General Cover",null,""),
+     head(linkedId,"Bank Cover",reportId,"To {{Client Name}}\nRef {{Certificate Number}}"),
+   ]),
+ }));
+ await page.route("**/rest/v1/cv_report_format_library*",route=>route.fulfill({
+   status:200,contentType:"application/json",body:JSON.stringify([{
+     id:reportId,template_id:template,account_id:account,format_name:"Bank Report",
+     storage_path:account+"/"+template+"/"+reportId+"/72000000-0000-0000-0000-000000000001.docx",
+     bindings:[],file_name:"report.docx",
+   }]),
+ }));
+ await page.route("**/rest/v1/cv_saved_cover_letters*",route=>{
+   savedCopies++;return route.fulfill({status:500,contentType:"application/json",body:"{}"});
+ });
+ await page.route("**/storage/v1/object/**",route=>{
+   const isDocx=route.request().url().includes("certverify-word-formats");
+   return route.fulfill({status:200,contentType:isDocx?
+     "application/vnd.openxmlformats-officedocument.wordprocessingml.document":"application/pdf",
+     body:isDocx?sampleDocx():pdfBytes});
+ });
+ await login(page);
+ await page.goto("/dashboard/certificates/"+certificate);
+ await expect(page.getByRole("heading",{name:"Download Cover Letter"})).toBeVisible();
+ const cover=page.getByRole("combobox",{name:"Cover letter format"});
+ await expect(cover).toHaveValue(linkedId);
+ await expect(page.getByRole("textbox",{name:"Letter text"})).toHaveValue("To Example Customer\nRef CV-2026-001");
+ await expect(page.getByRole("combobox",{name:"Word report to include"})).toHaveValue(reportId);
+ const download=page.waitForEvent("download");
+ await page.getByRole("button",{name:"Download Cover Letter"}).click();
+ const result=await download;
+ const bytes=await readFile(await result.path());
+ const document=await PDFDocument.load(bytes);
+ expect(document.getPageCount()).toBe(2); // cover page + report printed together
+ expect(savedCopies).toBe(0);
+ // Closing the text area means plain cover with QR, no separate Plain mode.
+ await page.getByRole("button",{name:/Letter text — edit/}).click();
+ await expect(page.getByText("Plain letterhead + verification QR")).toBeVisible();
+ await page.getByRole("combobox",{name:"Word report to include"}).selectOption("none");
+ await expect(cover).toHaveValue(generalId);
+ const plain=page.waitForEvent("download");
+ await page.getByRole("button",{name:"Download Cover Letter"}).click();
+ expect((await PDFDocument.load(await readFile(await (await plain).path()))).getPageCount()).toBe(1);
+ expect(savedCopies).toBe(0);
 });
