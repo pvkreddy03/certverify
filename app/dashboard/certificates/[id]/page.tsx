@@ -378,8 +378,8 @@ export default function ViewCertificatePage() {
             preferredFormatId={certificate.report_format_id} />}
 
           {!loadingFields && <DownloadCoverLetter
-            certificateId={certificate.id}
             certificateNumber={certificate.certificate_id}
+            certificateCreatedAt={certificate.created_at}
             verificationId={certificate.public_verification_id}
             templateId={certificate.template_id}
             preferredReportId={certificate.report_format_id}
