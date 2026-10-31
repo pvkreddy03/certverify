@@ -13,6 +13,7 @@ on:
       - "tests/browser/cover-letter-pdf.spec.ts"
       - "tests/browser/cover-letter-library.spec.ts"
       - "tests/browser/certificate-cover-format.spec.ts"
+      - "tests/browser/customer-page-audit.spec.ts"
       - "lib/repositories/certificates.ts"
       - ".github/workflows/cover-letter-browser.yml"
   workflow_dispatch:
@@ -31,7 +32,7 @@ jobs:
       - run: npm ci
       - run: npx playwright install --with-deps chromium
       - name: Test real PDF and Word rendering, QR placement, field autofill and report merge
-        run: npx playwright test tests/browser/cover-letter-pdf.spec.ts tests/browser/cover-letter-library.spec.ts tests/browser/certificate-cover-format.spec.ts --reporter=line
+        run: npx playwright test tests/browser/cover-letter-pdf.spec.ts tests/browser/cover-letter-library.spec.ts tests/browser/certificate-cover-format.spec.ts tests/browser/customer-page-audit.spec.ts --reporter=line
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
