@@ -21,8 +21,8 @@ type WordFormat = {
 };
 type Field = { field_name: string; field_value: string | null };
 type Props = {
-  certificateId: string;
   certificateNumber: string;
+  certificateCreatedAt: string;
   verificationId: string;
   templateId: string | null;
   preferredReportId: string | null;
@@ -41,7 +41,7 @@ export function matchingCoverFormats(available: CoverFormat[], templateId: strin
 }
 
 export function DownloadCoverLetter({
-  certificateId, certificateNumber, verificationId, templateId, preferredReportId, fieldValues,
+  certificateNumber, certificateCreatedAt, verificationId, templateId, preferredReportId, fieldValues,
 }: Props) {
   const [covers, setCovers] = useState<CoverFormat[]>([]);
   const [reports, setReports] = useState<WordFormat[]>([]);
@@ -93,10 +93,10 @@ export function DownloadCoverLetter({
     const output: Record<string, string> = {};
     for (const item of fieldValues) output[item.field_name] = item.field_value ?? "";
     output["Certificate Number"] = certificateNumber;
-    output["Certificate Date"] = output["Certificate Date"] || new Date().toLocaleDateString("en-IN");
+    output["Certificate Date"] = output["Certificate Date"] || new Date(certificateCreatedAt).toLocaleDateString("en-IN");
     output["Date"] = new Date().toLocaleDateString("en-IN");
     return output;
-  }, [fieldValues, certificateNumber]);
+  }, [fieldValues, certificateNumber, certificateCreatedAt]);
 
   const prefilled = chosen ? fillCoverText(chosen.body_template ?? "", values) : "";
   const currentText = manualText ?? prefilled;
