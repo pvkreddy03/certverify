@@ -163,7 +163,7 @@ test("certificate details downloads one complete PDF using a report-linked cover
  const generalId="74000000-0000-0000-0000-000000000001";
  const linkedId="74000000-0000-0000-0000-000000000002";
  const head=(id:string,name:string,report_format_id:string|null,body_template:string)=>({
-   id,name,report_format_id,template_id:template,body_template,
+   id,name,report_format_id,template_id:report_format_id ? template : null,body_template,
    file_type:"application/pdf",file_name:"letterhead.pdf",storage_path:account+"/"+id+"/72000000-0000-0000-0000-000000000001.pdf",
    qr_x:0.79,qr_y:0.75,qr_size:0.16,text_x:0.13,text_y:0.28,text_width:0.72,text_height:0.42,
  });
