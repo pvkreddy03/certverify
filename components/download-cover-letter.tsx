@@ -85,8 +85,7 @@ export function DownloadCoverLetter({
   const chosen = choices.find(item => item.id === coverId) ??
     choices.find(item => item.id === preferredCoverId) ??
     choices.find(item => item.is_default) ??
-    choices.find(item => !item.template_id && !item.report_format_id) ??
-    choices[0];
+    choices.find(item => !item.template_id && !item.report_format_id);
   const values = useMemo(() => {
     const output: Record<string, string> = {};
     for (const item of fieldValues) output[item.field_name] = item.field_value ?? "";
@@ -175,12 +174,17 @@ export function DownloadCoverLetter({
             Cover letter format
             <select aria-label="Cover letter format" className="cv-field mt-2" value={chosen?.id ?? ""}
               onChange={event => { setCoverId(event.target.value); setManualText(null); setMessage(""); }}>
+              {!choices.some(item => item.is_default || (!item.template_id && !item.report_format_id)) &&
+                <option value="">Plain QR cover (no default letterhead yet)</option>}
               {choices.map(format => <option key={format.id} value={format.id}>
                 {format.name}{format.is_default ? " · Your default letterhead" : format.report_format_id ? " · Report-linked" : format.template_id ? " · Template-linked" : " · General"}
               </option>)}
             </select>
           </label>}
-          {!chosen && <p className="rounded-lg bg-teal-50 p-3 text-sm text-teal-900">No letterhead uploaded yet. A plain A4 page and verification QR will be generated. You can upload your own letterhead at any time.</p>}
+          {!chosen && <p className="rounded-lg bg-teal-50 p-3 text-sm text-teal-900">
+            A plain A4 page with verification QR will be generated.
+            <Link href="/dashboard/cover-letters" className="ml-1 font-bold underline">Upload your letterhead and set the QR position</Link> whenever you are ready.
+          </p>}
 
           <div className="rounded-xl border border-[#d5e7e6] p-4">
             <button type="button" aria-expanded={textOpen}
