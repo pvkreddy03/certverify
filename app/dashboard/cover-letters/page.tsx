@@ -9,6 +9,7 @@ import { createPrintableDocument, detectKind, inspectFile, previewFirstPage, FIL
 import { downloadLetterhead, letterheadStoragePath, removeUncommittedLetterhead, uploadLetterhead } from "@/lib/cover-letters/private-storage";
 import { downloadWordOriginal } from "@/lib/reports/private-storage";
 import { generateWordReport, openWordDocument, type ReportBinding } from "@/lib/reports/docx-visual";
+import { savedCoverPath, uploadSavedCover, rollbackSavedCover } from "@/lib/cover-letters/saved-covers";
 
 type Letterhead = CoverPlacement & {
   id: string; account_id: string; name: string; file_name: string; file_type: string;
@@ -38,6 +39,7 @@ export default function CoverLettersPage() {
   const [templateId, setTemplateId] = useState("");
   const [certificateId, setCertificateId] = useState("");
   const [name, setName] = useState("");
+  const [coverLetterName, setCoverLetterName] = useState("");
   const [linkedTemplateId, setLinkedTemplateId] = useState("");
   const [defaultFormatId, setDefaultFormatId] = useState("");
   const [file, setFile] = useState<File | null>(null);
@@ -62,6 +64,7 @@ export default function CoverLettersPage() {
   const [pageRatio, setPageRatio] = useState(297 / 210);
   const capture = useRef<{x: number; y: number; moving: boolean} | null>(null);
   const saveLock = useRef(false);
+  const initialLetterhead = useRef(false);
   const latestPreview = useRef(0);
   const lastPdf = useRef("");
 
@@ -95,6 +98,25 @@ export default function CoverLettersPage() {
     setTemplates((tmpl.data ?? []) as Template[]);
     setFormats((fmts.data ?? []) as Format[]);
     setCanManage(["owner", "admin"].includes(member.data.role));
+    const requestedHead = new URLSearchParams(window.location.search).get("letterhead");
+    if (!initialLetterhead.current && requestedHead) {
+      initialLetterhead.current = true;
+      const head = (letters.data ?? []).find(item => item.id === requestedHead) as Letterhead | undefined;
+      if (head) {
+        setTemplateId(head.id);
+        setName(head.name);
+        setLinkedTemplateId(head.template_id ?? "");
+        setDefaultFormatId(head.report_format_id ?? "");
+        setLayout({qr_x:head.qr_x,qr_y:head.qr_y,qr_size:head.qr_size,
+          text_x:head.text_x,text_y:head.text_y,text_width:head.text_width,text_height:head.text_height});
+        setBodyTemplate(head.body_template);
+        const data = await downloadLetterhead(head.storage_path);
+        const sourceKind = detectKind({name:head.file_name,type:head.file_type});
+        setOriginal(data);
+        setKind(sourceKind);
+        await createPreview(data,sourceKind);
+      }
+    }
     const requested = new URLSearchParams(window.location.search).get("certificate");
     setCertificateId(previous => previous && (certs.data ?? []).some(item => item.id === previous) ? previous :
       (certs.data ?? []).find(item => item.id === requested)?.id ?? (certs.data ?? [])[0]?.id ?? "");
@@ -149,7 +171,7 @@ export default function CoverLettersPage() {
 
   async function openTemplate(id: string) {
     const candidate = saved.find(item => item.id === id);
-    setTemplateId(id); setMessage(""); setPreviewPage("");
+    setTemplateId(id); setMessage(""); setPreviewPage(""); setCoverLetterName("");
     setFile(null); setOriginal(null); setEditedAuto(null); setPrintUrl("");
     setSetupExpanded(false); setIncludeReport(false);
     if (!candidate) {
@@ -238,9 +260,7 @@ export default function CoverLettersPage() {
       success = true;
       if (file) setOriginal(file);
       setFile(null); setTemplateId(id);
-      await loadLibrary();
-      setSetupExpanded(false);
-      setMessage("Saved. The QR position and optional auto-fill are now ready for reuse.");
+      window.location.assign("/dashboard/my-cover-letters#letterheads");
     } catch (error) {
       if (uploadedPath && !success) await removeUncommittedLetterhead(uploadedPath);
       setMessage(formatError(error));
@@ -256,27 +276,55 @@ export default function CoverLettersPage() {
     const word = await openWordDocument(await downloadWordOriginal(selected.storage_path));
     return generateWordReport(word, selected.bindings, values);
   }
-  async function generate(download: boolean) {
-    if (busy) return;
+  async function generate(action: "preview" | "download" | "save") {
+    if (busy || saveLock.current) return;
     setBusy(true); setMessage("");
+    if (action === "save") saveLock.current = true;
     try {
       if (!chosenSource || !previewPage) throw new Error("Choose a letterhead first.");
       if (!certificate) throw new Error("Choose an issued certificate.");
       if (!matched) throw new Error("This letterhead is linked to a different certificate template. Select a matching certificate.");
       if (includeReport && !chosenReportFormat) throw new Error("Choose a Word report format.");
+      const clean = coverLetterName.trim();
+      if (action === "save" && (clean.length < 2 || clean.length > 120))
+        throw new Error("Name this cover letter (2–120 characters) before saving.");
+      if (action === "save" && (!current || !!file))
+        throw new Error("Save your reusable letterhead and QR position first, then create the finished cover letter.");
       const report = includeReport ? await prepareReport() : null;
       const output = await createPrintableDocument({
         background: chosenSource, kind, verificationId: certificate.public_verification_id,
         body, placement: layout, report,
       });
+      if (action === "save") {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error("Sign in to save the cover letter.");
+        const id = crypto.randomUUID();
+        const path = savedCoverPath(id, user.id);
+        await uploadSavedCover(path, output);
+        let persisted = false;
+        try {
+          const { error } = await supabase.from("cv_saved_cover_letters").insert({
+            id, account_id: requireSelectedAccountId(), certificate_id: certificate.id,
+            letterhead_id: current!.id, name: clean, output_mode: mode,
+            includes_report: includeReport, report_format_id: includeReport ? chosenReportFormat : null,
+            pdf_storage_path: path, created_by: user.id,
+          });
+          if (error) throw new Error("Could not save cover letter: " + error.message);
+          persisted = true;
+        } finally {
+          if (!persisted) await rollbackSavedCover(path);
+        }
+        window.location.assign("/dashboard/my-cover-letters?saved=1");
+        return;
+      }
       const url = URL.createObjectURL(output);
       if (lastPdf.current) URL.revokeObjectURL(lastPdf.current);
       lastPdf.current = url; setPrintUrl(url);
-      if (download) savePdf(output, "Cover Letter - " + safeFile(certificate.certificate_id));
+      if (action === "download") savePdf(output, "Cover Letter - " + safeFile(certificate.certificate_id));
       setMessage(includeReport ? "Cover letter and report created as one PDF. Check pages before printing." :
         "Cover letter created. The verification QR is ready to scan.");
     } catch (error) { setMessage(formatError(error)); }
-    finally { setBusy(false); }
+    finally { setBusy(false); saveLock.current = false; }
   }
 
   useEffect(() => () => { if (lastPdf.current) URL.revokeObjectURL(lastPdf.current); }, []);
@@ -287,7 +335,7 @@ export default function CoverLettersPage() {
 
   return <main className="cv-page">
     <div className="cv-shell space-y-5 pb-14">
-      <Link href="/dashboard" className="text-sm font-semibold text-teal-800 underline">← Dashboard</Link>
+      <div className="flex flex-wrap items-center justify-between gap-2"><Link href="/dashboard" className="text-sm font-semibold text-teal-800 underline">← Dashboard</Link><Link href="/dashboard/my-cover-letters" className="text-sm font-bold text-teal-800 underline">My Cover Letters</Link></div>
       <header className="cv-hero"><div className="cv-hero__body">
         <p className="cv-eyebrow mb-2">ONE-TIME SETUP · REPEATABLE PRINTING</p>
         <h1 className="text-3xl font-extrabold !text-white">Letterhead + Verification QR</h1>
@@ -407,7 +455,10 @@ export default function CoverLettersPage() {
             </section>
 
             <section className="cv-panel rounded-2xl p-5">
-              <h2 className="text-lg font-extrabold text-[#173b4b]">4. Print or download</h2>
+              <h2 className="text-lg font-extrabold text-[#173b4b]">4. Name, save or print</h2>
+              <label className="mt-3 block text-sm font-semibold">Cover letter name
+                <input aria-label="Cover letter name" className="cv-field mt-2" maxLength={120} value={coverLetterName} onChange={e => setCoverLetterName(e.target.value)} placeholder={certificate ? "Cover Letter - " + certificate.certificate_id : "e.g. SBI Valuation Cover"}/>
+              </label>
               <label className="mt-3 flex items-center gap-2 text-sm font-semibold">
                 <input type="checkbox" checked={includeReport} onChange={e => setIncludeReport(e.target.checked)} disabled={visibleFormats.length===0} />
                 Include the Word report after the letter
@@ -419,14 +470,19 @@ export default function CoverLettersPage() {
                 </select>
               </label>}
               <div className="mt-4 grid gap-2 sm:grid-cols-2">
-                <button type="button" className={buttonClass} disabled={!allowed || busy} onClick={() => void generate(false)}>Preview PDF</button>
-                <button type="button" className="cv-primary disabled:opacity-40" disabled={!allowed || busy} onClick={() => void generate(true)}>{busy ? "Preparing…" : "Download PDF"}</button>
+                <button type="button" className={buttonClass} disabled={!allowed || busy} onClick={() => void generate("preview")}>Preview PDF</button>
+                <button type="button" className="cv-primary disabled:opacity-40" disabled={!allowed || busy} onClick={() => void generate("download")}>{busy ? "Preparing…" : "Download PDF"}</button>
               </div>
+              <button type="button" className="cv-primary mt-3 w-full disabled:opacity-40"
+                disabled={!allowed || busy} onClick={() => void generate("save")}>
+                {busy ? "Saving…" : "Save Cover Letter → My Cover Letters"}
+              </button>
+              {!current && <p className="mt-2 text-xs font-medium text-amber-800">To save a finished letter, first save its reusable letterhead and QR placement.</p>}
               {printUrl && <div className="mt-4 space-y-3">
                 <a className="inline-flex rounded-xl bg-[#e0f7ee] px-4 py-3 text-sm font-bold text-teal-900" href={printUrl} target="_blank" rel="noopener noreferrer">Open PDF to print</a>
                 <iframe title="Your finished printable PDF" className="h-96 w-full rounded-lg border" src={printUrl}/>
               </div>}
-              <p className="mt-3 text-xs leading-5 text-slate-500">Nothing you generate is stored. The source letterhead remains private. Always check the print preview and scan the QR before sending.</p>
+              <p className="mt-3 text-xs leading-5 text-slate-500">Preview and Download do not save a record. Choose Save Cover Letter to keep a named PDF in My Cover Letters. Always check the PDF and scan the QR before sending.</p>
             </section>
           </div>
         </div>
@@ -467,7 +523,7 @@ export default function CoverLettersPage() {
             </label>
           </div>}
           <button type="button" className="cv-primary mt-4 disabled:opacity-40" disabled={busy || !previewPage || !canManage}
-            onClick={() => void saveLayout()}>{busy ? "Saving…" : current ? "Save reusable layout" : "Save letterhead & QR placement"}</button>
+            onClick={() => void saveLayout()}>{busy ? "Saving…" : current ? "Save reusable layout → My Cover Letters" : "Save letterhead → My Cover Letters"}</button>
         </section>}
       </>}
     </div>
