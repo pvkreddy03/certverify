@@ -73,10 +73,10 @@ export default function CertificatesPage() {
       setIncludeCoverLetter(false);
       setSelectedCoverFormatId("");
     });
-    void supabase.from("cv_cover_letter_templates")
+    void Promise.resolve(supabase.from("cv_cover_letter_templates")
       .select("id,name,template_id,report_format_id")
       .eq("account_id", requireSelectedAccountId())
-      .order("name")
+      .order("name"))
       .then(({ data, error }) => {
         if (!live) return;
         if (error) throw new Error(error.message);
