@@ -16,10 +16,12 @@ export const FILE_TYPES: Record<DocumentKind, string> = {
 export const extForKind = (kind: DocumentKind) => kind;
 export function detectKind(file: Pick<Blob, "type"> & { name?: string }): DocumentKind {
   const name = (file.name ?? "").toLowerCase();
-  if (name.endsWith(".pdf") && file.type === PDF_MIME) return "pdf";
-  if (name.endsWith(".docx") && file.type === DOCX_MIME) return "docx";
-  if (/\.jpe?g$/.test(name) && file.type === "image/jpeg") return "jpg";
-  if (name.endsWith(".png") && file.type === "image/png") return "png";
+  const declared = file.type.toLowerCase();
+  const accepts = (mime: string) => declared === mime || declared === "" || declared === "application/octet-stream";
+  if (name.endsWith(".pdf") && accepts(PDF_MIME)) return "pdf";
+  if (name.endsWith(".docx") && accepts(DOCX_MIME)) return "docx";
+  if (/\.jpe?g$/.test(name) && accepts("image/jpeg")) return "jpg";
+  if (name.endsWith(".png") && accepts("image/png")) return "png";
   throw new Error("Use a PDF, Word .docx, JPG or PNG letterhead. Older .doc files must be saved as .docx.");
 }
 export async function inspectFile(file: File): Promise<DocumentKind> {
