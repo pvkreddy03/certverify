@@ -8,6 +8,8 @@ import { supabase } from "@/lib/supabase";
 import { LocationPicker } from "@/components/location-picker";
 import {parseGeoLocation} from "@/lib/geo/location";
 import { listReportFormats, type ReportFormat } from "@/lib/reports/private-storage";
+import { requireSelectedAccountId } from "@/lib/accounts/context";
+import { matchingCoverFormats, type LinkedCoverFormat } from "@/lib/cover-letters/format-options";
 
 import {
   generateCertificateId,
@@ -49,6 +51,46 @@ export default function CertificatesPage() {
   const [formatLoadError, setFormatLoadError] = useState("");
   const [includeWordReport, setIncludeWordReport] = useState(false);
   const [selectedFormatId, setSelectedFormatId] = useState("");
+  const [coverFormats, setCoverFormats] = useState<LinkedCoverFormat[]>([]);
+  const [coverLoading, setCoverLoading] = useState(false);
+  const [coverLoadError, setCoverLoadError] = useState("");
+  const [includeCoverLetter, setIncludeCoverLetter] = useState(false);
+  const [selectedCoverFormatId, setSelectedCoverFormatId] = useState("");
+  const compatibleCoverFormats = matchingCoverFormats(
+    coverFormats, selectedTemplateId || null,
+    includeWordReport && selectedFormatId ? selectedFormatId : null
+  );
+  const effectiveCoverFormatId = compatibleCoverFormats.some(item => item.id === selectedCoverFormatId)
+    ? selectedCoverFormatId : compatibleCoverFormats[0]?.id ?? "";
+  useEffect(() => {
+    let live = true;
+    if (!selectedTemplateId) return;
+    void Promise.resolve().then(() => {
+      if (!live) return;
+      setCoverLoading(true);
+      setCoverLoadError("");
+      setCoverFormats([]);
+      setIncludeCoverLetter(false);
+      setSelectedCoverFormatId("");
+    });
+    void supabase.from("cv_cover_letter_templates")
+      .select("id,name,template_id,report_format_id")
+      .eq("account_id", requireSelectedAccountId())
+      .order("name")
+      .then(({ data, error }) => {
+        if (!live) return;
+        if (error) throw new Error(error.message);
+        setCoverFormats((data ?? []) as LinkedCoverFormat[]);
+      })
+      .catch(error => {
+        if (!live) return;
+        setCoverFormats([]);
+        setCoverLoadError(error instanceof Error ? error.message : "Cover formats unavailable.");
+      })
+      .finally(() => { if (live) setCoverLoading(false); });
+    return () => { live = false; };
+  }, [selectedTemplateId]);
+
   useEffect(() => {
     let active = true;
     if (!selectedTemplateId) return;
@@ -144,6 +186,12 @@ export default function CertificatesPage() {
 
     let insertedId: string | null = null;
     try {
+      if (includeCoverLetter && (coverLoading || !effectiveCoverFormatId)) {
+        throw new Error("Choose a compatible saved cover-letter format before saving.");
+      }
+      if (includeWordReport && (formatLoading || !selectedFormatId)) {
+        throw new Error("Choose a Word report format before saving.");
+      }
       for (const field of customFields) {
         if (field.field_type === "location" && customFieldValues[field.id]) {
           if (!parseGeoLocation(customFieldValues[field.id])) throw new Error("Invalid map location for "+field.field_name);
@@ -174,6 +222,7 @@ export default function CertificatesPage() {
         status,
         replaces_certificate_id: replacementId,
         report_format_id: includeWordReport && selectedFormatId ? selectedFormatId : null,
+        cover_letter_format_id: includeCoverLetter ? effectiveCoverFormatId : null,
       });
       insertedId = certificate.id;
       setCreatedRecordId(certificate.id);
@@ -300,6 +349,40 @@ export default function CertificatesPage() {
                 {formats.map(item => <option key={item.id} value={item.id}>{item.format_name}</option>)}
               </select>
             </label>}
+          </div>}
+
+          {selectedTemplateId && <div className="rounded-xl border border-[#b8ded8] bg-[#f1faf8] p-5">
+            <label className="flex cursor-pointer items-center gap-3 text-sm font-semibold text-slate-900">
+              <input type="checkbox" checked={includeCoverLetter} disabled={saving || coverLoading || compatibleCoverFormats.length === 0}
+                onChange={event => setIncludeCoverLetter(event.target.checked)} />
+              Prepare a Cover Letter too (optional)
+            </label>
+            <p className="mt-2 text-xs text-slate-600">
+              Select the saved letterhead and QR placement now. The completed cover is generated from this certificate later—no duplicate PDF is stored.
+              {includeWordReport && " Download the cover and full Word report as one PDF from Certificate Details."}
+            </p>
+            {coverLoading && <p role="status" className="mt-2 text-xs text-slate-600">Loading matching cover-letter formats…</p>}
+            {coverLoadError && <p role="alert" className="mt-2 text-xs text-amber-800">Could not load cover formats: {coverLoadError}</p>}
+            {includeCoverLetter && compatibleCoverFormats.length > 0 && <label className="mt-4 block text-sm font-semibold text-slate-900">
+              Choose Cover Letter Format
+              <select aria-label="Choose cover letter format" className="cv-field mt-2"
+                value={effectiveCoverFormatId} onChange={event => setSelectedCoverFormatId(event.target.value)}
+                disabled={saving} required>
+                {compatibleCoverFormats.map(format => <option key={format.id} value={format.id}>
+                  {format.name}{format.report_format_id ? " · Report-linked" : format.template_id ? " · Template-linked" : " · General"}
+                </option>)}
+              </select>
+            </label>}
+            {!coverLoading && compatibleCoverFormats.length === 0 && <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-white p-3">
+              <p className="max-w-md text-xs text-slate-600">
+                {coverFormats.length ? "No saved cover format matches the current template and Word report selection." :
+                  "No cover-letter format is saved yet. Set up a reusable letterhead with a QR position once."}
+              </p>
+              <Link href={"/dashboard/cover-letters?template=" + encodeURIComponent(selectedTemplateId)}
+                className="rounded-lg border border-teal-700 px-3 py-2 text-xs font-bold text-teal-800">
+                + Create Cover Letter Format
+              </Link>
+            </div>}
           </div>}
 
           {/* Custom Fields */}
