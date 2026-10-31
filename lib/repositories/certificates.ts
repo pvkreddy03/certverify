@@ -28,6 +28,7 @@ export async function createCertificate(certificate: {
   status: string;
   replaces_certificate_id?: string | null;
   report_format_id?: string | null;
+  cover_letter_format_id?: string | null;
 }) {
   /*
    * Get the template name at the exact moment the certificate

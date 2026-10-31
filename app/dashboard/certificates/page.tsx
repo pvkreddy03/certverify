@@ -8,6 +8,8 @@ import { supabase } from "@/lib/supabase";
 import { LocationPicker } from "@/components/location-picker";
 import {parseGeoLocation} from "@/lib/geo/location";
 import { listReportFormats, type ReportFormat } from "@/lib/reports/private-storage";
+import { requireSelectedAccountId } from "@/lib/accounts/context";
+import { matchingCoverFormats, type LinkedCoverFormat } from "@/lib/cover-letters/format-options";
 
 import {
   generateCertificateId,
@@ -49,6 +51,46 @@ export default function CertificatesPage() {
   const [formatLoadError, setFormatLoadError] = useState("");
   const [includeWordReport, setIncludeWordReport] = useState(false);
   const [selectedFormatId, setSelectedFormatId] = useState("");
+  const [coverFormats, setCoverFormats] = useState<(LinkedCoverFormat & {is_default?:boolean})[]>([]);
+  const [coverLoading, setCoverLoading] = useState(false);
+  const [coverLoadError, setCoverLoadError] = useState("");
+  const [includeCoverLetter, setIncludeCoverLetter] = useState(false);
+  const [selectedCoverFormatId, setSelectedCoverFormatId] = useState("");
+  const compatibleCoverFormats = matchingCoverFormats(
+    coverFormats, selectedTemplateId || null,
+    includeWordReport && selectedFormatId ? selectedFormatId : null
+  );
+  const effectiveCoverFormatId = compatibleCoverFormats.some(item => item.id === selectedCoverFormatId)
+    ? selectedCoverFormatId : compatibleCoverFormats[0]?.id ?? "";
+  useEffect(() => {
+    let live = true;
+    if (!selectedTemplateId) return;
+    void Promise.resolve().then(() => {
+      if (!live) return;
+      setCoverLoading(true);
+      setCoverLoadError("");
+      setCoverFormats([]);
+      setIncludeCoverLetter(false);
+      setSelectedCoverFormatId("");
+    });
+    void Promise.resolve(supabase.from("cv_cover_letter_templates")
+      .select("id,name,template_id,report_format_id,is_default")
+      .eq("account_id", requireSelectedAccountId())
+      .order("name"))
+      .then(({ data, error }) => {
+        if (!live) return;
+        if (error) throw new Error(error.message);
+        setCoverFormats((data ?? []) as (LinkedCoverFormat & {is_default?:boolean})[]);
+      })
+      .catch(error => {
+        if (!live) return;
+        setCoverFormats([]);
+        setCoverLoadError(error instanceof Error ? error.message : "Cover formats unavailable.");
+      })
+      .finally(() => { if (live) setCoverLoading(false); });
+    return () => { live = false; };
+  }, [selectedTemplateId]);
+
   useEffect(() => {
     let active = true;
     if (!selectedTemplateId) return;
@@ -75,6 +117,8 @@ export default function CertificatesPage() {
   const [saving, setSaving] = useState(false);
 
   const [customFields, setCustomFields] = useState<CertificateField[]>([]);
+  const [fieldsLoading, setFieldsLoading] = useState(false);
+  const [fieldsLoadError, setFieldsLoadError] = useState("");
   const [customFieldValues, setCustomFieldValues] = useState<
     Record<string, string>
   >({});
@@ -99,27 +143,29 @@ export default function CertificatesPage() {
   }, []);
 
   useEffect(() => {
-    async function loadCustomFields() {
-      if (!selectedTemplateId) {
-        setCustomFields([]);
-        setCustomFieldValues({});
-        return;
-      }
-
-      try {
-        const fields = await getCertificateFields(selectedTemplateId);
-        setCustomFields(fields);
-        setCustomFieldValues({});
-      } catch (error) {
-        setMessage(
-          error instanceof Error
-            ? error.message
-            : "Could not load certificate fields."
-        );
-      }
+    let active = true;
+    if (!selectedTemplateId) {
+      void Promise.resolve().then(() => {
+        if (active) {
+          setCustomFields([]); setCustomFieldValues({}); setFieldsLoading(false); setFieldsLoadError("");
+        }
+      });
+      return () => { active = false; };
     }
-
-    loadCustomFields();
+    void Promise.resolve().then(() => {
+      if (active) {
+        setFieldsLoading(true); setFieldsLoadError("");
+        setCustomFields([]); setCustomFieldValues({});
+      }
+    });
+    void getCertificateFields(selectedTemplateId).then(fields => {
+      if (!active) return;
+      setCustomFields(fields); setCustomFieldValues({});
+    }).catch(error => {
+      if (!active) return;
+      setFieldsLoadError(error instanceof Error ? error.message : "Could not load certificate fields.");
+    }).finally(() => { if (active) setFieldsLoading(false); });
+    return () => { active = false; };
   }, [selectedTemplateId]);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -144,6 +190,13 @@ export default function CertificatesPage() {
 
     let insertedId: string | null = null;
     try {
+      if (!selectedTemplateId || fieldsLoading || fieldsLoadError) throw new Error("Certificate fields are not ready. Select a template and try again.");
+      if (includeCoverLetter && (coverLoading || !effectiveCoverFormatId)) {
+        throw new Error("Choose a compatible saved cover-letter format before saving.");
+      }
+      if (includeWordReport && (formatLoading || !selectedFormatId)) {
+        throw new Error("Choose a Word report format before saving.");
+      }
       for (const field of customFields) {
         if (field.field_type === "location" && customFieldValues[field.id]) {
           if (!parseGeoLocation(customFieldValues[field.id])) throw new Error("Invalid map location for "+field.field_name);
@@ -174,6 +227,7 @@ export default function CertificatesPage() {
         status,
         replaces_certificate_id: replacementId,
         report_format_id: includeWordReport && selectedFormatId ? selectedFormatId : null,
+        cover_letter_format_id: includeCoverLetter ? effectiveCoverFormatId : null,
       });
       insertedId = certificate.id;
       setCreatedRecordId(certificate.id);
@@ -256,6 +310,7 @@ export default function CertificatesPage() {
                   return;
                 }
                 setSelectedTemplateId(e.target.value);
+                setMessage("");
               }}
               disabled={loadingTemplates || saving}
               required
@@ -300,6 +355,48 @@ export default function CertificatesPage() {
                 {formats.map(item => <option key={item.id} value={item.id}>{item.format_name}</option>)}
               </select>
             </label>}
+          </div>}
+
+          {selectedTemplateId && <div className="rounded-xl border border-[#b8ded8] bg-[#f1faf8] p-5">
+            <label className="flex cursor-pointer items-center gap-3 text-sm font-semibold text-slate-900">
+              <input type="checkbox" checked={includeCoverLetter} disabled={saving || coverLoading}
+                onChange={event => setIncludeCoverLetter(event.target.checked)} />
+              Use a specialized cover letter (optional)
+            </label>
+            <p className="mt-2 text-xs text-slate-600">
+              Every certificate automatically receives your default letterhead and saved QR placement. Leave this unchecked unless this certificate needs a different, template-specific cover. Both Word and PDF downloads are available later.
+              {includeWordReport && " The PDF can combine the cover and full report in one download."}
+            </p>
+            {coverLoading && <p role="status" className="mt-2 text-xs text-slate-600">Loading matching cover-letter formats…</p>}
+            {coverLoadError && <p role="alert" className="mt-2 text-xs text-amber-800">Could not load cover formats: {coverLoadError}</p>}
+            {includeCoverLetter && compatibleCoverFormats.length > 0 && <label className="mt-4 block text-sm font-semibold text-slate-900">
+              Choose Cover Letter Format
+              <select aria-label="Choose cover letter format" className="cv-field mt-2"
+                value={effectiveCoverFormatId} onChange={event => setSelectedCoverFormatId(event.target.value)}
+                disabled={saving} required>
+                {compatibleCoverFormats.map(format => <option key={format.id} value={format.id}>
+                  {format.name}{format.report_format_id ? " · Report-linked" : format.template_id ? " · Template-linked" : " · General"}
+                </option>)}
+              </select>
+            </label>}
+            {!coverLoading && compatibleCoverFormats.length === 0 && <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-white p-3">
+              <p className="max-w-md text-xs text-slate-600">
+                {coverFormats.length ? "No specialized cover matches this selection. The default plain letterhead still works." :
+                  "You can issue certificates now using a plain QR cover, or upload your letterhead once for automatic use."}
+              </p>
+              <Link href={"/dashboard/cover-letters?template=" + encodeURIComponent(selectedTemplateId)}
+                className="rounded-lg border border-teal-700 px-3 py-2 text-xs font-bold text-teal-800">
+                Upload / Manage Letterhead
+              </Link>
+            </div>}
+          </div>}
+
+          {selectedTemplateId && coverFormats.some(item => item.is_default) && !includeCoverLetter && <p className="text-xs text-teal-800">
+            Your default account letterhead will be applied automatically. No extra cover-letter selection needed.
+          </p>}
+          {selectedTemplateId && fieldsLoading && <p role="status" className="rounded-lg bg-slate-50 px-4 py-3 text-sm text-slate-700">Loading certificate fields…</p>}
+          {fieldsLoadError && <div role="alert" className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            Could not load required certificate fields: {fieldsLoadError}. Choose the template again before saving.
           </div>}
 
           {/* Custom Fields */}
@@ -381,7 +478,7 @@ export default function CertificatesPage() {
           {/* Save Button */}
           <button
             type="submit"
-            disabled={saving || loadingTemplates || Boolean(createdRecordId)}
+            disabled={saving || loadingTemplates || fieldsLoading || Boolean(fieldsLoadError) || Boolean(createdRecordId)}
             className="cv-primary disabled:cursor-not-allowed disabled:opacity-50"
           >
             {saving ? "Saving..." : "Save Certificate"}

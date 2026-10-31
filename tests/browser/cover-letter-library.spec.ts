@@ -1,0 +1,95 @@
+import { test, expect, type Page } from "@playwright/test";
+
+const account="10000000-0000-0000-0000-000000000001";
+const template="41000000-0000-0000-0000-000000000001";
+const unrelated="41000000-0000-0000-0000-000000000002";
+const report="55000000-0000-0000-0000-000000000001";
+const general="70000000-0000-0000-0000-000000000001";
+const templated="70000000-0000-0000-0000-000000000002";
+const reportLinked="70000000-0000-0000-0000-000000000003";
+const other="70000000-0000-0000-0000-000000000004";
+const certificate="20000000-0000-0000-0000-000000000001";
+
+async function login(page:Page){
+ await page.goto("/login");
+ await page.getByLabel("Email address").fill("existing@example.test");
+ await page.getByLabel("Password",{exact:true}).fill("test-password");
+ await page.getByRole("button",{name:"Sign in",exact:true}).click();
+ await expect(page.getByLabel("Workspace")).toBeVisible();
+}
+test.beforeEach(async ({request})=>{await request.post("http://127.0.0.1:54329/test/reset");});
+
+test("Create Certificate offers saved general/template/report linked cover formats and saves the chosen format",async ({page})=>{
+ let inserted:Record<string,unknown>|null=null;
+ await page.route("**/rest/v1/certificate_templates*",route=>{
+   const isSingle=route.request().url().includes("id=eq.");
+   return route.fulfill({status:200,contentType:"application/json",
+     body:JSON.stringify(isSingle?{id:template,name:"Property Valuation"}:[{id:template,name:"Property Valuation"}])});
+ });
+ await page.route("**/rest/v1/cv_report_format_library*",route=>route.fulfill({status:200,contentType:"application/json",
+   body:JSON.stringify([{id:report,format_name:"Bank Format",template_id:template,account_id:account,bindings:[],storage_path:"path"}])}));
+ await page.route("**/rest/v1/cv_cover_letter_templates*",route=>route.fulfill({status:200,contentType:"application/json",
+   body:JSON.stringify([
+     {id:general,name:"General Cover",template_id:null,report_format_id:null},
+     {id:templated,name:"Property Cover",template_id:template,report_format_id:null},
+     {id:reportLinked,name:"Bank-specific Cover",template_id:template,report_format_id:report},
+     {id:other,name:"Other template",template_id:unrelated,report_format_id:null},
+   ])}));
+ await page.route("**/rest/v1/rpc/cv_generate_certificate_id",route=>route.fulfill({status:200,contentType:"application/json",body:JSON.stringify("CV-TEST-2026-100")}));
+ await page.route("**/rest/v1/certificates*",route=>{
+   if(route.request().method()==="POST"){
+     inserted=route.request().postDataJSON();
+     return route.fulfill({status:201,contentType:"application/json",body:JSON.stringify({id:certificate})});
+   }
+   if(!route.request().url().includes("id=eq.")) return route.continue();
+   return route.fulfill({status:200,contentType:"application/json",body:JSON.stringify({
+      id:certificate,certificate_id:"CV-TEST-2026-100",status:"Active",created_at:"2026-10-31T08:00:00Z",
+      template_id:template,template_name:"Property Valuation",report_format_id:report,
+      public_verification_id:"30000000-0000-0000-0000-000000000001",
+    })});
+ });
+ await login(page);
+ await page.goto("/dashboard/certificates");
+ await page.getByRole("combobox",{name:"Certificate Template"}).selectOption(template);
+ const coverToggle=page.getByRole("checkbox",{name:"Use a specialized cover letter (optional)"});
+ await expect(coverToggle).toBeVisible();
+ await coverToggle.check();
+ const cover=page.getByRole("combobox",{name:"Choose cover letter format"});
+ await expect(cover).toHaveValue(templated); // template-specific before report is selected
+ await expect(cover.locator("option")).toHaveCount(2);
+ await page.getByRole("checkbox",{name:"Prepare a Word report too (optional)"}).check();
+ await expect(cover.locator("option")).toHaveCount(3);
+ await expect(cover).toHaveValue(reportLinked);
+ await cover.selectOption(templated);
+ await page.getByRole("button",{name:"Save Certificate"}).click();
+ await expect(page).toHaveURL(new RegExp("/dashboard/certificates/"+certificate+"\\?created=1"),{timeout:25000});
+ expect(inserted).toMatchObject({template_id:template,report_format_id:report,cover_letter_format_id:templated});
+});
+
+test("Create Certificate gives a reusable cover setup link and does not force generated PDF storage",async ({page})=>{
+ await page.route("**/rest/v1/certificate_templates*",route=>route.fulfill({status:200,contentType:"application/json",
+   body:JSON.stringify([{id:template,name:"Property Valuation"}])}));
+ await page.route("**/rest/v1/cv_cover_letter_templates*",route=>route.fulfill({status:200,contentType:"application/json",body:"[]"}));
+ await login(page);
+ await page.goto("/dashboard/certificates");
+ await page.getByRole("combobox",{name:"Certificate Template"}).selectOption(template);
+ await expect(page.getByRole("checkbox",{name:"Use a specialized cover letter (optional)"})).toBeVisible();
+ await expect(page.getByRole("link",{name:/Upload \/ Manage Letterhead/})).toHaveAttribute("href","/dashboard/cover-letters?template="+template);
+});
+
+
+test("first visit offers optional default letterhead setup without blocking dashboard",async ({page})=>{
+ await page.route("**/rest/v1/cv_cover_letter_templates*",route=>route.fulfill({
+   status:200,contentType:"application/json",body:"[]"
+ }));
+ await login(page);
+ await page.goto("/dashboard");
+ const setup=page.getByRole("region",{name:"One-time letterhead setup"});
+ await expect(setup).toBeVisible();
+ await expect(setup.getByRole("link",{name:"Upload letterhead"})).toHaveAttribute("href","/dashboard/cover-letters");
+ await setup.getByRole("button",{name:"Not now"}).click();
+ await expect(setup).toHaveCount(0);
+ await page.reload();
+ await expect(setup).toHaveCount(0);
+ await expect(page.getByRole("link",{name:"+ Create Certificate"})).toBeVisible();
+});

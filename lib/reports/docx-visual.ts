@@ -298,3 +298,13 @@ export function downloadReport(blob: Blob, filename: string) {
   document.body.appendChild(a); a.click(); a.remove();
   window.setTimeout(() => URL.revokeObjectURL(url), 3000);
 }
+
+/** Assemble a small standards-compliant Word archive without external converters.
+ * Used for on-demand editable cover-letter text on a printable QR letterhead.
+ */
+export function packageWordParts(parts: {name: string; bytes: Uint8Array}[]): Blob {
+  return makeZip(parts.map(part => ({
+    name: part.name, data: part.bytes, crc: checksum(part.bytes),
+    plainSize: part.bytes.length, method: 0,
+  })));
+}
