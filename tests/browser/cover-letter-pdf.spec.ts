@@ -96,7 +96,7 @@ test("upload native PDF, position QR by click and generate QR-only printable PDF
   await mockRecords(page);
   await login(page);
   await page.goto("/dashboard/cover-letters");
-  await expect(page.getByRole("heading", {name:"Letterhead + Verification QR"})).toBeVisible();
+  await expect(page.getByRole("heading", {name:"Cover Letter Format Designer"})).toBeVisible();
   await page.getByPlaceholder("Standard cover letter").fill("Standard Valuation Cover");
   await page.locator('input[type=file]').setInputFiles({
     name:"letterhead.pdf", mimeType:"application/pdf", buffer:await samplePdf(),
@@ -105,8 +105,8 @@ test("upload native PDF, position QR by click and generate QR-only printable PDF
   const paper=page.getByRole("button",{name:"Click or drag to set QR or text position"});
   await expect(paper).toBeVisible();
   await paper.click({position:{x:70,y:140}});
-  await page.getByRole("button",{name:"QR only"}).click();
-  await expect(page.getByText("No text entry needed.",{exact:false})).toBeVisible();
+  await page.getByRole("button",{name:/Example cover-letter text/}).click();
+  await expect(page.getByText("original letterhead and QR", {exact:false})).toBeVisible();
   await page.getByRole("button",{name:"Preview PDF"}).click();
   await expect(page.getByRole("link",{name:"Open PDF to print"})).toBeVisible({timeout:30000});
   const download=page.waitForEvent("download");
@@ -122,8 +122,7 @@ test("manually type a letter in the same PDF upload workflow", async ({page}) =>
     name:"letterhead.pdf",mimeType:"application/pdf",buffer:await samplePdf()
   });
   await expect(page.getByText("Document ready.",{exact:false})).toBeVisible({timeout:30000});
-  await page.getByRole("button",{name:"Type letter"}).click();
-  await page.getByPlaceholder("Enter your covering letter. This wording applies only to this download.").fill("To the Branch Manager\nSubject: Valuation report\nPlease find attached the report.");
+  await page.getByRole("textbox",{name:"Example cover-letter text"}).fill("To the Branch Manager\nSubject: Valuation report\nPlease find attached the report.");
   await page.getByRole("button",{name:"Preview PDF"}).click();
   await expect(page.getByRole("link",{name:"Open PDF to print"})).toBeVisible({timeout:30000});
 });
@@ -149,10 +148,9 @@ test("Word DOCX upload, certificate autofill and optional merged Word report", a
     buffer:sampleDocx(),
   });
   await expect(page.getByText("Document ready.",{exact:false})).toBeVisible({timeout:30000});
-  await page.getByRole("button",{name:"Optional one-time setup: auto-fill and report linking"}).click();
+  await page.getByRole("button",{name:"Format auto-fill and report linking (optional)"}).click();
   await page.getByRole("textbox",{name:"Reusable letter wording"}).fill("Ref {{Certificate Number}}\nProperty {{Property Address}}");
-  await page.getByRole("button",{name:"Auto-fill",exact:true}).click();
-  await expect(page.getByRole("textbox",{name:"Auto-filled letter — you can edit it"})).toHaveValue(/Ref CV-2026-001[\s\S]*Property Bhongir, Telangana/);
+  await expect(page.getByRole("textbox",{name:"Example cover-letter text"})).toHaveValue(/Ref CV-2026-001[\s\S]*Property Bhongir, Telangana/);
   await page.getByRole("checkbox",{name:"Include the Word report after the letter"}).check();
   await page.getByRole("button",{name:"Preview PDF"}).click();
   await expect(page.getByRole("link",{name:"Open PDF to print"})).toBeVisible({timeout:30000});
