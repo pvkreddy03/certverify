@@ -212,11 +212,23 @@ test("certificate details downloads one complete PDF using a report-linked cover
  await page.goto("/dashboard/certificates/"+certificate);
  await expect(page.getByRole("heading",{name:"Download Cover Letter"})).toBeVisible();
  const cover=page.getByRole("combobox",{name:"Cover letter format"});
- await expect(cover).toHaveValue(linkedId);
+ await expect(cover).toHaveValue(generalId); // default is plain, not a report-linked template
+ await cover.selectOption(linkedId); // optional advanced cover
  await expect(page.getByRole("textbox",{name:"Letter text"})).toHaveValue("To Example Customer\nRef CV-2026-001");
  await expect(page.getByRole("combobox",{name:"Word report to include"})).toHaveValue(reportId);
+ // Word output is a genuine DOCX with a full-page QR letterhead image and editable text.
+ const wordEvent=page.waitForEvent("download");
+ await page.getByRole("button",{name:"Download Cover Letter (Word)"}).click();
+ const wordFile=await wordEvent;
+ expect(wordFile.suggestedFilename()).toMatch(/Cover Letter.*CV-2026-001\.docx$/);
+ const wordBytes=await readFile(await wordFile.path());
+ expect(wordBytes.subarray(0,4).toString("latin1")).toBe("PK\x03\x04");
+ expect(wordBytes.includes(Buffer.from("word/header1.xml"))).toBe(true);
+ expect(wordBytes.includes(Buffer.from("word/media/letterhead.jpg"))).toBe(true);
+ expect(wordBytes.includes(Buffer.from("To Example Customer"))).toBe(true);
+
  const download=page.waitForEvent("download");
- await page.getByRole("button",{name:"Download Cover Letter"}).click();
+ await page.getByRole("button",{name:"Download Cover Letter (PDF)"}).click();
  const result=await download;
  const bytes=await readFile(await result.path());
  const document=await PDFDocument.load(bytes);
@@ -231,4 +243,40 @@ test("certificate details downloads one complete PDF using a report-linked cover
  await page.getByRole("button",{name:"Download Cover Letter"}).click();
  expect((await PDFDocument.load(await readFile(await (await plain).path()))).getPageCount()).toBe(1);
  expect(savedCopies).toBe(0);
+});
+
+
+test("without any uploaded letterhead, PDF and Word QR cover downloads still work",async ({page})=>{
+ const blankCertificate={
+   id:certificate,certificate_id:"CV-EMPTY-2026",status:"Active",created_at:"2026-10-31T00:00:00Z",
+   template_id:template,template_name:"Property Valuation",report_format_id:null,
+   cover_letter_format_id:null,public_verification_id:verify,
+ };
+ await page.route("**/rest/v1/certificates*",route=>{
+   if(!route.request().url().includes("id=eq.")) return route.continue();
+   return route.fulfill({status:200,contentType:"application/json",body:JSON.stringify(blankCertificate)});
+ });
+ await page.route("**/rest/v1/cv_cover_letter_templates*",route=>route.fulfill({
+   status:200,contentType:"application/json",body:"[]"
+ }));
+ await page.route("**/rest/v1/cv_report_format_library*",route=>route.fulfill({
+   status:200,contentType:"application/json",body:"[]"
+ }));
+ await page.route("**/rest/v1/certificate_field_values*",route=>route.fulfill({
+   status:200,contentType:"application/json",body:"[]"
+ }));
+ await login(page);
+ await page.goto("/dashboard/certificates/"+certificate);
+ await expect(page.getByText("plain A4 page with verification QR",{exact:false})).toBeVisible();
+ const pdfEvent=page.waitForEvent("download");
+ await page.getByRole("button",{name:"Download Cover Letter (PDF)"}).click();
+ const pdfFile=await pdfEvent;
+ expect((await PDFDocument.load(await readFile(await pdfFile.path()))).getPageCount()).toBe(1);
+ const wordEvent=page.waitForEvent("download");
+ await page.getByRole("button",{name:"Download Cover Letter (Word)"}).click();
+ const wordFile=await wordEvent;
+ const docx=await readFile(await wordFile.path());
+ expect(wordFile.suggestedFilename()).toMatch(/CV-EMPTY-2026\.docx$/);
+ expect(docx.subarray(0,4).toString("latin1")).toBe("PK\x03\x04");
+ expect(docx.includes(Buffer.from("word/header1.xml"))).toBe(true);
 });
