@@ -151,7 +151,7 @@ test("Word DOCX upload, certificate autofill and optional merged Word report", a
   await expect(page.getByText("Document ready.",{exact:false})).toBeVisible({timeout:30000});
   await page.getByRole("button",{name:"Optional one-time setup: auto-fill and report linking"}).click();
   await page.getByRole("textbox",{name:"Reusable letter wording"}).fill("Ref {{Certificate Number}}\nProperty {{Property Address}}");
-  await page.getByRole("button",{name:"Auto-fill"}).click();
+  await page.getByRole("button",{name:"Auto-fill",exact:true}).click();
   await expect(page.getByRole("textbox",{name:"Auto-filled letter — you can edit it"})).toHaveValue(/Ref CV-2026-001[\s\S]*Property Bhongir, Telangana/);
   await page.getByRole("checkbox",{name:"Include the Word report after the letter"}).check();
   await page.getByRole("button",{name:"Preview PDF"}).click();
