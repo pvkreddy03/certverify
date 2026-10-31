@@ -4,17 +4,18 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { requireSelectedAccountId } from "@/lib/accounts/context";
 import { supabase } from "@/lib/supabase";
-import { fillCoverText, savePdf, type CoverPlacement } from "@/lib/cover-letters/generator";
+import { DEFAULT_PLACEMENT, fillCoverText, savePdf, type CoverPlacement } from "@/lib/cover-letters/generator";
 import { createPrintableDocument, detectKind } from "@/lib/cover-letters/native-documents";
 import { downloadLetterhead } from "@/lib/cover-letters/private-storage";
 import { downloadWordOriginal } from "@/lib/reports/private-storage";
 import { generateWordReport, openWordDocument, type ReportBinding } from "@/lib/reports/docx-visual";
 import { matchingCoverFormats } from "@/lib/cover-letters/format-options";
+import { createWordCoverLetter, downloadWordCover, plainLetterheadPdf } from "@/lib/cover-letters/word-cover";
 
 type CoverFormat = CoverPlacement & {
   id: string; name: string; file_name: string; file_type: string;
   storage_path: string; body_template: string;
-  template_id: string | null; report_format_id: string | null;
+  template_id: string | null; report_format_id: string | null; is_default?: boolean;
 };
 type WordFormat = {
   id: string; format_name: string; template_id: string;
@@ -53,7 +54,7 @@ export function DownloadCoverLetter({
       const [{ data: { user } }, { data: coverData, error: coverError }, { data: reportData, error: reportError }] = await Promise.all([
         supabase.auth.getUser(),
         supabase.from("cv_cover_letter_templates")
-          .select("id,name,file_name,file_type,storage_path,body_template,template_id,report_format_id,qr_x,qr_y,qr_size,text_x,text_y,text_width,text_height")
+          .select("id,name,file_name,file_type,storage_path,body_template,template_id,report_format_id,is_default,qr_x,qr_y,qr_size,text_x,text_y,text_width,text_height")
           .eq("account_id", accountId).order("name"),
         supabase.from("cv_report_format_library")
           .select("id,format_name,template_id,storage_path,bindings")
@@ -79,7 +80,13 @@ export function DownloadCoverLetter({
   const selectedReportId = includeReport ? reportId || reports[0]?.id || null : null;
   const choices = useMemo(() => matchingCoverFormats(covers, templateId, selectedReportId),
     [covers, templateId, selectedReportId]);
-  const chosen = choices.find(item => item.id === coverId) ?? choices.find(item => item.id === preferredCoverId) ?? choices[0];
+  // No special format was selected: always prefer the account-wide plain
+  // letterhead, before any template/report-specific optional variants.
+  const chosen = choices.find(item => item.id === coverId) ??
+    choices.find(item => item.id === preferredCoverId) ??
+    choices.find(item => item.is_default) ??
+    choices.find(item => !item.template_id && !item.report_format_id) ??
+    choices[0];
   const values = useMemo(() => {
     const output: Record<string, string> = {};
     for (const item of fieldValues) output[item.field_name] = item.field_value ?? "";
@@ -92,12 +99,26 @@ export function DownloadCoverLetter({
   const prefilled = chosen ? fillCoverText(chosen.body_template ?? "", values) : "";
   const currentText = manualText ?? prefilled;
 
-  async function download() {
-    if (working || !chosen) return;
+  async function download(format: "pdf" | "docx") {
+    if (working) return;
     setWorking(true); setMessage("");
     try {
-      const original = await downloadLetterhead(chosen.storage_path);
-      const kind = detectKind({ name: chosen.file_name, type: chosen.file_type });
+      const original = chosen ? await downloadLetterhead(chosen.storage_path) : null;
+      const kind = chosen ? detectKind({ name: chosen.file_name, type: chosen.file_type }) : null;
+      const placement = chosen ? {
+        qr_x: chosen.qr_x, qr_y: chosen.qr_y, qr_size: chosen.qr_size,
+        text_x: chosen.text_x, text_y: chosen.text_y,
+        text_width: chosen.text_width, text_height: chosen.text_height,
+      } : DEFAULT_PLACEMENT;
+      if (format === "docx") {
+        const word = await createWordCoverLetter({
+          background: original, kind, verificationId,
+          body: textOpen ? currentText : "", placement,
+        });
+        downloadWordCover(word, "Cover Letter - " + certificateNumber + ".docx");
+        setMessage("Word letterhead downloaded with QR at your saved position. Letter text can be edited in Word.");
+        return;
+      }
       let report: Blob | null = null;
       if (includeReport && selectedReportId) {
         const selected = reports.find(item => item.id === selectedReportId);
@@ -109,20 +130,14 @@ export function DownloadCoverLetter({
         report = await generateWordReport(word, bindings, values);
       }
       const pdf = await createPrintableDocument({
-        background: original, kind, verificationId,
-        body: textOpen ? currentText : "",
-        placement: {
-          qr_x: chosen.qr_x, qr_y: chosen.qr_y, qr_size: chosen.qr_size,
-          text_x: chosen.text_x, text_y: chosen.text_y, text_width: chosen.text_width, text_height: chosen.text_height,
-        },
-        report,
+        background: original ?? await plainLetterheadPdf(), kind: kind ?? "pdf",
+        verificationId, body: textOpen ? currentText : "", placement, report,
       });
       if (resultUrl) URL.revokeObjectURL(resultUrl);
-      const url = URL.createObjectURL(pdf);
-      setResultUrl(url);
+      setResultUrl(URL.createObjectURL(pdf));
       savePdf(pdf, "Cover Letter - " + certificateNumber);
-      setMessage(report ? "Downloaded one PDF with your cover letter followed by the full report." :
-        "Downloaded the cover letter PDF with its verification QR.");
+      setMessage(report ? "Downloaded one PDF with the cover letter and full report." :
+        "Downloaded plain letterhead with verification QR.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Could not generate cover letter.");
     } finally { setWorking(false); }
@@ -133,7 +148,7 @@ export function DownloadCoverLetter({
       <div>
         <h2 className="text-lg font-bold text-slate-900">Download Cover Letter</h2>
         <p className="mt-1 text-sm text-slate-600">
-          Use a saved cover format and its QR position. Text is optional. The cover and Word report download together as one PDF.
+          Your usual letterhead and QR position are used automatically. Optional text or specialized cover formats can be selected. PDF includes the complete report when chosen; Word provides an editable cover.
         </p>
       </div>
       <Link className="text-sm font-semibold text-teal-800 underline" href="/dashboard/my-cover-letters">My Cover Letters</Link>
@@ -155,16 +170,17 @@ export function DownloadCoverLetter({
           </select>
         </label>}
 
-        {choices.length ? <>
-          <label className="block text-sm font-semibold text-slate-800">
+        <>
+          {choices.length > 0 && <label className="block text-sm font-semibold text-slate-800">
             Cover letter format
             <select aria-label="Cover letter format" className="cv-field mt-2" value={chosen?.id ?? ""}
               onChange={event => { setCoverId(event.target.value); setManualText(null); setMessage(""); }}>
               {choices.map(format => <option key={format.id} value={format.id}>
-                {format.name}{format.report_format_id ? " · Report-linked" : format.template_id ? " · Template-linked" : " · General"}
+                {format.name}{format.is_default ? " · Your default letterhead" : format.report_format_id ? " · Report-linked" : format.template_id ? " · Template-linked" : " · General"}
               </option>)}
             </select>
-          </label>
+          </label>}
+          {!chosen && <p className="rounded-lg bg-teal-50 p-3 text-sm text-teal-900">No letterhead uploaded yet. A plain A4 page and verification QR will be generated. You can upload your own letterhead at any time.</p>}
 
           <div className="rounded-xl border border-[#d5e7e6] p-4">
             <button type="button" aria-expanded={textOpen}
@@ -181,18 +197,20 @@ export function DownloadCoverLetter({
             </div>}
             {!textOpen && <p className="mt-2 text-xs text-teal-800">Plain letterhead + verification QR, no text.</p>}
           </div>
-          <button type="button" disabled={working} onClick={() => void download()}
-            className="rounded-xl bg-teal-800 px-5 py-3 text-sm font-bold text-white hover:bg-teal-900 disabled:opacity-50">
-            {working ? "Preparing full PDF…" : "Download Cover Letter" }
-          </button>
+          <div className="flex flex-wrap gap-3">
+            <button type="button" disabled={working} onClick={() => void download("pdf")}
+              className="rounded-xl bg-teal-800 px-5 py-3 text-sm font-bold text-white hover:bg-teal-900 disabled:opacity-50">
+              {working ? "Preparing…" : "Download Cover Letter (PDF)"}
+            </button>
+            <button type="button" disabled={working} onClick={() => void download("docx")}
+              className="rounded-xl border border-teal-700 bg-white px-5 py-3 text-sm font-bold text-teal-800 hover:bg-teal-50 disabled:opacity-50">
+              {working ? "Preparing…" : "Download Cover Letter (Word)"}
+            </button>
+          </div>
           {resultUrl && <a href={resultUrl} target="_blank" rel="noopener noreferrer"
             className="ml-3 inline-block text-sm font-semibold text-teal-900 underline">Open and print the complete PDF</a>}
-        </> : <div className="rounded-xl bg-teal-50 p-4">
-          <p className="text-sm font-semibold text-teal-900">No compatible saved cover-letter format found.</p>
-          <p className="mt-1 text-sm text-slate-700">Create a reusable cover format and link it to this certificate template or selected report format.</p>
-          <Link href="/dashboard/cover-letters" className="mt-2 inline-block text-sm font-semibold text-teal-800 underline">Manage cover-letter formats</Link>
-        </div>}
-        <p className="text-xs text-slate-500">Only your reusable format is stored. No per-certificate cover-letter PDF is saved.</p>
+        </>
+        <p className="text-xs text-slate-500">PDF and Word covers are generated only when downloaded. No certificate-specific copy is stored.</p>
       </div>}
     {message && <p role="status" className="mt-3 text-sm font-medium text-[#2a5864]">{message}</p>}
   </section>;
