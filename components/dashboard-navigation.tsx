@@ -158,7 +158,7 @@ export function DashboardNavigation({ role, accounts = [], selectedAccountId: se
           </span>
         </Link>
 
-        <div className="min-w-0 flex-1 lg:hidden">
+        <div className="min-w-0 flex-1 xl:hidden">
           <details ref={mobileMenu} className="group relative w-fit">
             <summary aria-label="Open navigation menu" className="flex cursor-pointer list-none items-center gap-2 rounded-xl border border-white/15 bg-white/10 px-3 py-2.5 text-xs font-bold text-white [&::-webkit-details-marker]:hidden">
               <svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
@@ -178,7 +178,7 @@ export function DashboardNavigation({ role, accounts = [], selectedAccountId: se
           </details>
         </div>
 
-        <div className="hidden min-w-0 flex-1 flex-nowrap items-center gap-0.5 py-0.5 lg:flex">
+        <div className="hidden min-w-0 flex-1 flex-nowrap items-center gap-0.5 py-0.5 xl:flex">
           {visible.map((item, i) => {
             if (isGroup(item)) {
               const highlighted = item.items.some(entry => entry.href === active);
