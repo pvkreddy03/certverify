@@ -392,7 +392,7 @@ export default function CertificatesPage() {
           </div>}
 
           {selectedTemplateId && coverFormats.some(item => item.is_default) && !includeCoverLetter && <p className="text-xs text-teal-800">
-            Your account's default letterhead will be applied automatically. No extra cover-letter selection needed.
+            Your default account letterhead will be applied automatically. No extra cover-letter selection needed.
           </p>}
           {selectedTemplateId && fieldsLoading && <p role="status" className="rounded-lg bg-slate-50 px-4 py-3 text-sm text-slate-700">Loading certificate fields…</p>}
           {fieldsLoadError && <div role="alert" className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
