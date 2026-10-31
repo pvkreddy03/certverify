@@ -16,11 +16,13 @@ const menu: MenuItem[] = [
   { label: "My Certificates", icon: "certificates", items: [
     { href: "/dashboard/certificates/list", label: "My Certificates", icon: "certificates" },
     { href: "/dashboard/reports", label: "My Reports", icon: "reports" },
+    { href: "/dashboard/my-cover-letters", label: "My Cover Letters", icon: "reports" },
   ] },
   { label: "Templates & Formats", icon: "templates", items: [
     { href: "/dashboard/templates", label: "Templates", icon: "templates" },
     { href: "/dashboard/report-formats", label: "Report Formats", icon: "reports" },
-    { href: "/dashboard/cover-letters", label: "Cover Letters", icon: "reports" },
+    { href: "/dashboard/cover-letters", label: "Create Cover Letter", icon: "reports" },
+    { href: "/dashboard/my-cover-letters", label: "My Cover Letters", icon: "reports" },
   ] },
   { href: "/dashboard/reference-map", label: "Reference Map", icon: "map" },
   { href: "/dashboard/team", label: "Team", icon: "team", managerOnly: true },
@@ -80,6 +82,7 @@ export function DashboardNavigation({ role, accounts = [], selectedAccountId: se
   const [signOutError, setSignOutError] = useState("");
   const firstMenu = useRef<HTMLDetailsElement>(null);
   const secondMenu = useRef<HTMLDetailsElement>(null);
+  const mobileMenu = useRef<HTMLDetailsElement>(null);
   const active = currentRoute(pathname);
 
   useEffect(() => {
@@ -96,12 +99,13 @@ export function DashboardNavigation({ role, accounts = [], selectedAccountId: se
   useEffect(() => {
     firstMenu.current?.removeAttribute("open");
     secondMenu.current?.removeAttribute("open");
+    mobileMenu.current?.removeAttribute("open");
   }, [pathname]);
 
   useEffect(() => {
     const closeOutside = (event: PointerEvent) => {
       const target = event.target as Node | null;
-      for (const item of [firstMenu.current, secondMenu.current]) {
+      for (const item of [firstMenu.current, secondMenu.current, mobileMenu.current]) {
         if (item && target && !item.contains(target)) item.removeAttribute("open");
       }
     };
@@ -109,6 +113,7 @@ export function DashboardNavigation({ role, accounts = [], selectedAccountId: se
       if (event.key === "Escape") {
         firstMenu.current?.removeAttribute("open");
         secondMenu.current?.removeAttribute("open");
+        mobileMenu.current?.removeAttribute("open");
       }
     };
     document.addEventListener("pointerdown", closeOutside);
@@ -153,20 +158,27 @@ export function DashboardNavigation({ role, accounts = [], selectedAccountId: se
           </span>
         </Link>
 
-        <div className="min-w-0 flex-1 xl:hidden">
-          <label htmlFor="customer-jump" className="sr-only">Navigate to page</label>
-          <select id="customer-jump" aria-label="Navigate to page" value={active}
-            onChange={e => window.location.assign(e.target.value)}
-            className="w-full rounded-xl border border-white/15 bg-[#1a2e49] px-3 py-2.5 text-sm font-semibold text-white">
-            {mobileGroups.map((group, i) => group.group
-              ? <optgroup key={group.group} label={group.group}>
-                  {group.options.map(item => <option key={item.href} value={item.href}>{item.label}</option>)}
-                </optgroup>
-              : group.options.map(item => <option key={i + ":" + item.href} value={item.href}>{item.label}</option>))}
-          </select>
+        <div className="min-w-0 flex-1 lg:hidden">
+          <details ref={mobileMenu} className="group relative w-fit">
+            <summary aria-label="Open navigation menu" className="flex cursor-pointer list-none items-center gap-2 rounded-xl border border-white/15 bg-white/10 px-3 py-2.5 text-xs font-bold text-white [&::-webkit-details-marker]:hidden">
+              <svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+              Menu <Chevron/>
+            </summary>
+            <div className="absolute left-0 top-[calc(100%+7px)] z-50 max-h-[75vh] w-[min(82vw,300px)] overflow-y-auto rounded-xl border border-slate-200 bg-white p-2 shadow-2xl">
+              {mobileGroups.map((group,index) => <div key={index}>
+                {group.group && <p className="px-3 pb-1 pt-2 text-xs font-bold uppercase tracking-wide text-slate-400">{group.group}</p>}
+                {group.options.map(item => <Link key={item.href} href={item.href}
+                  onClick={() => mobileMenu.current?.removeAttribute("open")}
+                  className={"flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-semibold " +
+                    (active===item.href ? "bg-teal-50 text-teal-800" : "text-slate-700 hover:bg-slate-100")}>
+                  <NavigationIcon kind={item.icon}/>{item.label}
+                </Link>)}
+              </div>)}
+            </div>
+          </details>
         </div>
 
-        <div className="hidden min-w-0 flex-1 flex-nowrap items-center gap-0.5 py-0.5 xl:flex">
+        <div className="hidden min-w-0 flex-1 flex-nowrap items-center gap-0.5 py-0.5 lg:flex">
           {visible.map((item, i) => {
             if (isGroup(item)) {
               const highlighted = item.items.some(entry => entry.href === active);
