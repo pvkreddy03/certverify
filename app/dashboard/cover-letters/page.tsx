@@ -182,7 +182,8 @@ export default function CoverLettersPage() {
       // Validate Word/PDF before uploading: the same preview is shown when printing.
       await createPreview(input, fileKind);
       setFile(input); setOriginal(null); setKind(fileKind);
-      setSetupExpanded(true);
+      // Advanced mappings stay collapsed until the user chooses to open them.
+      setSetupExpanded(false);
       setMessage("Document ready. Drag QR onto the page or click a position, then save the layout.");
     } catch (error) { setMessage(formatError(error)); }
   }
