@@ -76,3 +76,20 @@ test("Create Certificate gives a reusable cover setup link and does not force ge
  await expect(page.getByRole("checkbox",{name:"Use a specialized cover letter (optional)"})).toBeVisible();
  await expect(page.getByRole("link",{name:/Upload \/ Manage Letterhead/})).toHaveAttribute("href","/dashboard/cover-letters?template="+template);
 });
+
+
+test("first visit offers optional default letterhead setup without blocking dashboard",async ({page})=>{
+ await page.route("**/rest/v1/cv_cover_letter_templates*",route=>route.fulfill({
+   status:200,contentType:"application/json",body:"[]"
+ }));
+ await login(page);
+ await page.goto("/dashboard");
+ const setup=page.getByRole("region",{name:"One-time letterhead setup"});
+ await expect(setup).toBeVisible();
+ await expect(setup.getByRole("link",{name:"Upload letterhead"})).toHaveAttribute("href","/dashboard/cover-letters");
+ await setup.getByRole("button",{name:"Not now"}).click();
+ await expect(setup).toHaveCount(0);
+ await page.reload();
+ await expect(setup).toHaveCount(0);
+ await expect(page.getByRole("link",{name:"+ Create Certificate"})).toBeVisible();
+});
