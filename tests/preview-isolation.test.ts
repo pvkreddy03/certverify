@@ -124,3 +124,17 @@ test("preview QR origin cannot point to an unreviewed production or third-party 
   for(const origin of ["https://other.example","https://certverify-beta.vercel.app","http://certverify-staging.vercel.app"])
     assert.throws(()=>assertPreviewIsolation({...previewEnv,NEXT_PUBLIC_VERIFICATION_ORIGIN:origin}));
 });
+
+test("ValuerSeal preview origin is permitted only for the approved branded branch",()=>{
+  const ownBranch = {
+    ...previewEnv,
+    VERCEL_GIT_COMMIT_REF:"change/valuerseal-brand-remove-admin-geo-20261106",
+    NEXT_PUBLIC_APP_URL:"https://valuerseal.com",
+    NEXT_PUBLIC_VERIFICATION_ORIGIN:"https://valuerseal.com",
+  };
+  assert.doesNotThrow(()=>assertPreviewIsolation(ownBranch));
+  assert.equal(previewOrigin(ownBranch),"https://valuerseal.com");
+  assert.throws(()=>assertPreviewIsolation({...ownBranch,VERCEL_GIT_COMMIT_REF:"feature/another-branch"}));
+  assert.throws(()=>assertPreviewIsolation({...ownBranch,NEXT_PUBLIC_APP_URL:"https://impostor.valuerseal.com"}));
+  assert.throws(()=>assertPreviewIsolation({...ownBranch,CERTVERIFY_SANDBOX_PROJECT_REF:"jhnxztaqfikgvkshifel"}));
+});
