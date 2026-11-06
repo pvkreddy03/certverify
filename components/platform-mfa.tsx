@@ -57,7 +57,7 @@ export function PlatformMfa({
     setMessage("");
     const { data, error } = await supabase.auth.mfa.enroll({
       factorType: "totp",
-      friendlyName: accountSecurity ? "CertVerify account security" : "CertVerify platform approval",
+      friendlyName: accountSecurity ? "ValuerSeal account security" : "ValuerSeal platform approval",
     });
     if (error) {
       setMessage("Authenticator setup failed. Refresh the page and retry, or sign in again.");
@@ -140,7 +140,7 @@ export function PlatformMfa({
               </summary>
               <p className="mt-3 text-sm">
                 In Microsoft Authenticator choose Other account → Enter code manually.
-                Set the account name to <strong>CertVerify</strong> and enter this setup key:
+                Set the account name to <strong>ValuerSeal</strong> and enter this setup key:
               </p>
               <label className="mt-3 block text-sm font-medium" htmlFor="certverify-totp-setup-key">
                 Authenticator setup key

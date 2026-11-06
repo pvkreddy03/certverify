@@ -173,7 +173,7 @@ export default function SettingsPage() {
           </h1>
 
           <p className="mt-2 text-slate-600">
-            Manage your CertVerify account and
+            Manage your ValuerSeal account and
             organization settings.
           </p>
         </div>

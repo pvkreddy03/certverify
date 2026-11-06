@@ -131,7 +131,7 @@ export default function SubscriptionOrdersPage() {
                 onClick={() => void cancelRequest(request.id)}>Cancel request</button>}
           </article>)}</div>}
       </section>
-      <p className="text-center text-xs text-slate-500">Your order history is a record of payment and subscription status, not a tax invoice. If you need a tax invoice, contact CertVerify support.</p>
+      <p className="text-center text-xs text-slate-500">Your order history is a record of payment and subscription status, not a tax invoice. If you need a tax invoice, contact ValuerSeal support.</p>
     </>}
   </div></main>;
 }

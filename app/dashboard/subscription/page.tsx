@@ -139,7 +139,7 @@ export default function SubscriptionPage() {
           <div className="max-w-xl space-y-3">
             <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[.18em] text-[#8bf4e3]">
               <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10"><Icon name="card"/></span>
-              CertVerify membership
+              ValuerSeal membership
             </div>
             <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl">A plan that works for you.</h1>
             <p className="text-sm leading-6 text-[#d7f3ef] sm:text-base">Pick what fits your practice. Your certificate records, QR verification and organization workspace stay together as you grow.</p>
@@ -217,8 +217,8 @@ export default function SubscriptionPage() {
 
           {eligible.length === 0 ? <div className="cv-panel rounded-3xl border-amber-200 p-7">
             <h3 className="text-lg font-bold text-[#253e50]">No plans are currently available for this account</h3>
-            <p className="mt-2 text-sm leading-6 text-slate-600">Plans must be activated and marked visible by the CertVerify platform administrator, and their availability dates must include today. Your account and existing documents are unaffected.</p>
-            <p className="mt-3 text-sm font-medium text-amber-800">Please contact CertVerify support for available subscription plans. No payment can be requested until a plan is published.</p>
+            <p className="mt-2 text-sm leading-6 text-slate-600">Plans must be activated and marked visible by the ValuerSeal platform administrator, and their availability dates must include today. Your account and existing documents are unaffected.</p>
+            <p className="mt-3 text-sm font-medium text-amber-800">Please contact ValuerSeal support for available subscription plans. No payment can be requested until a plan is published.</p>
             {s.can_manage && s.period && <button type="button" disabled={busy}
               onClick={() => void act({ action: "quote", planId: s.period!.plan_id, seats: s.period!.licensed_seats, coupon, intent: "renewal" })}
               className="mt-5 rounded-xl bg-[#0e746c] px-5 py-3 text-sm font-bold text-white hover:bg-[#095e56] disabled:opacity-50">

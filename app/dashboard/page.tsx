@@ -92,7 +92,7 @@ export default function DashboardPage(){
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <p className="cv-eyebrow"><span className="h-2 w-2 rounded-full bg-[#0d978f]"/> Your workspace</p>
-          <h1 className="mt-2 text-[28px] font-extrabold tracking-tight text-[#172a45] sm:text-4xl">Welcome to CertVerify</h1>
+          <h1 className="mt-2 text-[28px] font-extrabold tracking-tight text-[#172a45] sm:text-4xl">Welcome to ValuerSeal</h1>
           <p className="mt-2 text-sm text-[#687991]">Auto-fill your documents, verify authenticity, manage secure records and revisit references—all in one workspace.</p>
         </div>
         <div className="flex items-center gap-3">
@@ -107,7 +107,7 @@ export default function DashboardPage(){
             <h2 className="text-lg font-extrabold text-teal-950">Set up your letterhead once (optional)</h2>
             <p className="mt-2 text-sm leading-6 text-teal-900">
               Upload your usual letterhead and click where the verification QR should appear.
-              CertVerify will use this automatically for every certificate, in Word or PDF.
+              ValuerSeal will use this automatically for every certificate, in Word or PDF.
               You can skip setup and add your letterhead later.
             </p>
           </div>

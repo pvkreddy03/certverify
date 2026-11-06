@@ -185,7 +185,7 @@ export default function ViewCertificatePage() {
     });
 
     link.download =
-      `CertVerify-${certificate.certificate_id}.${format === "jpeg" ? "jpg" : "png"}`;
+      `ValuerSeal-${certificate.certificate_id}.${format === "jpeg" ? "jpg" : "png"}`;
 
     document.body.appendChild(link);
     link.click();
@@ -481,7 +481,7 @@ export default function ViewCertificatePage() {
             </p>
 
             <p className="mt-1 text-xs text-slate-400">
-              Verification provided by CertVerify
+              Verification provided by ValuerSeal
             </p>
           </section>
 
