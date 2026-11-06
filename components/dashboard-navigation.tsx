@@ -148,12 +148,12 @@ export function DashboardNavigation({ role, accounts = [], selectedAccountId: se
   return (
     <nav aria-label="Customer dashboard pages" className="sticky top-0 z-30 border-b border-white/10 bg-[#0d1b32] text-white shadow-[0_8px_28px_rgba(9,22,44,.10)]">
       <div className="mx-auto flex max-w-[1480px] flex-nowrap items-center gap-2 px-4 py-3 md:px-6">
-        <Link href="/dashboard" aria-label="CertVerify dashboard" className="group mr-1 inline-flex shrink-0 items-center gap-3 rounded-xl px-1 py-1">
+        <Link href="/dashboard" aria-label="ValuerSeal dashboard" className="group mr-1 inline-flex shrink-0 items-center gap-3 rounded-xl px-1 py-1">
           <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#44d2be] to-[#13998e] text-[#092b39] shadow-[0_5px_18px_rgba(44,205,179,.2)]">
             <svg aria-hidden="true" width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m5 12 5 5L20 6"/><path d="M3 3h11M3 21h18"/></svg>
           </span>
           <span className="hidden flex-col leading-tight 2xl:flex">
-            <span className="text-[16px] font-extrabold tracking-tight">CertVerify<span className="text-[#5be4d0]">.</span></span>
+            <span className="text-[16px] font-extrabold tracking-tight">ValuerSeal<span className="text-[#5be4d0]">.</span></span>
             <span className="text-[10px] font-medium tracking-[.13em] text-[#9ab7c7]">WORKSPACE</span>
           </span>
         </Link>

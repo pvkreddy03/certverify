@@ -14,9 +14,9 @@ export default async function PlatformLayout({ children }: { children: React.Rea
     <header className="sticky top-0 z-40 border-b border-slate-200 bg-[#0d1b32] text-white shadow-lg">
       <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
-          <Link href="/platform" className="flex items-center gap-3" aria-label="CertVerify administration home">
+          <Link href="/platform" className="flex items-center gap-3" aria-label="ValuerSeal administration home">
             <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-teal-400 text-xl font-black text-slate-900">✓</span>
-            <span><span className="block text-lg font-extrabold">CertVerify Control Center</span>
+            <span><span className="block text-lg font-extrabold">ValuerSeal Control Center</span>
               <span className="block text-xs font-medium text-teal-200">Platform administration · Secure access</span></span>
           </Link>
           <div className="flex items-center gap-3 text-xs">

@@ -20,7 +20,7 @@ export default async function VerifyCertificatePage({ params }: { params: Promis
       <h1 className="text-2xl font-bold">{unavailable ? "Verification Temporarily Unavailable" : "Certificate Not Found"}</h1>
       <p className="mt-4 text-slate-600">{unavailable ? "We could not check the current status. Please try again; this is not a validity result." : "This link could not identify a certificate. Ask the issuer for the certificate's current QR code."}</p>
     </section>
-    <footer className="mt-6 text-center text-sm"><Link href="/">Powered by CertVerify</Link></footer>
+    <footer className="mt-6 text-center text-sm"><Link href="/">Powered by ValuerSeal</Link></footer>
   </main>;
   const presentation = statusPresentation(certificate.status);
   return <main className="mx-auto max-w-2xl px-6 py-12">
@@ -51,7 +51,7 @@ export default async function VerifyCertificatePage({ params }: { params: Promis
           </dl>}
         </section>
       </div>
-      <footer className="border-t p-5 text-center text-xs text-slate-500"><Link href="/" className="font-medium text-blue-700">Powered by CertVerify</Link></footer>
+      <footer className="border-t p-5 text-center text-xs text-slate-500"><Link href="/" className="font-medium text-blue-700">Powered by ValuerSeal</Link></footer>
     </article>
   </main>;
 }

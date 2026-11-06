@@ -13,7 +13,6 @@ const actions = [
   { href:"/platform/branding", title:"Branding approvals", description:"Review and decide pending branding requests", icon:"✓" },
   { href:"/platform/contact", title:"Support and contact", description:"Manage public contact details", icon:"✉" },
   { href:"/platform/audit", title:"Audit trail", description:"Review administrator actions", icon:"☷" },
-  { href:"/platform/geo", title:"Geo intelligence", description:"MFA-protected, aggregated regional map analytics", icon:"⌖" },
 ];
 
 function Overview() {
@@ -87,7 +86,7 @@ export default function PlatformPage() {
   return <main className="mx-auto max-w-7xl space-y-8 px-4 py-8 sm:px-6">
     <section className="rounded-3xl bg-gradient-to-r from-[#102b47] via-[#184b57] to-[#087e75] p-7 text-white shadow-lg sm:p-9">
       <p className="text-xs font-bold uppercase tracking-[.18em] text-teal-200">Platform control center</p>
-      <h1 className="mt-3 text-3xl font-extrabold sm:text-4xl">Manage CertVerify with confidence.</h1>
+      <h1 className="mt-3 text-3xl font-extrabold sm:text-4xl">Manage ValuerSeal with confidence.</h1>
       <p className="mt-3 max-w-2xl text-sm leading-6 text-teal-50">View subscriptions, organizations, security and customer activity from one place. Administrative changes remain access-controlled and audited.</p>
     </section>
     <section>
