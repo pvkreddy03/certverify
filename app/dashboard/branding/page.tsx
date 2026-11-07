@@ -141,14 +141,14 @@ export default function BrandingPage() {
       <h2 className="text-xl font-semibold">{internalOwner ? "Save organization branding" : firstLogoOnly ? "Activate your first logo" : "Request branding change"}</h2>
       {!internalOwner && profile.firstLogoAvailable && <p className="rounded border border-teal-200 bg-teal-50 p-3 text-sm text-teal-900">
         First logo setup requires no approval. Upload a logo, keep the existing organization name and details unchanged, then select <strong>Save first logo now</strong>. Any later logo replacement, removal or branding update requires approval.
-      </p>
+      </p>}
       {internalOwner && profile.requests.some((r)=>["pending","needs_information","permission_granted"].includes(r.status)) &&
         <p className="rounded border border-teal-200 bg-teal-50 p-3 text-sm text-teal-900">The form is prefilled with your earlier pending branding request. Review it, then save directly; the old request will be closed.</p>}
       {!internalOwner && hasOpenRequest && <p role="status" className="rounded border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
         {firstLogoOnly
           ? "Your earlier pending branding request will be cancelled when you activate the first logo. Submit any other proposed changes again for approval."
           : "A request is already awaiting review. See Requests and decisions below; another branding change cannot be submitted until it is resolved."}
-      </p>
+      </p>}
       <label className="block">Company or professional name<input className="mt-2 block w-full rounded border p-3" value={name} onChange={(event)=>setName(event.target.value)} minLength={2} maxLength={160} required disabled={busy} /></label>
       <label className="block">Public professional details<textarea className="mt-2 block w-full rounded border p-3" value={details} onChange={(event)=>setDetails(event.target.value)} maxLength={2000} disabled={busy} /></label>
       <label className="block">Proposed logo<input className="mt-2 block" type="file" accept="image/png,image/jpeg,image/webp" disabled={busy} onChange={(event)=>{ const file=event.target.files?.[0];if (file) void upload(file); }} /></label>
