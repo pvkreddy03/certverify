@@ -22,6 +22,7 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
   const [upgrading, setUpgrading] = useState(false);
+  const [internalWorkspace, setInternalWorkspace] = useState(false);
 
   async function loadAccount() {
     setLoading(true);
@@ -86,6 +87,8 @@ export default function SettingsPage() {
       return;
     }
 
+    const { data: internalAccess } = await supabase.rpc("cv_my_internal_workspace");
+    setInternalWorkspace(internalAccess === true);
     setAccount(accountData);
 
     setMembership({
@@ -208,7 +211,11 @@ export default function SettingsPage() {
                   <span className="mt-4 block text-sm font-bold text-[#0a7770]">Edit profile →</span>
                 </span>
               </Link>
-              {membership.role === "owner" && <Link href="/dashboard/subscription" className="cv-card cv-card--interactive flex items-start gap-4 rounded-2xl p-6">
+              {membership.role === "owner" && internalWorkspace && <section className="cv-card rounded-2xl p-6" role="status">
+                <h2 className="text-lg font-bold text-teal-900">Super Admin — Internal access active</h2>
+                <p className="mt-2 text-sm text-slate-600">This organization does not need a subscription or branding approval. Your access is complimentary while your verified platform-owner permission remains active.</p>
+              </section>}
+              {membership.role === "owner" && !internalWorkspace && <Link href="/dashboard/subscription" className="cv-card cv-card--interactive flex items-start gap-4 rounded-2xl p-6">
                 <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#e7f2fb] text-[#2454a0]">
                   <svg aria-hidden="true" viewBox="0 0 24 24" width="25" height="25" fill="none" stroke="currentColor" strokeWidth="1.8">
                     <rect x="2" y="5" width="20" height="14" rx="3"/><path d="M2 10h20M7 15h4"/>
