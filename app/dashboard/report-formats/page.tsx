@@ -50,7 +50,6 @@ export default function ReportFormatsPage() {
   }, []);
 
   const canCreate = !!member && (member.role === "owner" || member.role === "admin" || member.can_manage_templates === true);
-  const count = formats.length;
   const visibleFormats = formats.filter(format => {
     const template = templates.find(item => item.id === format.template_id);
     const text = (format.format_name + " " + (template?.name ?? "")).toLowerCase();
