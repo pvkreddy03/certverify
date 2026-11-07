@@ -35,7 +35,7 @@ export default function BrandingPage() {
     setAuthorized(!!account && canManageAccount(account.role));
     const isInternalOwner=account?.role==="owner" && admin.data===true && !admin.error;
     const earlierProposal=isInternalOwner
-      ? data.requests.find((entry)=>["pending","needs_information","permission_granted"].includes(entry.status))
+      ? data.requests.find((entry: BrandingProfile["requests"][number])=>["pending","needs_information","permission_granted"].includes(entry.status))
       : null;
     setInternalOwner(isInternalOwner);
     setRoleReady(true);
@@ -52,7 +52,7 @@ export default function BrandingPage() {
       setAuthorized(!!account && canManageAccount(account.role));
       const isInternalOwner=account?.role==="owner" && admin.data===true && !admin.error;
       const earlierProposal=isInternalOwner
-        ? data.requests.find((entry)=>["pending","needs_information","permission_granted"].includes(entry.status))
+        ? data.requests.find((entry: BrandingProfile["requests"][number])=>["pending","needs_information","permission_granted"].includes(entry.status))
         : null;
       setInternalOwner(isInternalOwner);
       setRoleReady(true);
