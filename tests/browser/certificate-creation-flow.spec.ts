@@ -64,8 +64,9 @@ test("saving once opens the certificate and automatically shows downloadable QR"
   });
   await expect(page).toHaveURL(new RegExp(`/dashboard/certificates/${certificate}\\?created=1`));
   expect(inserts).toBe(1);
-  await expect(page.getByRole("status")).toContainText("Certificate saved successfully");
+  await expect(page.getByRole("status").filter({hasText:"Certificate saved."})).toBeVisible();
   await expect(page.getByAltText("QR code for CV-FIXTURE-1")).toBeVisible();
+  await page.getByText("QR image only",{exact:false}).first().click();
   await expect(page.getByRole("button", { name: "Download PNG" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Download JPEG" })).toBeVisible();
 });
