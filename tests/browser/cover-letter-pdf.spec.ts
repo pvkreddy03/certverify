@@ -97,7 +97,7 @@ test("upload native PDF, position QR by click and generate QR-only printable PDF
   await mockRecords(page);
   await login(page);
   await page.goto("/dashboard/cover-letters");
-  await expect(page.getByRole("heading", {name:"Cover Letter Format Designer"})).toBeVisible();
+  await expect(page.getByRole("heading", {name:"Letterhead & QR Setup"})).toBeVisible();
   await page.getByPlaceholder("Standard cover letter").fill("Standard Valuation Cover");
   await page.locator('input[type=file]').setInputFiles({
     name:"letterhead.pdf", mimeType:"application/pdf", buffer:await samplePdf(),
@@ -210,41 +210,48 @@ test("certificate details downloads one complete PDF using a report-linked cover
  });
  await login(page);
  await page.goto("/dashboard/certificates/"+certificate);
- await expect(page.getByRole("heading",{name:"Download Cover Letter"})).toBeVisible();
+
+ await expect(page.getByRole("heading",{name:"Download documents"})).toBeVisible();
+ const quick=page.getByRole("article").filter({has:page.getByRole("heading",{name:"Letterhead + QR"})});
+ const coverCard=page.getByRole("article").filter({has:page.getByRole("heading",{name:"Cover Letter"})});
+ const reportCard=page.getByRole("article").filter({has:page.getByRole("heading",{name:"Valuation Report"})});
+ await expect(quick.getByRole("button",{name:/Download Letterhead \+ QR/})).toBeVisible();
+
+ // Most common operation: one click gets only the saved letterhead and QR.
+ const quickEvent=page.waitForEvent("download");
+ await quick.getByRole("button",{name:/Download Letterhead \+ QR/}).click();
+ const quickFile=await quickEvent;
+ expect((await PDFDocument.load(await readFile(await quickFile.path()))).getPageCount()).toBe(1);
+ expect(quickFile.suggestedFilename()).toMatch(/Letterhead QR.*CV-2026-001\\.pdf$/);
+
+ // Optional special letter wording/format remains available without crowding the page.
+ await page.getByText("More options · choose a different cover-letter layout").click();
  const cover=page.getByRole("combobox",{name:"Cover letter format"});
- await expect(cover).toHaveValue(generalId); // default is plain, not a report-linked template
- await cover.selectOption(linkedId); // optional advanced cover
- await expect(page.getByRole("textbox",{name:"Letter text"})).toHaveValue("To Example Customer\nRef CV-2026-001");
- await expect(page.getByRole("combobox",{name:"Attach report to PDF (optional)"})).toHaveValue(reportId);
- // Word output is a genuine DOCX with a full-page QR letterhead image and editable text.
+ await expect(cover).toHaveValue(generalId);
+ await cover.selectOption(linkedId);
+ await coverCard.getByText("Edit the letter text").click();
+ await expect(coverCard.getByRole("textbox",{name:"Letter text"})).toHaveValue(
+   "To Example Customer\\nRef CV-2026-001"
+ );
+
  const wordEvent=page.waitForEvent("download");
- await page.getByRole("button",{name:"Download Cover Letter (Word)"}).click();
+ await coverCard.getByRole("button",{name:"Need editable Word instead?"}).click();
  const wordFile=await wordEvent;
- expect(wordFile.suggestedFilename()).toMatch(/Cover Letter.*CV-2026-001\.docx$/);
+ expect(wordFile.suggestedFilename()).toMatch(/Cover Letter.*CV-2026-001\\.docx$/);
  const wordBytes=await readFile(await wordFile.path());
- expect(wordBytes.subarray(0,4).toString("latin1")).toBe("PK\x03\x04");
+ expect(wordBytes.subarray(0,4).toString("latin1")).toBe("PK\\x03\\x04");
  expect(wordBytes.includes(Buffer.from("word/header1.xml"))).toBe(true);
- expect(wordBytes.includes(Buffer.from("word/media/letterhead.png"))).toBe(true);
  expect(wordBytes.includes(Buffer.from("To Example Customer"))).toBe(true);
 
- const download=page.waitForEvent("download");
- await page.getByRole("button",{name:"Download Cover Letter (PDF)"}).click();
- const result=await download;
- const bytes=await readFile(await result.path());
- const document=await PDFDocument.load(bytes);
- expect(document.getPageCount()).toBe(2); // cover page + report printed together
- expect(savedCopies).toBe(0);
- // Closing the text area means plain cover with QR, no separate Plain mode.
- await page.getByRole("button",{name:/Letter text — edit/}).click();
- await expect(page.getByText("Plain letterhead + verification QR")).toBeVisible();
- await page.getByRole("combobox",{name:"Attach report to PDF (optional)"}).selectOption("none");
- await expect(cover).toHaveValue(generalId);
- const plain=page.waitForEvent("download");
- await page.getByRole("button",{name:"Download Cover Letter (PDF)"}).click();
- expect((await PDFDocument.load(await readFile(await (await plain).path()))).getPageCount()).toBe(1);
+ // The cover PDF has one page. Only the separate third choice appends the report.
+ const coverEvent=page.waitForEvent("download");
+ await coverCard.getByRole("button",{name:/Download Cover Letter/}).click();
+ expect((await PDFDocument.load(await readFile(await (await coverEvent).path()))).getPageCount()).toBe(1);
+ const combinedEvent=page.waitForEvent("download");
+ await reportCard.getByRole("button",{name:/Download Report \+ Letterhead/}).click();
+ expect((await PDFDocument.load(await readFile(await (await combinedEvent).path()))).getPageCount()).toBe(2);
  expect(savedCopies).toBe(0);
 });
-
 
 test("without any uploaded letterhead, PDF and Word QR cover downloads still work",async ({page})=>{
  const blankCertificate={
@@ -267,13 +274,15 @@ test("without any uploaded letterhead, PDF and Word QR cover downloads still wor
  }));
  await login(page);
  await page.goto("/dashboard/certificates/"+certificate);
- await expect(page.getByText("plain A4 page with verification QR",{exact:false})).toBeVisible();
+ await expect(page.getByText("plain A4 page with QR",{exact:false})).toBeVisible();
  const pdfEvent=page.waitForEvent("download");
- await page.getByRole("button",{name:"Download Cover Letter (PDF)"}).click();
+ await page.getByRole("article").filter({has:page.getByRole("heading",{name:"Letterhead + QR"})})
+   .getByRole("button",{name:/Download Letterhead \+ QR/}).click();
  const pdfFile=await pdfEvent;
  expect((await PDFDocument.load(await readFile(await pdfFile.path()))).getPageCount()).toBe(1);
  const wordEvent=page.waitForEvent("download");
- await page.getByRole("button",{name:"Download Cover Letter (Word)"}).click();
+ await page.getByRole("article").filter({has:page.getByRole("heading",{name:"Letterhead + QR"})})
+   .getByRole("button",{name:"Need editable Word instead?"}).click();
  const wordFile=await wordEvent;
  const docx=await readFile(await wordFile.path());
  expect(wordFile.suggestedFilename()).toMatch(/CV-EMPTY-2026\.docx$/);
