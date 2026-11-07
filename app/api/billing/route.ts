@@ -22,13 +22,14 @@ async function requireOwner(request: Request) {
 export async function GET(request: Request) {
   try {
     const { client } = await requireOwner(request);
-    const [status, catalog] = await Promise.all([
+    const [status, catalog, internal] = await Promise.all([
       client.rpc("cv_subscription_status"),
       client.rpc("cv_pricing_catalog"),
+      client.rpc("cv_my_internal_workspace"),
     ]);
-    if (status.error || catalog.error)
+    if (status.error || catalog.error || internal.error)
       throw new RequestError("Subscription details could not be loaded.", 503);
-    return privateJson({ subscription: status.data, plans: catalog.data });
+    return privateJson({ subscription: status.data, plans: catalog.data, internalWorkspace: internal.data === true });
   } catch (error) {
     return requestErrorResponse(error);
   }
@@ -36,6 +37,9 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const { client } = await authenticatedRequest(request);
+    const { data: internal, error: internalError } = await client.rpc("cv_my_internal_workspace");
+    if (internalError) throw new RequestError("Subscription permissions could not be verified.",503);
+    if (internal === true) throw new RequestError("Your internal administrator workspace has unrestricted complimentary access. No subscription or payment is required.",403);
     let body: unknown;
     try {
       body = await request.json();
