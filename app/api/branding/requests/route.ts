@@ -4,7 +4,20 @@ export async function POST(request: Request) {
   try {
     const { client }=await authenticatedRequest(request);
     const body=await request.json();
-    if (body.action==="direct") {
+    if (body.action==="initial_logo") {
+      // Approval-free only once per organization, enforced against immutable
+      // branding history under a database account-row lock.
+      const { data,error }=await client.rpc("cv_set_initial_brand_logo",{
+        p_logo:body.logoAssetId,
+      });
+      if (error) {
+        if (error.code==="42501") throw new RequestError("Only an active organization owner or administrator can set the first logo.",403);
+        if (error.code==="23505") throw new RequestError("Your organization has already used its first-logo setup. Submit a branding request for approval.",409);
+        if (error.code==="22023") throw new RequestError("Upload and verify your first logo before saving.",400);
+        throw new RequestError("Your first logo could not be activated. Refresh the page and try again.",409);
+      }
+      return Response.json(data,{ headers:{ "Cache-Control":"private, no-store" } });
+    } else if (body.action==="direct") {
       // MFA and workspace ownership are enforced by this database RPC.
       // A mere "admin" label or customer-side flag is never sufficient.
       const { data,error }=await client.rpc("cv_platform_owner_branding_save",{
