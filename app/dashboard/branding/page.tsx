@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Image from "next/image";
+import { BrandingLogo } from "@/components/branding-logo";
 import { PlatformMfa } from "@/components/platform-mfa";
 import { supabase } from "@/lib/supabase";
 import { selectedAccountId, canManageAccount, type AccountMembership } from "@/lib/accounts/context";
@@ -159,7 +159,7 @@ export default function BrandingPage() {
         <p className="mt-1 break-all">{selectedLogoName}</p>
       </div>}
       <p className="text-sm text-slate-600">Static PNG, JPEG or WebP, up to 2 MB and 4096 × 4096 pixels. Logos are normalized and metadata is removed.</p>
-      {logo && <><Image src={`/api/branding/logo/${logo}?account=${selectedAccountId()}`} alt="Proposed issuer logo" width={96} height={96} unoptimized /><button type="button" disabled={busy} onClick={()=>setLogo(null)} className="text-red-700">Request logo removal</button></>}
+      {logo && <><BrandingLogo src={`/api/branding/logo/${logo}?account=${selectedAccountId()}`} alt="Proposed issuer logo" size={96} /><button type="button" disabled={busy} onClick={()=>setLogo(null)} className="text-red-700">Request logo removal</button></>}
       <label className="block">Explanation (optional)<textarea className="mt-2 block w-full rounded border p-3" value={explanation} onChange={(event)=>setExplanation(event.target.value)} maxLength={2000} disabled={busy} /></label>
       <button disabled={busy || submitted || uploadState==="uploading" || uploadState==="failed" ||
           (!internalOwner && hasOpenRequest && !firstLogoOnly)}
@@ -200,12 +200,12 @@ export default function BrandingPage() {
     </p>}
     {profile?.current && <section className="rounded border bg-white p-6"><h2 className="text-xl font-semibold">Current approved identity</h2>
       <p className="mt-3 font-medium">{profile.current.company_name}</p><p className="whitespace-pre-wrap">{profile.current.professional_details}</p>
-      {profile.current.logo_asset_id && <Image src={`/api/branding/logo/${profile.current.logo_asset_id}?account=${selectedAccountId()}`} alt="Current issuer logo" width={128} height={128} unoptimized className="object-contain" />}
+      {profile.current.logo_asset_id && <BrandingLogo src={`/api/branding/logo/${profile.current.logo_asset_id}?account=${selectedAccountId()}`} alt="Current issuer logo" size={128} className="object-contain" />}
     </section>}
     {editor ? (internalOwner ? <PlatformMfa>{editor}</PlatformMfa> : editor) : null}
     {profile?.permissions.filter((p)=>p.proposal && !p.used_at && !p.revoked_at).map((permission)=><section key={permission.id} className="rounded border bg-blue-50 p-6">
       <h2 className="font-semibold">Temporary approved editing permission</h2><p>Fields: {permission.fields.join(", ")}. Expires: {new Date(permission.expires_at).toLocaleString("en-IN")}</p><p>Approved identity: {permission.proposal?.company_name}</p><p>{permission.proposal?.professional_details}</p>
-      {permission.proposal?.logo_asset_id && <Image src={`/api/branding/logo/${permission.proposal.logo_asset_id}?account=${selectedAccountId()}`} alt="Permission approved logo" width={96} height={96} unoptimized />}
+      {permission.proposal?.logo_asset_id && <BrandingLogo src={`/api/branding/logo/${permission.proposal.logo_asset_id}?account=${selectedAccountId()}`} alt="Permission approved logo" size={96} />}
       <button disabled={busy} onClick={()=>{ void act({ action:"apply",permissionId:permission.id }); }} className="mt-3 rounded bg-blue-700 px-4 py-2 text-white">Apply approved changes</button>
     </section>)}
     {!!profile?.requests.length && <section className="space-y-3"><h2 className="text-xl font-semibold">Requests and decisions</h2>{profile.requests.map((request)=><article key={request.id} className="rounded border p-4"><p>{request.company_name} — {request.status}</p><p>{request.decision_reason}</p>{request.status==="needs_information" && <form onSubmit={(event)=>{ event.preventDefault();const form=new FormData(event.currentTarget);void act({ action:"information",requestId:request.id,message:form.get("message") }); }}><label>Additional information<textarea name="message" required maxLength={2000} className="block w-full border p-2" /></label><button disabled={busy} className="text-blue-700">Supply information</button></form>}</article>)}</section>}
