@@ -13,20 +13,17 @@ type MenuItem = NavItem | NavGroup;
 const menu: MenuItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: "home" },
   { href: "/dashboard/certificates", label: "Create Certificate", icon: "create" },
-  { label: "My Certificates", icon: "certificates", items: [
-    { href: "/dashboard/certificates/list", label: "My Certificates", icon: "certificates" },
-    { href: "/dashboard/reports", label: "My Reports", icon: "reports" },
-    { href: "/dashboard/my-cover-letters", label: "My Cover Letters", icon: "reports" },
-  ] },
-  { label: "Templates & Formats", icon: "templates", items: [
+  { href: "/dashboard/certificates/list", label: "My Certificates", icon: "certificates" },
+  { href: "/dashboard/valuation-payments", label: "Job Payments", icon: "subscription", managerOnly: true },
+  { label: "More", icon: "templates", items: [
+    { href: "/dashboard/reference-map", label: "Reference Map", icon: "map" },
     { href: "/dashboard/templates", label: "Templates", icon: "templates" },
     { href: "/dashboard/report-formats", label: "Report Formats", icon: "reports" },
-    { href: "/dashboard/cover-letters", label: "Create Cover Letter Format", icon: "reports" },
+    { href: "/dashboard/cover-letters", label: "Letterhead & QR Setup", icon: "reports" },
+    { href: "/dashboard/reports", label: "My Reports", icon: "reports" },
     { href: "/dashboard/my-cover-letters", label: "My Cover Letters", icon: "reports" },
+    { href: "/dashboard/team", label: "Team", icon: "team", managerOnly: true },
   ] },
-  { href: "/dashboard/valuation-payments", label: "Job Payments", icon: "subscription", managerOnly: true },
-  { href: "/dashboard/reference-map", label: "Reference Map", icon: "map" },
-  { href: "/dashboard/team", label: "Team", icon: "team", managerOnly: true },
   { href: "/dashboard/settings", label: "Settings", icon: "settings" },
 ];
 
@@ -39,6 +36,7 @@ function permitted(item: NavItem, role: AccountMembership["role"] | null): boole
 function currentRoute(pathname: string) {
   if (/^\/dashboard\/certificates\/[0-9a-f-]{36}$/i.test(pathname)) return "/dashboard/certificates/list";
   if (pathname.startsWith("/dashboard/certificates/bulk")) return "/dashboard/certificates";
+  if (pathname.startsWith("/dashboard/certificates/display")) return "/dashboard/certificates/list";
   if (pathname.startsWith("/dashboard/templates/") && pathname.includes("/report")) return "/dashboard/report-formats";
   if (pathname.startsWith("/dashboard/templates/")) return "/dashboard/templates";
   if (pathname === "/dashboard/subscription" || pathname.startsWith("/dashboard/subscription/")) return "/dashboard/settings";
@@ -161,7 +159,7 @@ export function DashboardNavigation({ role, accounts = [], selectedAccountId: se
 
         <div className="min-w-0 flex-1 xl:hidden">
           <details ref={mobileMenu} className="group relative w-fit">
-            <summary aria-label="Open navigation menu" className="flex cursor-pointer list-none items-center gap-2 rounded-xl border border-white/15 bg-white/10 px-3 py-2.5 text-xs font-bold text-white [&::-webkit-details-marker]:hidden">
+            <summary aria-label="Open navigation menu" className="flex cursor-pointer list-none items-center gap-2 rounded-xl border border-white/15 bg-white/10 px-3 py-2.5 text-sm font-bold text-white [&::-webkit-details-marker]:hidden">
               <svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
               Menu <Chevron/>
             </summary>
@@ -185,11 +183,11 @@ export function DashboardNavigation({ role, accounts = [], selectedAccountId: se
               const highlighted = item.items.some(entry => entry.href === active);
               return <details ref={i === 2 ? firstMenu : secondMenu} key={item.label} className="group relative shrink-0">
                 <summary aria-label={item.label} aria-current={highlighted ? "page" : undefined}
-                  className={"flex cursor-pointer list-none items-center gap-2 rounded-xl px-2.5 py-2.5 text-[12px] font-semibold whitespace-nowrap marker:content-none [&::-webkit-details-marker]:hidden " +
+                  className={"flex cursor-pointer list-none items-center gap-2 rounded-xl px-2.5 py-2.5 text-sm font-semibold whitespace-nowrap marker:content-none [&::-webkit-details-marker]:hidden " +
                     (highlighted ? "bg-[#244759] text-[#86f3dd] ring-1 ring-[#3b6b75]" : "text-[#c1d3df] hover:bg-white/10 hover:text-white")}>
                   <NavigationIcon kind={item.icon}/>{item.label}<Chevron/>
                 </summary>
-                <div className="absolute left-0 top-[calc(100%+8px)] z-50 min-w-[235px] overflow-hidden rounded-2xl border border-[#c8d9e0] bg-white p-2 shadow-[0_20px_45px_rgba(9,26,42,.25)]">
+                <div className="absolute left-0 top-[calc(100%+8px)] z-50 max-h-[75vh] min-w-[245px] overflow-y-auto rounded-2xl border border-[#c8d9e0] bg-white p-2 shadow-[0_20px_45px_rgba(9,26,42,.25)]">
                   {item.items.map(entry => <Link key={entry.href} href={entry.href}
                     aria-current={active === entry.href ? "page" : undefined}
                     onClick={() => { firstMenu.current?.removeAttribute("open"); secondMenu.current?.removeAttribute("open"); }}
@@ -202,7 +200,7 @@ export function DashboardNavigation({ role, accounts = [], selectedAccountId: se
             }
             const highlighted = active === item.href;
             return <Link key={item.href} href={item.href} aria-current={highlighted ? "page" : undefined}
-              className={"inline-flex shrink-0 items-center gap-2 rounded-xl px-3 py-2.5 text-[12px] font-semibold whitespace-nowrap " +
+              className={"inline-flex shrink-0 items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-semibold whitespace-nowrap " +
                 (highlighted ? "bg-[#244759] text-[#86f3dd] shadow-inner ring-1 ring-[#3b6b75]" : "text-[#c1d3df] hover:bg-white/10 hover:text-white")}>
               <NavigationIcon kind={item.icon}/>{item.label}
             </Link>;
