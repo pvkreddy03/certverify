@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { PlatformAdminGuide } from "@/components/platform-admin-guide";
-import Image from "next/image";
+import { BrandingLogo } from "@/components/branding-logo";
 import Link from "next/link";
 import { PlatformMfa } from "@/components/platform-mfa";
 import { supabase } from "@/lib/supabase";
@@ -24,8 +24,8 @@ function ReviewCard({ review,onChanged,reviewerId }: { review:BrandingReview;onC
   const logoNotIncluded=!review.request.logo_asset_id && !review.fields.includes("logo");
   return <article className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
     <h2 className="text-xl font-semibold">{review.current.company_name} — {review.request.status}</h2>
-    <div className="grid gap-4 sm:grid-cols-2"><div><h3 className="font-semibold">Current branding</h3><p>{review.current.company_name}</p><p>{review.current.professional_details}</p>{review.current.logo_asset_id && <Image src={`/api/branding/logo/${review.current.logo_asset_id}`} alt="Current branding logo" width={96} height={96} unoptimized />}</div>
-      <div><h3 className="font-semibold">Proposed branding</h3><p>{review.request.company_name}</p><p>{review.request.professional_details}</p>{review.request.logo_asset_id && <Image src={`/api/branding/logo/${review.request.logo_asset_id}`} alt="Proposed branding logo" width={96} height={96} unoptimized />}</div></div>
+    <div className="grid gap-4 sm:grid-cols-2"><div><h3 className="font-semibold">Current branding</h3><p>{review.current.company_name}</p><p>{review.current.professional_details}</p>{review.current.logo_asset_id && <BrandingLogo src={`/api/branding/logo/${review.current.logo_asset_id}`} alt="Current branding logo" size={96} />}</div>
+      <div><h3 className="font-semibold">Proposed branding</h3><p>{review.request.company_name}</p><p>{review.request.professional_details}</p>{review.request.logo_asset_id && <BrandingLogo src={`/api/branding/logo/${review.request.logo_asset_id}`} alt="Proposed branding logo" size={96} />}</div></div>
     <p>Requested by {review.request.requested_by}. Fields: {review.fields.join(", ")}.</p>
     {pending && submittedByReviewer && <p role="status" className="rounded border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
       This request was submitted from your own account. You cannot approve it from the independent review queue. If you own the workspace, open <Link href="/dashboard/branding" className="font-bold underline">Organization Branding</Link> and save directly after MFA; this will close the old pending request.
