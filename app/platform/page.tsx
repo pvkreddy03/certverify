@@ -18,11 +18,15 @@ const actions = [
 function Overview() {
   const [report, setReport] = useState<PlatformOverview | null>(null);
   const [error, setError] = useState("");
+  const [openBranding, setOpenBranding] = useState<number | null>(null);
   useEffect(() => {
     let active = true;
     void platformFetch<PlatformOverview>("/api/platform/overview")
       .then(data => { if(active) setReport(data); })
       .catch(failure => { if(active) setError(failure.message); });
+    void platformFetch<{total:number}>("/api/platform/branding?status=open&limit=1")
+      .then(data => { if (active) setOpenBranding(data.total); })
+      .catch(() => { /* Keep the navigation link even if the count is unavailable. */ });
     return () => { active = false; };
   }, []);
   if (error) return <p role="alert" className="rounded-xl border border-red-200 bg-red-50 p-5 text-red-800">{error}</p>;
@@ -41,6 +45,10 @@ function Overview() {
   const maximum = Math.max(1, ...report.issuance_daily.map(day => day.count));
 
   return <div className="space-y-8">
+    <Link href="/platform/branding" className="block rounded-2xl border border-teal-200 bg-white p-5 font-bold text-teal-900 shadow-sm">
+      Branding approvals · {openBranding === null ? "View pending requests" : openBranding+" open request"+(openBranding===1?"":"s")}
+      <span className="ml-3 text-sm font-normal text-slate-600">Review customer requests after MFA verification</span>
+    </Link>
     <section aria-label="Platform key statistics" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
       {metrics.map(([label,value]) => <article key={label} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <h2 className="text-sm font-medium text-slate-500">{label}</h2>
