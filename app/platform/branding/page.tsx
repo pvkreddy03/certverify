@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { PlatformAdminGuide } from "@/components/platform-admin-guide";
 import Image from "next/image";
+import Link from "next/link";
 import { PlatformMfa } from "@/components/platform-mfa";
 import { supabase } from "@/lib/supabase";
 import { brandingFetch } from "@/lib/branding/client";
@@ -27,7 +28,7 @@ function ReviewCard({ review,onChanged,reviewerId }: { review:BrandingReview;onC
       <div><h3 className="font-semibold">Proposed branding</h3><p>{review.request.company_name}</p><p>{review.request.professional_details}</p>{review.request.logo_asset_id && <Image src={`/api/branding/logo/${review.request.logo_asset_id}`} alt="Proposed branding logo" width={96} height={96} unoptimized />}</div></div>
     <p>Requested by {review.request.requested_by}. Fields: {review.fields.join(", ")}.</p>
     {pending && submittedByReviewer && <p role="status" className="rounded border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
-      You submitted this branding request. For security, a different Super Admin must review it. You cannot approve, reject or grant permission for your own request.
+      This request was submitted from your own account. You cannot approve it from the independent review queue. If you own the workspace, open <Link href="/dashboard/branding" className="font-bold underline">Organization Branding</Link> and save directly after MFA; this will close the old pending request.
     </p>}
     {pending && logoNotIncluded && <p className="rounded border border-slate-300 bg-slate-50 p-3 text-sm">
       No new logo is attached to this request. To request logo approval, upload the logo from your organization&apos;s Branding page and submit a new change request.
