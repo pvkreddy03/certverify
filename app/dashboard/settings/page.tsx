@@ -165,162 +165,68 @@ export default function SettingsPage() {
     );
   }
 
+
   return (
-    <main className="cv-page min-h-screen px-4 py-10 sm:px-6">
-      <div className="mx-auto max-w-5xl">
-
-        {/* Header */}
-        <div className="mb-8">
-          <p className="cv-eyebrow mb-2">WORKSPACE PREFERENCES</p><h1 className="text-3xl font-extrabold tracking-tight text-[#1c314a]">
-            Settings
-          </h1>
-
-          <p className="mt-2 text-slate-600">
-            Manage your ValuerSeal account and
-            organization settings.
-          </p>
-        </div>
-
-        {/* Loading */}
-        {loading && (
-          <div className="rounded-xl bg-white p-8 text-slate-600 shadow-sm">
-            Loading account information...
-          </div>
-        )}
-
-        {/* Error */}
-        {!loading && errorMessage && (
-          <div className="rounded-xl bg-red-50 p-5 text-red-700">
-            {errorMessage}
-          </div>
-        )}
-
-        {/* Account */}
-        {!loading &&
-          !errorMessage &&
-          account &&
-          membership && (
-            <div className="space-y-6">
-
-              <Link href="/dashboard/profile" className="cv-card cv-card--interactive flex items-start gap-4 rounded-2xl p-6">
-                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#e3f8f0] text-[#0c7b71]">
-                  <svg aria-hidden="true" width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/></svg>
-                </span>
-                <span><span className="block text-lg font-bold text-[#1c394b]">My Profile</span>
-                  <span className="mt-1 block text-sm leading-6 text-slate-600">Update contact details, profession and your optional profile photo.</span>
-                  <span className="mt-4 block text-sm font-bold text-[#0a7770]">Edit profile →</span>
-                </span>
-              </Link>
-              {membership.role === "owner" && internalWorkspace && <section className="cv-card rounded-2xl p-6" role="status">
-                <h2 className="text-lg font-bold text-teal-900">Super Admin — Internal access active</h2>
-                <p className="mt-2 text-sm text-slate-600">This organization does not need a subscription or branding approval. Your access is complimentary while your verified platform-owner permission remains active.</p>
-              </section>}
-              {membership.role === "owner" && !internalWorkspace && <Link href="/dashboard/subscription" className="cv-card cv-card--interactive flex items-start gap-4 rounded-2xl p-6">
-                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#e7f2fb] text-[#2454a0]">
-                  <svg aria-hidden="true" viewBox="0 0 24 24" width="25" height="25" fill="none" stroke="currentColor" strokeWidth="1.8">
-                    <rect x="2" y="5" width="20" height="14" rx="3"/><path d="M2 10h20M7 15h4"/>
-                  </svg>
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block text-lg font-bold text-[#1c394b]">Subscriptions</span>
-                  <span className="mt-1 block text-sm leading-6 text-slate-600">Manage plans, licensed seats, billing and your payment history.</span>
-                  <span className="mt-4 block text-sm font-bold text-[#0a7770]">Manage subscriptions →</span>
-                </span>
-              </Link>}
-              {/* Security settings remain available to every signed-in member.
-                   Subscriptions are owner-only; branding is manager-only. */}
-              <section aria-label="Settings options" className="grid gap-4 sm:grid-cols-2">
-                <Link href="/account/security" className="cv-card cv-card--interactive flex items-start gap-4 rounded-2xl p-6">
-                  <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#e5f6f0] text-[#0a847a]">
-                    <svg aria-hidden="true" viewBox="0 0 24 24" width="25" height="25" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M12 2 4 5v7c0 5.4 3.5 8.6 8 10 4.5-1.4 8-4.6 8-10V5Z"/><path d="m9 12 2 2 4-4"/></svg>
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-lg font-bold text-[#1c394b]">Security Options</span>
-                    <span className="mt-1 block text-sm leading-6 text-slate-600">Manage password, authenticator and account security settings.</span>
-                    <span className="mt-4 block text-sm font-bold text-[#0a7770]">Manage security →</span>
-                  </span>
-                </Link>
-                {(membership.role === "owner" || membership.role === "admin") && (
-                  <Link href="/dashboard/branding" className="cv-card cv-card--interactive flex items-start gap-4 rounded-2xl p-6">
-                    <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#e7f1fa] text-[#2858a3]">
-                      <svg aria-hidden="true" viewBox="0 0 24 24" width="25" height="25" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="m12 2-9 5v10l9 5 9-5V7zM3 7l9 5 9-5M12 12v10"/></svg>
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block text-lg font-bold text-[#1c394b]">Organization Branding</span>
-                      <span className="mt-1 block text-sm leading-6 text-slate-600">Manage your organization&apos;s name, logo and issuer branding.</span>
-                      <span className="mt-4 block text-sm font-bold text-[#0a7770]">Manage branding →</span>
-                    </span>
-                  </Link>
-                )}
-              </section>
-
-              <Link href="/dashboard/my-cover-letters" className="cv-card cv-card--interactive flex items-start gap-4 rounded-2xl p-6">
-                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#e5f6f0] text-[#087a6f]">
-                  <svg aria-hidden="true" width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-                    <path d="M6 2h8l5 5v15H6zM14 2v6h5M9 12h7M9 16h7"/>
-                  </svg>
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block text-lg font-bold text-[#1c394b]">Letterhead &amp; QR Placement</span>
-                  <span className="mt-1 block text-sm leading-6 text-slate-600">Set or change the default letterhead once for every certificate. Specialized cover formats are optional.</span>
-                  <span className="mt-4 block text-sm font-bold text-[#0a7770]">Manage letterhead →</span>
-                </span>
-              </Link>
-
-              {/* Multi-user Upgrade */}
-              {account.account_type ===
-                "individual" &&
-                (
-                  membership.role === "owner" ||
-                  membership.role === "admin"
-                ) && (
-                  <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-
-                    <h2 className="text-xl font-semibold text-slate-900">
-                      Multi-user
-                    </h2>
-
-                    <p className="mt-2 max-w-2xl text-slate-600">
-                      Upgrade your account to work
-                      with multiple users. You will
-                      become the Main Admin and will
-                      be able to manage your team and
-                      view organization-wide
-                      certificates.
-                    </p>
-
-                    <div className="mt-5 rounded-lg bg-slate-50 p-4">
-                      <p className="text-sm font-medium text-slate-800">
-                        Your existing data is safe
-                      </p>
-
-                      <p className="mt-1 text-sm text-slate-600">
-                        Existing certificates,
-                        certificate numbers,
-                        templates, and your account
-                        code will remain unchanged
-                        after the upgrade.
-                      </p>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={handleUpgrade}
-                      disabled={upgrading}
-                      className="mt-6 rounded-lg bg-slate-900 px-5 py-3 font-medium text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      {upgrading
-                        ? "Upgrading..."
-                        : "Upgrade to Multi-user"}
-                    </button>
-
-                  </section>
-                )}
-
-
-            </div>
-          )}
-
+    <main className="cv-page">
+      <div className="cv-shell max-w-4xl space-y-6">
+        <header>
+          <p className="text-sm font-bold text-teal-800">YOUR ACCOUNT</p>
+          <h1 className="mt-2 text-3xl font-extrabold text-slate-900">Settings</h1>
+          <p className="mt-2 text-base text-slate-600">Select what you want to change.</p>
+        </header>
+        {loading && <p role="status" className="cv-panel p-6 text-base">Loading account settings…</p>}
+        {!loading && errorMessage && <p role="alert" className="rounded-xl border border-red-200 bg-red-50 p-5 text-red-800">{errorMessage}</p>}
+        {!loading && !errorMessage && account && membership && <>
+          {membership.role==="owner" && internalWorkspace &&
+            <p role="status" className="rounded-xl border border-teal-200 bg-teal-50 px-5 py-4 text-base font-semibold text-teal-900">
+              Super Admin — Internal access active. No subscription or branding approval needed.
+            </p>}
+          <section aria-label="Settings options" className="divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-200 bg-white">
+            <Link href="/dashboard/profile" className="flex min-h-20 items-center justify-between gap-3 px-5 py-4 hover:bg-slate-50">
+              <span><span className="block text-lg font-bold text-slate-900">My Profile</span>
+                <span className="mt-1 block text-sm text-slate-600">Name, contact details and profile photo</span></span>
+              <span aria-hidden="true" className="text-lg text-teal-700">→</span>
+            </Link>
+            {membership.role==="owner"&&!internalWorkspace&&<Link href="/dashboard/subscription"
+              className="flex min-h-20 items-center justify-between gap-3 px-5 py-4 hover:bg-slate-50">
+              <span><span className="block text-lg font-bold text-slate-900">Subscriptions</span>
+                <span className="mt-1 block text-sm text-slate-600">Plan, fees and invoices</span></span>
+              <span aria-hidden="true" className="text-lg text-teal-700">→</span>
+            </Link>}
+            <Link href="/dashboard/cover-letters"
+              className="flex min-h-20 items-center justify-between gap-3 px-5 py-4 hover:bg-slate-50">
+              <span><span className="block text-lg font-bold text-slate-900">Letterhead &amp; QR Placement</span>
+                <span className="mt-1 block text-sm text-slate-600">Upload letterhead or change where the QR appears</span></span>
+              <span aria-hidden="true" className="text-lg text-teal-700">→</span>
+            </Link>
+            {(membership.role==="owner"||membership.role==="admin")&&<Link href="/dashboard/branding"
+              className="flex min-h-20 items-center justify-between gap-3 px-5 py-4 hover:bg-slate-50">
+              <span><span className="block text-lg font-bold text-slate-900">Organization Branding</span>
+                <span className="mt-1 block text-sm text-slate-600">Organization name and logo</span></span>
+              <span aria-hidden="true" className="text-lg text-teal-700">→</span>
+            </Link>}
+            <Link href="/account/security"
+              className="flex min-h-20 items-center justify-between gap-3 px-5 py-4 hover:bg-slate-50">
+              <span><span className="block text-lg font-bold text-slate-900">Security Options</span>
+                <span className="mt-1 block text-sm text-slate-600">Password and sign-in protection</span></span>
+              <span aria-hidden="true" className="text-lg text-teal-700">→</span>
+            </Link>
+          </section>
+          {account.account_type==="individual" && (membership.role==="owner"||membership.role==="admin") &&
+            <details className="rounded-xl border border-slate-200 bg-white p-5">
+              <summary className="cursor-pointer text-base font-bold text-slate-700">
+                Optional · Upgrade to Multi-user
+              </summary>
+              <p className="mt-3 text-sm leading-6 text-slate-600">
+                Invite team members to help you with valuation records. Your existing certificates,
+                templates and account code remain unchanged.
+              </p>
+              <button type="button" onClick={handleUpgrade} disabled={upgrading}
+                className="cv-primary mt-4 disabled:opacity-50">
+                {upgrading?"Upgrading…":"Upgrade to Multi-user"}
+              </button>
+            </details>}
+        </>}
       </div>
     </main>
   );
