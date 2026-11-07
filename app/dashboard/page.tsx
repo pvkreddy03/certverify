@@ -32,7 +32,6 @@ function Metric({label,count,help,kind,color}:{label:string;count:number|null;he
 }
 
 export default function DashboardPage(){
-  const [email,setEmail]=useState("");
   const [canManageFees,setCanManageFees]=useState(false);
   const [certificateCount,setCertificateCount]=useState<number|null>(null);
   const [templateCount,setTemplateCount]=useState<number|null>(null);
@@ -47,7 +46,6 @@ export default function DashboardPage(){
     async function load(){
       const {data:{user}}=await supabase.auth.getUser();
       if(!user||!active){if(active)setLoading(false);return;}
-      setEmail(user.email||"");
       const accountId=requireSelectedAccountId();
       const role=await supabase.from("account_members").select("role").eq("account_id",accountId).eq("user_id",user.id).eq("status","active").maybeSingle();
       if(!role.error)setCanManageFees(["owner","admin"].includes(role.data?.role??""));
