@@ -20,7 +20,9 @@ export default function ValuationPaymentsPage(){
   const [updated,setUpdated]=useState(false);
   useEffect(()=>{
     let live=true;
-    setUpdated(new URLSearchParams(window.location.search).has("updated"));
+    void Promise.resolve().then(()=>{
+      if(live)setUpdated(new URLSearchParams(window.location.search).has("updated"));
+    });
     async function load(){
       const {data:{user}}=await supabase.auth.getUser();
       if(!user)throw new Error("Sign in to see job payments.");
