@@ -97,6 +97,7 @@ test("upload native PDF, position QR by click and generate QR-only printable PDF
   await mockRecords(page);
   await login(page);
   await page.goto("/dashboard/cover-letters");
+  await page.getByText("Optional · preview with an issued certificate").click();
   await expect(page.getByRole("heading", {name:"Letterhead & QR Setup"})).toBeVisible();
   await page.getByPlaceholder("Standard cover letter").fill("Standard Valuation Cover");
   await page.locator('input[type=file]').setInputFiles({
@@ -119,6 +120,7 @@ test("upload native PDF, position QR by click and generate QR-only printable PDF
 test("manually type a letter in the same PDF upload workflow", async ({page}) => {
   await mockRecords(page);await login(page);
   await page.goto("/dashboard/cover-letters");
+  await page.getByText("Optional · preview with an issued certificate").click();
   await page.locator('input[type=file]').setInputFiles({
     name:"letterhead.pdf",mimeType:"application/pdf",buffer:await samplePdf()
   });
@@ -143,13 +145,14 @@ test("Word DOCX upload, certificate autofill and optional merged Word report", a
   }));
   await login(page);
   await page.goto("/dashboard/cover-letters");
+  await page.getByText("Optional · preview with an issued certificate").click();
   await page.locator('input[type=file]').setInputFiles({
     name:"letterhead.docx",
     mimeType:"application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     buffer:sampleDocx(),
   });
   await expect(page.getByText("Document ready.",{exact:false})).toBeVisible({timeout:30000});
-  await page.getByRole("button",{name:"Format auto-fill and report linking (optional)"}).click();
+  await page.getByRole("button",{name:"Optional · add reusable letter text or report links"}).click();
   await page.getByRole("textbox",{name:"Reusable letter wording"}).fill("Ref {{Certificate Number}}\nProperty {{Property Address}}");
   await expect(page.getByRole("textbox",{name:"Example cover-letter text"})).toHaveValue(/Ref CV-2026-001[\s\S]*Property Bhongir, Telangana/);
   await page.getByRole("checkbox",{name:"Include the Word report after the letter"}).check();
