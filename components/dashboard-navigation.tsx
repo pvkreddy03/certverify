@@ -24,6 +24,7 @@ const menu: MenuItem[] = [
     { href: "/dashboard/cover-letters", label: "Create Cover Letter Format", icon: "reports" },
     { href: "/dashboard/my-cover-letters", label: "My Cover Letters", icon: "reports" },
   ] },
+  { href: "/dashboard/valuation-payments", label: "Job Payments", icon: "subscription", managerOnly: true },
   { href: "/dashboard/reference-map", label: "Reference Map", icon: "map" },
   { href: "/dashboard/team", label: "Team", icon: "team", managerOnly: true },
   { href: "/dashboard/settings", label: "Settings", icon: "settings" },
