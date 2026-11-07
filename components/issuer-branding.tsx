@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Image from "next/image";
+import { BrandingLogo } from "@/components/branding-logo";
 import { supabase } from "@/lib/supabase";
 import { selectedAccountId } from "@/lib/accounts/context";
 import type { BrandingVersion } from "@/lib/branding/types";
@@ -16,7 +16,7 @@ export function IssuerBranding({ certificateId }: { certificateId?:string }) {
   },[certificateId]);
   if (!branding) return <p className="my-4 text-sm text-slate-600">{certificateId ? "Historical issuer branding awaits reconciliation." : "Branding is unavailable."}</p>;
   return <section aria-label={certificateId ? "Issuer at issuance" : "Account branding"} className="my-4 flex items-center gap-4 rounded border bg-white p-4">
-    {branding.logo_asset_id && <Image src={`/api/branding/logo/${branding.logo_asset_id}?account=${selectedAccountId()}`} alt={`${branding.company_name} logo`} width={96} height={96} unoptimized className="h-24 w-24 object-contain" />}
+    {branding.logo_asset_id && <BrandingLogo src={`/api/branding/logo/${branding.logo_asset_id}?account=${selectedAccountId()}`} alt={`${branding.company_name} logo`} size={96} className="h-24 w-24 object-contain" />}
     <div><h2 className="font-semibold">{branding.company_name}</h2><p className="whitespace-pre-wrap text-sm text-slate-600">{branding.professional_details}</p>{certificateId && <p className="text-xs text-slate-500">Issuer identity recorded at issuance</p>}</div>
   </section>;
 }

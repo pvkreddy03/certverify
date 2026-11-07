@@ -8,7 +8,7 @@ import QRCode from "qrcode";
 import { publicVerificationUrl } from "@/lib/certificates/public-verification-url";
 import { IssuerBranding } from "@/components/issuer-branding";
 import { CertificateStatusActions } from "@/components/certificate-status-actions";
-import { DownloadWordReport } from "@/components/download-word-report";
+import { ValuationJobPayment } from "@/components/valuation-job-payment";
 import { DownloadCoverLetter } from "@/components/download-cover-letter";
 import {geoUrl,parseGeoLocation} from "@/lib/geo/location";
 
@@ -185,7 +185,7 @@ export default function ViewCertificatePage() {
     });
 
     link.download =
-      `CertVerify-${certificate.certificate_id}.${format === "jpeg" ? "jpg" : "png"}`;
+      `ValuerSeal-${certificate.certificate_id}.${format === "jpeg" ? "jpg" : "png"}`;
 
     document.body.appendChild(link);
     link.click();
@@ -279,213 +279,167 @@ export default function ViewCertificatePage() {
       ? publicVerificationUrl(certificate.public_verification_id, window.location.origin)
       : "";
 
+
   return (
-    <main className="min-h-screen bg-slate-50 px-6 py-10">
-      <div className="mx-auto max-w-4xl">
+    <main className="cv-page">
+      <div className="cv-shell max-w-6xl space-y-6">
+        <Link href="/dashboard/certificates/list"
+          className="inline-flex min-h-11 items-center text-base font-bold text-teal-800 hover:underline">
+          ← Back to My Certificates
+        </Link>
 
-        <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <Link
-              href="/dashboard/certificates/list"
-              className="mb-3 inline-block text-sm font-medium text-slate-600 hover:text-slate-900"
-            >
-              ← Back to Certificates
-            </Link>
-
-            <h1 className="text-3xl font-bold text-slate-900">
-              Certificate Details
-            </h1>
-
-            <p className="mt-2 text-sm text-slate-500">
-              {certificate.certificate_id}
-            </p>
-          </div>
-
-          <div className="flex flex-wrap gap-3">
-            <button
-              type="button"
-              onClick={generateQRCode}
-              className="rounded-lg bg-slate-900 px-5 py-3 font-medium text-white hover:bg-slate-800"
-            >
-              Generate QR
-            </button>
-
-            <Link
-              href="/dashboard/certificates/list"
-              className="rounded-lg border border-slate-300 bg-white px-5 py-3 font-medium text-slate-700 hover:bg-slate-50"
-            >
-              Back
-            </Link>
-          </div>
-        </div>
-
-        {justCreated && <p role="status" className="mb-6 rounded-xl border border-emerald-200 bg-emerald-50 p-5 font-medium text-emerald-900">
-          ✓ Certificate saved successfully. Your QR is ready. Download the cover letter, complete report, or QR below.
-        </p>}
-        {errorMessage && (
-          <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            {errorMessage}
-          </div>
-        )}
-
-        <div className="space-y-6">
-
-          <IssuerBranding certificateId={certificate.id} />
-          {/* Certificate Header */}
-          <section className="rounded-2xl bg-white p-8 shadow-sm">
-            <div className="flex flex-wrap items-start justify-between gap-4">
-              <div>
-                <p className="text-sm text-slate-500">
-                  Certificate Number
-                </p>
-
-                <h2 className="mt-1 text-2xl font-bold text-slate-900">
-                  {certificate.certificate_id}
-                </h2>
-
-                {certificate.template_name && (
-                  <p className="mt-2 text-sm text-slate-500">
-                    Template:{" "}
-                    <span className="font-medium text-slate-700">
-                      {certificate.template_name}
-                    </span>
-                  </p>
-                )}
-              </div>
-
-              <span
-                className={`rounded-full px-3 py-1 text-xs font-medium ${getStatusClasses(
-                  certificate.status
-                )}`}
-              >
+        <header className="rounded-2xl border border-slate-200 bg-white px-5 py-6 sm:px-8">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <p className="text-sm font-semibold text-teal-800">YOUR VALUATION RECORD</p>
+              <h1 className="mt-2 text-3xl font-extrabold tracking-tight text-slate-900">
+                Certificate Details
+              </h1>
+              <p className="mt-2 text-lg font-semibold text-slate-700">
+                {certificate.template_name || "Property Valuation"}
+              </p>
+              <p className="mt-2 break-all text-sm text-slate-500">
+                Certificate: {certificate.certificate_id}
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className={"rounded-full px-4 py-2 text-sm font-semibold " + getStatusClasses(certificate.status)}>
                 {certificate.status}
               </span>
+              <Link href={verificationUrl} target="_blank" rel="noopener noreferrer"
+                className="inline-flex min-h-11 items-center rounded-xl border border-slate-300 px-4 text-sm font-semibold text-teal-800 hover:bg-slate-50">
+                View public verification ↗
+              </Link>
+            </div>
+          </div>
+        </header>
+
+        {justCreated && <p role="status" className="rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-base font-semibold text-emerald-900">
+          ✓ Certificate saved. Your letterhead with QR is ready to download below.
+        </p>}
+        {errorMessage && <p role="alert" className="rounded-xl border border-red-200 bg-red-50 px-5 py-4 text-base text-red-800">
+          {errorMessage}
+        </p>}
+
+        {certificate.status==="Revoked" && <section className="rounded-xl border border-red-300 bg-red-50 px-5 py-4">
+          <h2 className="text-lg font-bold text-red-900">This certificate is revoked</h2>
+          <p className="mt-1 text-sm text-red-800">
+            QR verification will show its revoked status. Do not present it as currently valid.
+          </p>
+          <Link href={"/dashboard/certificates?replaces="+certificate.id}
+            className="mt-2 inline-block min-h-10 pt-2 font-bold text-red-900 underline">
+            Issue a replacement certificate
+          </Link>
+        </section>}
+
+        {loadingFields ? <p role="status" className="rounded-xl bg-white p-6 text-base">
+          Loading your document downloads…
+        </p> : <DownloadCoverLetter
+          certificateNumber={certificate.certificate_id}
+          certificateCreatedAt={certificate.created_at}
+          verificationId={certificate.public_verification_id}
+          templateId={certificate.template_id}
+          preferredReportId={certificate.report_format_id}
+          preferredCoverId={certificate.cover_letter_format_id}
+          fieldValues={fieldValues}
+        />}
+
+        <section aria-label="More certificate tasks" className="rounded-2xl border border-slate-200 bg-white px-5 py-5 sm:px-7">
+          <h2 className="text-lg font-extrabold text-slate-900">More options</h2>
+          <p className="mt-1 text-sm text-slate-600">Only open these when you need them.</p>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <a href="#job-payment" onClick={()=>document.getElementById("job-payment")?.setAttribute("open","")}
+              className="inline-flex min-h-12 items-center rounded-xl border border-slate-200 px-4 text-base font-semibold text-slate-700 hover:bg-slate-50">
+              Job payment details
+            </a>
+            <a href="#record-details" onClick={()=>document.getElementById("record-details")?.setAttribute("open","")}
+              className="inline-flex min-h-12 items-center rounded-xl border border-slate-200 px-4 text-base font-semibold text-slate-700 hover:bg-slate-50">
+              View all property fields
+            </a>
+            <a href="#qr-image" onClick={()=>document.getElementById("qr-image")?.setAttribute("open","")}
+              className="inline-flex min-h-12 items-center rounded-xl border border-slate-200 px-4 text-base font-semibold text-slate-700 hover:bg-slate-50">
+              Download the QR image only
+            </a>
+            <a href="#certificate-status" onClick={()=>document.getElementById("certificate-status")?.setAttribute("open","")}
+              className="inline-flex min-h-12 items-center rounded-xl border border-slate-200 px-4 text-base font-semibold text-slate-700 hover:bg-slate-50">
+              Certificate status and history
+            </a>
+          </div>
+        </section>
+
+        <details id="job-payment" className="scroll-mt-24 rounded-2xl border border-slate-200 bg-white"
+          open={typeof window!=="undefined" && window.location.hash==="#job-payment" ? true : undefined}>
+          <summary className="cursor-pointer px-5 py-5 text-lg font-bold text-slate-900 sm:px-7">
+            Job payment details <span className="ml-2 text-sm font-normal text-slate-500">Private to your office</span>
+          </summary>
+          <div className="border-t border-slate-100 p-3 sm:p-4">
+            <ValuationJobPayment certificateId={certificate.id}/>
+          </div>
+        </details>
+
+        <details id="record-details" className="scroll-mt-24 rounded-2xl border border-slate-200 bg-white">
+          <summary className="cursor-pointer px-5 py-5 text-lg font-bold text-slate-900 sm:px-7">
+            All property and valuation details ({fieldValues.length})
+          </summary>
+          <section className="border-t border-slate-100 p-5 sm:p-7">
+            <div className="grid gap-4 sm:grid-cols-2">
+              {fieldValues.length===0 ? <p className="text-slate-500">No additional fields available.</p>
+                : fieldValues.map(field=><div key={field.id} className="rounded-xl bg-slate-50 p-4">
+                  <p className="text-sm font-semibold text-slate-500">{field.field_name}</p>
+                  <p className="mt-2 break-words text-base font-medium text-slate-900">
+                    {field.field_type==="location" ? (()=>{
+                      const point=parseGeoLocation(field.field_value);
+                      return point?<a href={geoUrl(point)} target="_blank" rel="noopener noreferrer"
+                        className="font-bold text-teal-800 underline">View property location on map ↗</a>:"No saved location";
+                    })() : formatFieldValue(field.field_value,field.field_type)}
+                  </p>
+                </div>)}
             </div>
           </section>
+        </details>
 
-          {certificate.status === "Revoked" && <section className="rounded-2xl border border-red-200 bg-red-50 p-8">
-            <h2 className="text-xl font-semibold">Revocation record</h2>
-            <p className="mt-3">Internal reason: {certificate.revocation_reason || "Historical reason not recorded"}</p>
-            <p className="mt-2">Public explanation: {certificate.public_revocation_reason || "No additional public explanation"}</p>
-            <p className="mt-2">Revoked on: {certificate.revoked_at ? new Date(certificate.revoked_at).toLocaleString("en-IN") : "Historical timestamp not recorded"}</p>
-            <p className="mt-2">Previous status: {certificate.revocation_previous_status || "Not recorded"}</p>
-            <p className="mt-2 text-sm">Responsible user: {certificate.revoked_by || "Historical actor not recorded"}</p>
-            <Link href={`/dashboard/certificates?replaces=${certificate.id}`} className="mt-4 inline-block font-medium text-blue-700">Issue linked replacement</Link>
-          </section>}
-          <CertificateStatusActions certificateId={certificate.id} status={certificate.status} onChanged={loadCertificate} />
-
-          {!loadingFields && <DownloadWordReport templateId={certificate.template_id}
-            certificateNumber={certificate.certificate_id} fieldValues={fieldValues}
-            preferredFormatId={certificate.report_format_id} />}
-
-          {!loadingFields && <DownloadCoverLetter
-            certificateNumber={certificate.certificate_id}
-            certificateCreatedAt={certificate.created_at}
-            verificationId={certificate.public_verification_id}
-            templateId={certificate.template_id}
-            preferredReportId={certificate.report_format_id}
-            preferredCoverId={certificate.cover_letter_format_id}
-            fieldValues={fieldValues}
-          />}
-
-          {/* Certificate Details */}
-          <section className="rounded-2xl bg-white p-8 shadow-sm">
-            <h2 className="text-xl font-semibold text-slate-900">
-              Certificate Details
-            </h2>
-
-            {loadingFields ? (
-              <p className="mt-6 text-sm text-slate-500">
-                Loading certificate details...
-              </p>
-            ) : fieldValues.length === 0 ? (
-              <p className="mt-6 text-sm text-slate-500">
-                No certificate fields available.
-              </p>
-            ) : (
-              <div className="mt-6 grid gap-6 md:grid-cols-2">
-                {fieldValues.map((field) => (
-                  <div
-                    key={field.id}
-                    className="rounded-lg border border-slate-200 p-4"
-                  >
-                    <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-                      {field.field_name}
-                    </p>
-
-                    <p className="mt-2 text-sm font-medium text-slate-900">
-                      {field.field_type === "location" ? (()=>{const point=parseGeoLocation(field.field_value);return point ? <><span>{point.lat.toFixed(6)}, {point.lng.toFixed(6)}</span><a className="mt-2 block text-blue-700 underline" href={geoUrl(point)} target="_blank" rel="noopener noreferrer">Open property location on map</a></> : "No valid location";})() : formatFieldValue(
-                        field.field_value,
-                        field.field_type
-                      )}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            )}
-          </section>
-
-          {/* QR Code */}
-          {qrCode && (
-            <section className="rounded-2xl bg-white p-8 text-center shadow-sm">
-              <h2 className="text-xl font-semibold text-slate-900">
-                Certificate Verification QR
-              </h2>
-
-              <p className="mt-2 text-sm text-slate-500">
-                Scan this QR code to verify the certificate, or download it to paste into your letterhead.
-              </p>
-
-              <div className="mt-6 flex justify-center">
-                <div className="rounded-xl border border-slate-200 bg-white p-4">
-                  <img
-                    src={qrCode}
-                    alt={`QR code for ${certificate.certificate_id}`}
-                    width={300}
-                    height={300}
-                    className="h-[300px] w-[300px]"
-                  />
-                </div>
-              </div>
-
-              <div className="mt-6 flex flex-wrap justify-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => { void downloadQRCode("png"); }}
-                  className="rounded-lg bg-blue-700 px-5 py-3 font-semibold text-white hover:bg-blue-800"
-                >
-                  Download PNG
-                </button>
-                <button type="button" onClick={() => { void downloadQRCode("jpeg"); }} className="rounded-lg border border-blue-200 bg-white px-5 py-3 font-semibold text-blue-800 hover:bg-blue-50">Download JPEG</button>
-              </div>
-
-              {verificationUrl && (
-                <p className="mx-auto mt-5 max-w-2xl break-all text-xs text-slate-400">
-                  {verificationUrl}
-                </p>
-              )}
-            </section>
-          )}
-
-          {/* Footer */}
-          <section className="rounded-2xl bg-white p-6 text-center shadow-sm">
-            <p className="text-xs text-slate-400">
-              Created on{" "}
-              {new Date(
-                certificate.created_at
-              ).toLocaleDateString("en-IN", {
-                day: "2-digit",
-                month: "short",
-                year: "numeric",
-              })}
+        <details id="qr-image" className="scroll-mt-24 rounded-2xl border border-slate-200 bg-white">
+          <summary className="cursor-pointer px-5 py-5 text-lg font-bold text-slate-900 sm:px-7">
+            QR image only <span className="ml-2 text-sm font-normal text-slate-500">For manual use</span>
+          </summary>
+          <section className="border-t border-slate-100 p-5 sm:p-7">
+            <p className="text-base text-slate-600">
+              Most users should download Letterhead + QR above. Use these separate QR images only when needed.
             </p>
-
-            <p className="mt-1 text-xs text-slate-400">
-              Verification provided by CertVerify
-            </p>
+            {qrCode && <img src={qrCode} alt={"QR code for "+certificate.certificate_id}
+              className="mt-4 h-52 w-52 rounded-xl border border-slate-200 bg-white p-3" width={208} height={208}/>}
+            <div className="mt-4 flex flex-wrap gap-3">
+              <button type="button" disabled={!qrCode} onClick={()=>{void downloadQRCode("jpeg");}}
+                className="cv-primary min-h-12 disabled:opacity-50">Download JPEG</button>
+              <button type="button" disabled={!qrCode} onClick={()=>{void downloadQRCode("png");}}
+                className="cv-secondary min-h-12 disabled:opacity-50">Download PNG</button>
+              <button type="button" onClick={()=>{void generateQRCode();}}
+                className="cv-secondary min-h-12">Generate QR</button>
+            </div>
+            {verificationUrl && <p className="mt-3 break-all text-sm text-slate-500">{verificationUrl}</p>}
           </section>
+        </details>
 
-        </div>
+        <details id="certificate-status" className="scroll-mt-24 rounded-2xl border border-slate-200 bg-white">
+          <summary className="cursor-pointer px-5 py-5 text-lg font-bold text-slate-900 sm:px-7">
+            Certificate status and history
+          </summary>
+          <div className="space-y-4 border-t border-slate-100 p-4">
+            <CertificateStatusActions certificateId={certificate.id} status={certificate.status} onChanged={loadCertificate}/>
+            {certificate.status==="Revoked" && <section className="rounded-xl border border-red-200 bg-red-50 p-5">
+              <h2 className="text-lg font-bold text-red-900">Revocation record</h2>
+              <p className="mt-2 text-sm">Internal reason: {certificate.revocation_reason||"Not recorded"}</p>
+              <p className="mt-2 text-sm">Public explanation: {certificate.public_revocation_reason||"None"}</p>
+              <p className="mt-2 text-sm">Revoked on: {certificate.revoked_at?new Date(certificate.revoked_at).toLocaleString("en-IN"):"Not recorded"}</p>
+              <p className="mt-2 text-sm">Previous status: {certificate.revocation_previous_status||"Not recorded"}</p>
+              <p className="mt-2 text-sm">Responsible user: {certificate.revoked_by||"Not recorded"}</p>
+            </section>}
+            <details className="rounded-lg bg-slate-50 p-4">
+              <summary className="cursor-pointer font-semibold">Issuer information</summary>
+              <IssuerBranding certificateId={certificate.id}/>
+            </details>
+          </div>
+        </details>
       </div>
     </main>
   );

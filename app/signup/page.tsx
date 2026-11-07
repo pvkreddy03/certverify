@@ -209,7 +209,7 @@ export default function SignupPage() {
           </div>
 
           <p className="mt-6 text-center text-xs text-slate-400">
-            Your professional records are protected by CertVerify.
+            Your professional records are protected by ValuerSeal.
           </p>
 
         </div>

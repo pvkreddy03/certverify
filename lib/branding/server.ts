@@ -29,7 +29,13 @@ export async function logoResponse(path: string, publiclyVisible=false, viewer?:
   // Never expose a privileged storage key or make the entire bucket public.
   if (!publiclyVisible && !viewer) throw new RequestError("Authentication required.",401);
   const data = await logoObjectStorage(viewer).download(path);
-  if (!data || data.size>MAX_LOGO_BYTES || data.type!=="image/webp") throw new RequestError("Logo unavailable.",404);
-  return new Response(await data.arrayBuffer(),{ headers:{ "Content-Type":"image/webp", "X-Content-Type-Options":"nosniff",
+  if (!data || data.size>MAX_LOGO_BYTES || data.size<12) throw new RequestError("Logo unavailable.",404);
+  // Some Storage SDK/runtime combinations return a valid WebP Blob with an
+  // empty or generic MIME type. Validate the actual WebP RIFF bytes instead
+  // of rejecting a legitimate normalized image based on Blob.type alone.
+  const bytes = new Uint8Array(await data.arrayBuffer());
+  const text=(start:number,length:number)=>String.fromCharCode(...bytes.subarray(start,start+length));
+  if (text(0,4)!=="RIFF" || text(8,4)!=="WEBP") throw new RequestError("Logo unavailable.",404);
+  return new Response(bytes,{ headers:{ "Content-Type":"image/webp", "X-Content-Type-Options":"nosniff",
     "Content-Security-Policy":"default-src 'none'; sandbox", "Cache-Control":publiclyVisible ? "public, max-age=300" : "private, no-store" } });
 }

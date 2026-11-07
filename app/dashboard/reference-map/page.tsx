@@ -128,16 +128,11 @@ export default function ReferenceMapPage(){
 
   return <main className="cv-page">
     <div className="cv-shell space-y-5">
-      <div className="cv-hero">
-        <div className="cv-hero__body">
-          <p className="cv-eyebrow mb-2">PRIVATE VALUATION HISTORY</p>
-          <h1 className="text-3xl font-bold text-white">Valuation Reference Map</h1>
-          <p className="mt-2 text-slate-200">
-            Find your previous valuation locations by distance, valuation date and template.
-            Pin colours indicate how old each recorded valuation is—not its current market relevance.
-          </p>
-        </div>
-      </div>
+      <header className="rounded-2xl border border-slate-200 bg-white p-6">
+        <p className="text-sm font-bold text-teal-800">YOUR PREVIOUS PROPERTIES</p>
+        <h1 className="mt-2 text-3xl font-extrabold text-slate-900">Valuation Reference Map</h1>
+        <p className="mt-2 text-base text-slate-600">Find past valuations nearby. Pin colours show the age of your records.</p>
+      </header>
       <div className="cv-panel space-y-4 p-5">
         <div className="grid gap-3 sm:grid-cols-3">
           <label className="text-sm">Find certificates

@@ -53,7 +53,7 @@ export default function ForgotPasswordPage() {
         <section className="w-full rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 text-xl font-bold text-white">C</div>
           <h1 className="mt-5 text-center text-2xl font-bold text-slate-900">Reset your password</h1>
-          <p className="mt-2 text-center text-sm leading-6 text-slate-600">Enter the email address linked to your CertVerify account.</p>
+          <p className="mt-2 text-center text-sm leading-6 text-slate-600">Enter the email address linked to your ValuerSeal account.</p>
 
           <form onSubmit={handleSubmit} noValidate className="mt-7 space-y-5">
             <div>

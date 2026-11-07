@@ -1,9 +1,9 @@
 "use client";
 
 import QRCode from "qrcode";
-import { PDFDocument } from "pdf-lib";
+import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import { publicVerificationUrl } from "@/lib/certificates/public-verification-url";
-import { fillCoverText, validatePlacement, type CoverPlacement } from "@/lib/cover-letters/generator";
+import { fillCoverText, verificationQrLayout, QR_VERIFICATION_CAPTION_LINES, validatePlacement, type CoverPlacement } from "@/lib/cover-letters/generator";
 
 export const PDF_MIME = "application/pdf";
 export const DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
@@ -163,11 +163,34 @@ async function overlay(pdf: PDFDocument, text: string, verificationId: string, p
   const verification = publicVerificationUrl(verificationId, window.location.origin);
   const qrBytes = await fetch(await QRCode.toDataURL(verification, { width: 900, margin: 2, errorCorrectionLevel: "M" })).then(r => r.arrayBuffer());
   const qr = await pdf.embedPng(qrBytes);
-  const qrWidth = placement.qr_size * width;
+  const qrLayout = verificationQrLayout(placement, width, height);
   page.drawImage(qr, {
-    x: placement.qr_x * width, y: height - placement.qr_y * height - qrWidth,
-    width: qrWidth, height: qrWidth,
+    x: qrLayout.qrX, y: height - qrLayout.qrY - qrLayout.size,
+    width: qrLayout.size, height: qrLayout.size,
   });
+  const font = await pdf.embedFont(StandardFonts.Helvetica);
+  const captionWidth = Math.max(...QR_VERIFICATION_CAPTION_LINES.map(line =>
+    font.widthOfTextAtSize(line, qrLayout.fontSize)));
+  const captionX = Math.max(qrLayout.margin, Math.min(
+    qrLayout.qrX + qrLayout.size / 2 - captionWidth / 2,
+    width - captionWidth - qrLayout.margin,
+  ));
+  const pad = qrLayout.fontSize * 0.2;
+  page.drawRectangle({
+    x: captionX - pad,
+    y: height - qrLayout.captionY - QR_VERIFICATION_CAPTION_LINES.length * qrLayout.lineHeight - pad,
+    width: captionWidth + 2 * pad,
+    height: QR_VERIFICATION_CAPTION_LINES.length * qrLayout.lineHeight + 2 * pad,
+    color: rgb(1, 1, 1),
+  });
+  for (const [index, line] of QR_VERIFICATION_CAPTION_LINES.entries()) {
+    const lineWidth = font.widthOfTextAtSize(line, qrLayout.fontSize);
+    page.drawText(line, {
+      x: captionX + (captionWidth - lineWidth) / 2,
+      y: height - qrLayout.captionY - qrLayout.fontSize - index * qrLayout.lineHeight,
+      font, size: qrLayout.fontSize, color: rgb(0.13, 0.21, 0.28),
+    });
+  }
   if (text.trim()) {
     const canvas = textCanvas(text, width, height, placement);
     const layer = await pdf.embedPng(canvas.toDataURL("image/png"));
@@ -199,6 +222,10 @@ export async function createPrintableDocument(args: {
   body: string; placement: CoverPlacement; report?: Blob | null;
 }): Promise<Blob> {
   const pdf = await asPdf(args.background, args.kind);
+  // A letterhead always contributes exactly one page, even when an uploaded
+  // PDF/DOCX happens to contain multiple pages. This applies to QR-only,
+  // cover-letter and combined-report downloads alike.
+  while(pdf.getPageCount()>1)pdf.removePage(pdf.getPageCount()-1);
   await overlay(pdf, args.body, args.verificationId, args.placement);
   if (args.report) {
     const canvases = await renderWordPages(args.report);

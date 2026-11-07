@@ -11,6 +11,57 @@ export const DEFAULT_PLACEMENT: CoverPlacement = {
 };
 export const DEFAULT_BODY = "Date: {{Date}}\nRef: {{Certificate Number}}\n\nTo,\n{{Client Name}}\n\nSubject: {{Subject}}\n\n{{Description}}\n\nRegards,\nAuthorized Signatory";
 
+/** The QR label is automatically included on both PDF and Word cover pages. */
+export const QR_VERIFICATION_CAPTION = "Scan this to verify the authenticity of the file.";
+export const QR_VERIFICATION_CAPTION_LINES = [
+  "Scan this to verify the",
+  "authenticity of the file.",
+] as const;
+
+/** Page units are those of the renderer (CSS pixels, canvas pixels, or PDF points).
+ * Keeps the QR and its caption together inside the printable page, including
+ * when an older saved position is very close to the bottom edge.
+ */
+export function verificationQrLayout(position: CoverPlacement, pageWidth: number, pageHeight: number) {
+  const size = position.qr_size * pageWidth;
+  const fontSize = Math.max(pageWidth * 0.012, Math.min(pageWidth * 0.016, size * 0.1));
+  const lineHeight = fontSize * 1.25;
+  const gap = fontSize * 0.4;
+  const margin = pageWidth * 0.01;
+  const captionHeight = QR_VERIFICATION_CAPTION_LINES.length * lineHeight;
+  const maxQrY = Math.max(0, pageHeight - size - gap - captionHeight - margin);
+  const qrY = Math.min(position.qr_y * pageHeight, maxQrY);
+  return {
+    qrX: position.qr_x * pageWidth, qrY, size, fontSize, lineHeight,
+    captionY: qrY + size + gap, margin,
+  };
+}
+
+/** Draw the short centered verification caption without relying on letter text. */
+export function paintQrCaption(ctx: CanvasRenderingContext2D, position: CoverPlacement, pageWidth: number, pageHeight: number) {
+  const layout = verificationQrLayout(position, pageWidth, pageHeight);
+  ctx.save();
+  ctx.font = "600 " + layout.fontSize + "px Arial, sans-serif";
+  ctx.textBaseline = "top";
+  const maxWidth = Math.max(...QR_VERIFICATION_CAPTION_LINES.map(line => ctx.measureText(line).width));
+  const captionX = Math.max(layout.margin, Math.min(
+    layout.qrX + layout.size / 2 - maxWidth / 2,
+    pageWidth - maxWidth - layout.margin,
+  ));
+  const pad = layout.fontSize * 0.2;
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(captionX - pad, layout.captionY - pad,
+    maxWidth + pad * 2, layout.lineHeight * QR_VERIFICATION_CAPTION_LINES.length + pad * 2);
+  ctx.fillStyle = "#213747";
+  for (const [index, line] of QR_VERIFICATION_CAPTION_LINES.entries()) {
+    const lineWidth = ctx.measureText(line).width;
+    ctx.fillText(line, captionX + (maxWidth - lineWidth) / 2,
+      layout.captionY + index * layout.lineHeight);
+  }
+  ctx.restore();
+}
+
+
 export function fillCoverText(template: string, fields: Record<string, string>): string {
   const normalized = new Map(Object.entries(fields).map(([key, value]) => [key.trim().toLowerCase(), value]));
   return template.replace(/\{\{\s*([^{}]+?)\s*\}\}/g, (_match, field: string) =>
@@ -78,13 +129,15 @@ export async function renderCoverPage(params: {
     context.fillRect(0, 0, canvas.width, canvas.height);
     context.drawImage(background, 0, 0, canvas.width, canvas.height);
     const p = params.position;
-    const qrPixels = Math.round(p.qr_size * canvas.width);
+    const qrLayout = verificationQrLayout(p, canvas.width, canvas.height);
+    const qrPixels = Math.round(qrLayout.size);
     const qrUrl = publicVerificationUrl(params.verificationId, window.location.origin);
     const qrData = await QRCode.toDataURL(qrUrl, { width: qrPixels, margin: 2, errorCorrectionLevel: "M" });
     const qr = await imageFromUrl(qrData);
     context.fillStyle = "#ffffff";
-    context.fillRect(Math.round(p.qr_x * canvas.width), Math.round(p.qr_y * canvas.height), qrPixels, qrPixels);
-    context.drawImage(qr, Math.round(p.qr_x * canvas.width), Math.round(p.qr_y * canvas.height), qrPixels, qrPixels);
+    context.fillRect(Math.round(qrLayout.qrX), Math.round(qrLayout.qrY), qrPixels, qrPixels);
+    context.drawImage(qr, Math.round(qrLayout.qrX), Math.round(qrLayout.qrY), qrPixels, qrPixels);
+    paintQrCaption(context, p, canvas.width, canvas.height);
     context.fillStyle = "#192d38";
     const fontPx = Math.round(canvas.width * 0.018);
     context.font = fontPx + "px Arial, sans-serif";

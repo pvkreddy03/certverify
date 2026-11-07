@@ -7,7 +7,7 @@ import { PaymentSimulation } from "@/components/payment-simulation";
 import { formatMoney } from "@/lib/billing/money";
 import type { CatalogPlan, Quote, SubscriptionStatus } from "@/lib/billing/types";
 
-type Report = { subscription: SubscriptionStatus; plans: CatalogPlan[] };
+type Report = { subscription: SubscriptionStatus; plans: CatalogPlan[]; internalWorkspace?: boolean };
 type TestCheckoutStatus = {
   mode: "disabled" | "incomplete" | "razorpay_test";
   configured: boolean;
@@ -139,9 +139,9 @@ export default function SubscriptionPage() {
           <div className="max-w-xl space-y-3">
             <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[.18em] text-[#8bf4e3]">
               <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10"><Icon name="card"/></span>
-              CertVerify membership
+              ValuerSeal membership
             </div>
-            <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl">A plan that works for you.</h1>
+            <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl">{report?.internalWorkspace ? "Your platform administrator access" : "A plan that works for you."}</h1>
             <p className="text-sm leading-6 text-[#d7f3ef] sm:text-base">Pick what fits your practice. Your certificate records, QR verification and organization workspace stay together as you grow.</p>
           </div>
           <Link href="/dashboard/subscription/orders"
@@ -164,7 +164,12 @@ export default function SubscriptionPage() {
       {message && <div role="status" className="rounded-2xl border border-teal-200 bg-teal-50 px-5 py-4 text-sm font-medium text-teal-950">{message}</div>}
       {loading && <div className="cv-panel p-9 text-slate-600" role="status">Finding your account plans…</div>}
 
-      {s && <>
+      {report?.internalWorkspace ? <section className="cv-panel rounded-3xl p-7" role="status">
+        <h2 className="text-2xl font-bold text-teal-900">Internal administrator licence — Active</h2>
+        <p className="mt-3 text-slate-700">This workspace is exempt from paid subscriptions. Certificate issuance and QR verification are available without a payment, renewal or certificate quota.</p>
+        <p className="mt-2 text-sm text-slate-600">Your access remains subject to active workspace ownership and platform administrator authorization.</p>
+        <Link href="/dashboard" className="mt-4 inline-block text-sm font-bold text-teal-800 underline">Return to dashboard</Link>
+      </section> : s && <>
         <section className="grid gap-5 md:grid-cols-[minmax(0,1.4fr)_minmax(270px,1fr)]">
           <div className="cv-panel rounded-3xl p-6 sm:p-7">
             <div className="flex flex-wrap items-center gap-3">
@@ -217,8 +222,8 @@ export default function SubscriptionPage() {
 
           {eligible.length === 0 ? <div className="cv-panel rounded-3xl border-amber-200 p-7">
             <h3 className="text-lg font-bold text-[#253e50]">No plans are currently available for this account</h3>
-            <p className="mt-2 text-sm leading-6 text-slate-600">Plans must be activated and marked visible by the CertVerify platform administrator, and their availability dates must include today. Your account and existing documents are unaffected.</p>
-            <p className="mt-3 text-sm font-medium text-amber-800">Please contact CertVerify support for available subscription plans. No payment can be requested until a plan is published.</p>
+            <p className="mt-2 text-sm leading-6 text-slate-600">Plans must be activated and marked visible by the ValuerSeal platform administrator, and their availability dates must include today. Your account and existing documents are unaffected.</p>
+            <p className="mt-3 text-sm font-medium text-amber-800">Please contact ValuerSeal support for available subscription plans. No payment can be requested until a plan is published.</p>
             {s.can_manage && s.period && <button type="button" disabled={busy}
               onClick={() => void act({ action: "quote", planId: s.period!.plan_id, seats: s.period!.licensed_seats, coupon, intent: "renewal" })}
               className="mt-5 rounded-xl bg-[#0e746c] px-5 py-3 text-sm font-bold text-white hover:bg-[#095e56] disabled:opacity-50">

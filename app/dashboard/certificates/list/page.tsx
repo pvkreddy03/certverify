@@ -3,7 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
-import { accountHeaders } from "@/lib/accounts/context";
+import { accountHeaders, requireSelectedAccountId } from "@/lib/accounts/context";
+import { ValuationRegister, type JobPayment, type TemplateFieldName, type DisplayPreference } from "@/components/valuation-register";
+import type { SavedField } from "@/lib/valuation/register";
 
 type Certificate = {
   id: string;
@@ -23,6 +25,11 @@ type CertificateRow = Certificate & {
 export default function CertificateListPage() {
   const [certificates, setCertificates] = useState<CertificateRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fields, setFields] = useState<SavedField[]>([]);
+  const [templateFields, setTemplateFields] = useState<TemplateFieldName[]>([]);
+  const [preferences, setPreferences] = useState<DisplayPreference[]>([]);
+  const [payments, setPayments] = useState<JobPayment[]>([]);
+  const [manager, setManager] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [exportMode, setExportMode] = useState<"all" | "range">("all");
   const [fromDate, setFromDate] = useState("");
@@ -106,6 +113,7 @@ export default function CertificateListPage() {
         .select(
           "id, certificate_id, status, created_at, template_id, template_name, user_id"
         )
+        .eq("account_id",requireSelectedAccountId())
         .order("created_at", { ascending: false });
 
     if (certificateError) {
@@ -149,6 +157,29 @@ export default function CertificateListPage() {
         certificate.user_id,
     }));
 
+    const accountId=requireSelectedAccountId();
+    const membership=await supabase.from("account_members").select("role")
+      .eq("account_id",accountId).eq("user_id",user.id).eq("status","active").maybeSingle();
+    const canManage=!!membership.data && ["owner","admin"].includes(membership.data.role);
+    setManager(canManage);
+    const certIds=rows.map(item=>item.id);
+    const [snapshotsResult,templateResult,configResult,paymentResult]=await Promise.all([
+      certIds.length ? supabase.from("certificate_field_values")
+        .select("certificate_id,field_name,field_value,field_type,display_order")
+        .in("certificate_id",certIds).limit(5000) : Promise.resolve({data:[],error:null}),
+      supabase.from("certificate_fields").select("template_id,field_name,display_order").limit(2000),
+      supabase.from("cv_valuation_display_config").select("template_id,field_names"),
+      canManage ? supabase.from("cv_valuation_job_payments")
+        .select("certificate_id,client_name,bank_name,branch_name,fee_amount,received_amount,due_date,notes")
+        .eq("account_id",accountId) : Promise.resolve({data:[],error:null}),
+    ]);
+    const failures=[snapshotsResult,templateResult,configResult,paymentResult]
+      .filter(result=>result.error).map(result=>result.error?.message);
+    if(failures.length) setErrorMessage("Some register details could not be loaded: "+failures.join("; "));
+    setFields(snapshotsResult.data??[]);
+    setTemplateFields(templateResult.data??[]);
+    setPreferences(configResult.data??[]);
+    setPayments(paymentResult.data??[]);
     setCertificates(rows);
     setLoading(false);
   }
@@ -157,58 +188,64 @@ export default function CertificateListPage() {
     void Promise.resolve().then(() => loadCertificates());
   }, []);
 
-  function formatDate(dateString: string) {
-    return new Date(dateString).toLocaleDateString("en-IN", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
-  }
-
-  function getStatusClasses(status: string) {
-    switch (status.toLowerCase()) {
-      case "active":
-        return "bg-green-100 text-green-700";
-
-      case "revoked":
-        return "bg-red-100 text-red-700";
-
-      case "inactive":
-        return "bg-slate-100 text-slate-700";
-
-      default:
-        return "bg-slate-100 text-slate-700";
-    }
-  }
-
   return (
     <main className="cv-page">
       <div className="cv-shell cv-entrance">
 
-        <Link href="/dashboard/certificates/bulk" className="cv-secondary mb-5 text-sm">▦ &nbsp; Bulk imports / Upload Excel →</Link>
-        <div className="cv-hero mb-7">
-          <div className="cv-hero__body flex flex-wrap items-center justify-between gap-5">
-          <div>
-            <p className="cv-eyebrow mb-3">VERIFICATION LIBRARY</p>
-            <h1 className="text-3xl font-bold !text-white">
-              My Certificates
-            </h1>
 
-            <p className="mt-2 text-[#d2e5ec]">
-              Review issued records, access QR codes and monitor certificate status.
+        <header className="mb-6 flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <p className="text-sm font-bold text-teal-800">VALUATION REGISTER</p>
+            <h1 className="mt-2 text-3xl font-extrabold tracking-tight text-slate-900">My Certificates</h1>
+            <p className="mt-2 text-base text-slate-600">
+              Find a property or client, then open its document in one click.
             </p>
           </div>
-
-          <Link
-            href="/dashboard/certificates"
-            className="cv-primary !border-[#3dcbb7] !bg-[#49d7c4] !text-[#09333b]"
-          >
-            + Create Certificate
-          </Link>
-          </div>
+          <Link href="/dashboard/certificates" className="cv-primary">+ Create Certificate</Link>
+        </header>
+        <div className="mb-5 flex flex-wrap gap-3">
+          {manager && <Link href="/dashboard/valuation-payments" className="cv-secondary text-sm">Job payments →</Link>}
+          <Link href="/dashboard/certificates/bulk" className="cv-secondary text-sm">Import Excel →</Link>
         </div>
 
-        <section aria-label="Export certificates to Excel" className="cv-panel mb-7 space-y-4 p-5 sm:p-6">
+
+        {errorMessage && (
+          <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {errorMessage}
+          </div>
+        )}
+
+        {loading ? (
+          <div className="cv-panel p-8 text-center text-slate-500">
+            Loading certificates...
+          </div>
+        ) : certificates.length === 0 ? (
+          <div className="cv-panel border-dashed p-12 text-center">
+            <h2 className="text-xl font-semibold text-slate-900">
+              No certificates yet
+            </h2>
+
+            <p className="mt-2 text-slate-500">
+              Create your first certificate to get started.
+            </p>
+
+            <Link
+              href="/dashboard/certificates"
+              className="mt-6 inline-block rounded-lg bg-slate-900 px-5 py-3 font-medium text-white hover:bg-slate-800"
+            >
+              Create Certificate
+            </Link>
+          </div>
+        ) : (
+          <ValuationRegister certificates={certificates} fields={fields}
+            templateFields={templateFields} preferences={preferences}
+            payments={payments} manager={manager}/>
+        )}
+
+        <details aria-label="Export certificates to Excel" className="mt-6 rounded-2xl border border-slate-200 bg-white p-5">
+          <summary className="cursor-pointer text-base font-bold text-slate-800">Download certificates to Excel (optional)</summary>
+          <div className="mt-4 border-t border-slate-100 pt-4">
+                    <div className="space-y-4">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <h2 className="text-lg font-bold text-[#183449]">Export certificates to Excel</h2>
@@ -252,114 +289,9 @@ export default function CertificateListPage() {
           </form>
           {exportError && <p role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{exportError}</p>}
           {exportDone && <p role="status" className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900">{exportDone}</p>}
-        </section>
-
-        {errorMessage && (
-          <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            {errorMessage}
+        </div>
           </div>
-        )}
-
-        {loading ? (
-          <div className="cv-panel p-8 text-center text-slate-500">
-            Loading certificates...
-          </div>
-        ) : certificates.length === 0 ? (
-          <div className="cv-panel border-dashed p-12 text-center">
-            <h2 className="text-xl font-semibold text-slate-900">
-              No certificates yet
-            </h2>
-
-            <p className="mt-2 text-slate-500">
-              Create your first certificate to get started.
-            </p>
-
-            <Link
-              href="/dashboard/certificates"
-              className="mt-6 inline-block rounded-lg bg-slate-900 px-5 py-3 font-medium text-white hover:bg-slate-800"
-            >
-              Create Certificate
-            </Link>
-          </div>
-        ) : (
-          <div className="cv-panel overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="cv-table min-w-full">
-                <thead className="border-b border-slate-200 bg-slate-50">
-                  <tr>
-                    <th className="px-6 py-4 font-semibold text-slate-700">
-                      Certificate Number
-                    </th>
-
-                    <th className="px-6 py-4 font-semibold text-slate-700">
-                      Template
-                    </th>
-
-                    <th className="px-6 py-4 font-semibold text-slate-700">
-                      Created By
-                    </th>
-
-                    <th className="px-6 py-4 font-semibold text-slate-700">
-                      Date Created
-                    </th>
-
-                    <th className="px-6 py-4 font-semibold text-slate-700">
-                      Status
-                    </th>
-
-                    <th className="px-6 py-4 font-semibold text-slate-700">
-                      Action
-                    </th>
-                  </tr>
-                </thead>
-
-                <tbody className="divide-y divide-slate-200">
-                  {certificates.map((certificate) => (
-                    <tr
-                      key={certificate.id}
-                      className="hover:bg-[#f6fbfa]"
-                    >
-                      <td className="px-6 py-4 font-medium text-slate-900">
-                        {certificate.certificate_id}
-                      </td>
-
-                      <td className="px-6 py-4 text-slate-700">
-                        {certificate.templateName}
-                      </td>
-
-                      <td className="px-6 py-4 text-slate-700">
-                        {certificate.createdBy}
-                      </td>
-
-                      <td className="px-6 py-4 text-slate-700">
-                        {formatDate(certificate.created_at)}
-                      </td>
-
-                      <td className="px-6 py-4">
-                        <span
-                          className={`rounded-full px-3 py-1 text-xs font-medium ${getStatusClasses(
-                            certificate.status
-                          )}`}
-                        >
-                          {certificate.status}
-                        </span>
-                      </td>
-
-                      <td className="px-6 py-4">
-                        <Link
-                          href={`/dashboard/certificates/${certificate.id}`}
-                          className="font-medium text-slate-900 hover:underline"
-                        >
-                          View
-                        </Link>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
+        </details>
 
       </div>
     </main>
