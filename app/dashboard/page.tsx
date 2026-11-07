@@ -6,7 +6,7 @@ import { supabase } from "@/lib/supabase";
 import { ProfileAvatarLink } from "@/components/profile-avatar-link";
 import { requireSelectedAccountId } from "@/lib/accounts/context";
 
-type RecentCertificate={id:string;certificate_id:string;status:string;created_at:string};
+type RecentCertificate={id:string;certificate_id:string;status:string;created_at:string;template_name:string|null};
 type IconName="certificate"|"template"|"scan"|"excel"|"arrow"|"shield";
 
 function Graphic({name,className="h-6 w-6"}:{name:IconName;className?:string}){
@@ -33,6 +33,7 @@ function Metric({label,count,help,kind,color}:{label:string;count:number|null;he
 
 export default function DashboardPage(){
   const [email,setEmail]=useState("");
+  const [canManageFees,setCanManageFees]=useState(false);
   const [certificateCount,setCertificateCount]=useState<number|null>(null);
   const [templateCount,setTemplateCount]=useState<number|null>(null);
   const [verificationCount,setVerificationCount]=useState<number|null>(null);
@@ -47,11 +48,14 @@ export default function DashboardPage(){
       const {data:{user}}=await supabase.auth.getUser();
       if(!user||!active){if(active)setLoading(false);return;}
       setEmail(user.email||"");
+      const accountId=requireSelectedAccountId();
+      const role=await supabase.from("account_members").select("role").eq("account_id",accountId).eq("user_id",user.id).eq("status","active").maybeSingle();
+      if(!role.error)setCanManageFees(["owner","admin"].includes(role.data?.role??""));
       const [certs,templates,verifications,recentResult]=await Promise.all([
         supabase.from("certificates").select("id",{count:"exact",head:true}),
         supabase.from("certificate_templates").select("id",{count:"exact",head:true}),
         supabase.from("certificate_verifications").select("id",{count:"exact",head:true}),
-        supabase.from("certificates").select("id,certificate_id,status,created_at").order("created_at",{ascending:false}).limit(5),
+        supabase.from("certificates").select("id,certificate_id,status,created_at,template_name").order("created_at",{ascending:false}).limit(5),
       ]);
       if(!active)return;
       if(!certs.error)setCertificateCount(certs.count??0);
@@ -177,7 +181,8 @@ export default function DashboardPage(){
                 className="group flex items-center gap-4 px-6 py-4 hover:bg-[#f7fcfb]">
                 <span className="cv-glow-icon !h-10 !w-10 !rounded-xl"><Graphic name="certificate" className="h-5 w-5"/></span>
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-bold text-[#213650]">{c.certificate_id}</span>
+                  <span className="block truncate text-sm font-bold text-[#213650]">{c.template_name || "Property valuation"}</span>
+                  <span className="block max-w-sm truncate font-mono text-[10px] text-slate-500">{c.certificate_id}</span>
                   <span className="block text-xs text-slate-500">{new Date(c.created_at).toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"})}</span>
                 </span>
                 <span className={"rounded-full px-2.5 py-1 text-xs font-bold "+(c.status.toLowerCase()==="active"?"bg-[#e1f7ed] text-[#0a8466]":c.status.toLowerCase()==="revoked"?"bg-red-50 text-red-700":"bg-slate-100 text-slate-600")}>{c.status}</span>
@@ -192,7 +197,8 @@ export default function DashboardPage(){
           {[
             {href:"/dashboard/certificates/bulk",name:"Generate from Excel",help:"Preview, edit and issue up to 100 certificates",kind:"excel" as IconName},
             {href:"/dashboard/templates",name:"Manage Templates",help:"Design reusable fields and approval-ready formats",kind:"template" as IconName},
-            {href:"/dashboard/certificates/list",name:"Certificate Library",help:"Find certificates and download their QR codes",kind:"certificate" as IconName},
+            {href:"/dashboard/certificates/list",name:"Valuation Register",help:"Search saved properties, clients, locations and certificate records",kind:"certificate" as IconName},
+            ...(canManageFees ? [{href:"/dashboard/valuation-payments",name:"Job Payments & Receivables",help:"Track pending valuation fees by client, bank and branch",kind:"certificate" as IconName}] : []),
             {href:"/dashboard/report-formats",name:"Manage Report Formats",help:"Attach and manage reusable Word layouts for different documents and clients",kind:"template" as IconName},
           ].map(action=><Link href={action.href} key={action.href}
             className="cv-card cv-card--interactive group flex items-center gap-4 p-5">
