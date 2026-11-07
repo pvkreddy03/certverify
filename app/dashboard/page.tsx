@@ -93,7 +93,7 @@ export default function DashboardPage(){
         <div>
           <p className="cv-eyebrow"><span className="h-2 w-2 rounded-full bg-[#0d978f]"/> Your workspace</p>
           <h1 className="mt-2 text-[28px] font-extrabold tracking-tight text-[#172a45] sm:text-4xl">Welcome to ValuerSeal</h1>
-          <p className="mt-2 text-sm text-[#687991]">Auto-fill your documents, verify authenticity, manage secure records and revisit references—all in one workspace.</p>
+          <p className="mt-2 text-sm text-[#687991]">Manage valuation records, verify QR codes, download reports, track fees and revisit property references.</p>
         </div>
         <div className="flex items-center gap-3">
           {email&&<span className="hidden max-w-[220px] truncate rounded-full border border-[#e4edf1] bg-white px-4 py-2 text-xs font-medium text-[#6d7b92] md:inline">{email}</span>}
@@ -126,8 +126,8 @@ export default function DashboardPage(){
             <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-bold tracking-wide text-[#a6f8e5]">
               <Graphic name="shield" className="h-4 w-4"/> Secure document authentication
             </span>
-            <h2 className="mt-5 max-w-[690px] text-white">One trusted record.<br/><span className="text-[#79ead7]">Every certificate.</span></h2>
-            <p className="mt-4 max-w-2xl text-sm leading-7 sm:text-base">Issue verifiable certificates with unique QR codes, automatically fill your preferred document layouts using saved data, and securely manage records and references in one professional workspace.</p>
+            <h2 className="mt-5 max-w-[690px] text-white">One verified valuation.<br/><span className="text-[#79ead7]">Every property record.</span></h2>
+            <p className="mt-4 max-w-2xl text-sm leading-7 sm:text-base">Create QR-verifiable valuation certificates, fill your bank report formats, locate previous valuations and track outstanding professional fees from one secure workspace.</p>
             <div className="mt-5 flex flex-wrap gap-2 text-xs font-semibold text-white/90">
               <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1.5">✓ QR verification</span>
               <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1.5">✓ Auto-filled document formats</span>
