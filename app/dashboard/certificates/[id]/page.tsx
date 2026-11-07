@@ -8,6 +8,7 @@ import QRCode from "qrcode";
 import { publicVerificationUrl } from "@/lib/certificates/public-verification-url";
 import { IssuerBranding } from "@/components/issuer-branding";
 import { CertificateStatusActions } from "@/components/certificate-status-actions";
+import { ValuationJobPayment } from "@/components/valuation-job-payment";
 import { DownloadWordReport } from "@/components/download-word-report";
 import { DownloadCoverLetter } from "@/components/download-cover-letter";
 import {geoUrl,parseGeoLocation} from "@/lib/geo/location";
@@ -307,7 +308,7 @@ export default function ViewCertificatePage() {
               onClick={generateQRCode}
               className="rounded-lg bg-slate-900 px-5 py-3 font-medium text-white hover:bg-slate-800"
             >
-              Generate QR
+              Refresh QR
             </button>
 
             <Link
@@ -387,6 +388,8 @@ export default function ViewCertificatePage() {
             preferredCoverId={certificate.cover_letter_format_id}
             fieldValues={fieldValues}
           />}
+
+          <ValuationJobPayment certificateId={certificate.id} />
 
           {/* Certificate Details */}
           <section className="rounded-2xl bg-white p-8 shadow-sm">
