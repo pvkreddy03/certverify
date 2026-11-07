@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { requireSelectedAccountId } from "@/lib/accounts/context";
-import { DEFAULT_PLACEMENT, fillCoverText, savePdf, type CoverPlacement, validatePlacement } from "@/lib/cover-letters/generator";
+import { DEFAULT_PLACEMENT, fillCoverText, savePdf, verificationQrLayout, type CoverPlacement, validatePlacement } from "@/lib/cover-letters/generator";
 import { createPrintableDocument, detectKind, inspectFile, previewFirstPage, FILE_TYPES, type DocumentKind } from "@/lib/cover-letters/native-documents";
 import { downloadLetterhead, letterheadStoragePath, removeUncommittedLetterhead, uploadLetterhead } from "@/lib/cover-letters/private-storage";
 import { downloadWordOriginal } from "@/lib/reports/private-storage";
@@ -216,9 +216,14 @@ export default function CoverLettersPage() {
     const rect = event.currentTarget.getBoundingClientRect();
     const x = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
     const y = Math.max(0, Math.min(1, (event.clientY - rect.top) / rect.height));
-    setLayout(previous => placement === "qr"
-      ? { ...previous, qr_x: Math.min(x, 1 - previous.qr_size), qr_y: Math.min(y, 1 - previous.qr_size) }
-      : { ...previous, text_x: Math.min(x, 1 - previous.text_width), text_y: Math.min(y, 1 - previous.text_height) });
+    setLayout(previous => {
+      if (placement !== "qr") return {
+        ...previous, text_x: Math.min(x, 1 - previous.text_width),
+        text_y: Math.min(y, 1 - previous.text_height),
+      };
+      const limit = verificationQrLayout({ ...previous, qr_y: 1 }, 1000, 1000 * pageRatio).qrY / (1000 * pageRatio);
+      return { ...previous, qr_x: Math.min(x, 1 - previous.qr_size), qr_y: Math.min(y, limit) };
+    });
   }
   function pointerDown(event: React.PointerEvent<HTMLDivElement>) {
     if (!canManage) return;
@@ -309,6 +314,12 @@ export default function CoverLettersPage() {
   const defaultReport = certificate ? (visibleFormats.find(f => f.id === current?.report_format_id)?.id ??
     visibleFormats.find(f => f.id === certificate.report_format_id)?.id ?? visibleFormats[0]?.id ?? "") : "";
   const chosenReportFormat = reportFormatId || defaultReport;
+  const qrPreview = verificationQrLayout(layout, 1000, 1000 * pageRatio);
+  const qrPreviewTop = qrPreview.qrY / (1000 * pageRatio) * 100;
+  const qrCaptionTop = qrPreview.captionY / (1000 * pageRatio) * 100;
+  const captionWidth = Math.min(28, Math.max(20, layout.qr_size * 175));
+  const captionLeft = Math.max(1, Math.min(layout.qr_x * 100 + layout.qr_size * 50 - captionWidth / 2,
+    99 - captionWidth));
 
   return <main className="cv-page">
     <div className="cv-shell space-y-5 pb-14">
@@ -369,13 +380,22 @@ export default function CoverLettersPage() {
                 onPointerCancel={() => { capture.current = null; }}
                 onKeyDown={e => { if (e.key === "ArrowRight" || e.key === "ArrowLeft" || e.key === "ArrowUp" || e.key === "ArrowDown") {
                   e.preventDefault(); const n = e.key === "ArrowRight" ? [0.01,0] : e.key === "ArrowLeft" ? [-0.01,0] : e.key === "ArrowDown" ? [0,0.01] : [0,-0.01];
-                  setLayout(old => ({ ...old, qr_x: Math.max(0,Math.min(1-old.qr_size,old.qr_x+n[0])), qr_y: Math.max(0,Math.min(1-old.qr_size,old.qr_y+n[1])) })); } }}>
+                  setLayout(old => {
+                    const limit = verificationQrLayout({ ...old, qr_y: 1 }, 1000, 1000 * pageRatio).qrY / (1000 * pageRatio);
+                    return { ...old, qr_x: Math.max(0,Math.min(1-old.qr_size,old.qr_x+n[0])),
+                      qr_y: Math.max(0,Math.min(limit,old.qr_y+n[1])) };
+                  }); } }}>
                 {/* The preview is a rendering of the user's PDF, Word or image, not a generic mockup. */}
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={previewPage} alt="Your imported letterhead page" className="absolute inset-0 h-full w-full"/>
                 <div className="pointer-events-none absolute flex items-center justify-center border-2 border-[#008b80] bg-white/95 text-center text-[11px] font-extrabold text-teal-800 shadow"
-                  style={{ left: layout.qr_x * 100 + "%", top: layout.qr_y * 100 + "%",
+                  style={{ left: layout.qr_x * 100 + "%", top: qrPreviewTop + "%",
                     width: layout.qr_size * 100 + "%", aspectRatio: "1" }}>QR</div>
+                <div className="pointer-events-none absolute bg-white px-0.5 py-px text-center text-[8px] font-semibold leading-tight text-[#213747]"
+                  style={{ left: captionLeft + "%", top: qrCaptionTop + "%", width: captionWidth + "%" }}>
+                  <span className="block">Scan this to verify the</span>
+                  <span className="block">authenticity of the file.</span>
+                </div>
                 {textOpen && <div className="pointer-events-none absolute overflow-hidden border-2 border-dashed border-amber-600 bg-amber-50/50 p-1 text-[10px] text-slate-800"
                   style={{left:layout.text_x*100+"%",top:layout.text_y*100+"%",width:layout.text_width*100+"%",height:layout.text_height*100+"%"}}>
                   Text area
@@ -387,11 +407,12 @@ export default function CoverLettersPage() {
             {canManage && <div className="mt-4 flex flex-wrap items-center gap-3">
               <label className="text-sm font-semibold">QR size
                 <input aria-label="QR size" className="ml-3 align-middle" type="range" min="0.1" max="0.25" step="0.01" value={layout.qr_size}
-                  onChange={e => setLayout(previous => ({
-                    ...previous, qr_size: Number(e.target.value),
-                    qr_x: Math.min(previous.qr_x, 1-Number(e.target.value)),
-                    qr_y: Math.min(previous.qr_y, 1-Number(e.target.value)),
-                  }))}/>
+                  onChange={e => setLayout(previous => {
+                    const next = { ...previous, qr_size: Number(e.target.value),
+                      qr_x: Math.min(previous.qr_x, 1-Number(e.target.value)) };
+                    const limit = verificationQrLayout({ ...next, qr_y: 1 }, 1000, 1000 * pageRatio).qrY / (1000 * pageRatio);
+                    return { ...next, qr_y: Math.min(previous.qr_y, limit) };
+                  })}/>
               </label>
               <span className="text-xs text-slate-500">QR includes a white scanning background.</span>
             </div>}
