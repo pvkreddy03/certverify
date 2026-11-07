@@ -65,7 +65,7 @@ test("save the letterhead QR layout once, redirect to format library, not per-ce
  await page.getByPlaceholder("Standard cover letter").fill("Permanent Office Layout");
  await page.locator('input[type=file]').setInputFiles({name:"letterhead.pdf",mimeType:"application/pdf",buffer:await pdf()});
  await expect(page.getByText("Document ready.",{exact:false})).toBeVisible({timeout:30000});
- await page.getByRole("button",{name:/Save format/}).click();
+ await page.getByRole("button",{name:"Save Letterhead & QR"}).click();
  await expect(page).toHaveURL(/\/dashboard\/my-cover-letters#letterheads/,{timeout:30000});
  await expect(page.getByText("Permanent Office Layout")).toBeVisible();
  expect(uploads).toBe(1);
@@ -93,10 +93,12 @@ test("administrator makes a general letterhead the account default with one acti
  expect(chosen).toBe(headId);
 });
 
-test("compact ribbon links to My Cover Letters under Certificates and Formats",async ({page})=>{
- await login(page);await page.goto("/dashboard");
- await page.getByLabel("My Certificates",{exact:true}).first().click();
- await expect(page.getByRole("link",{name:"My Cover Letters"}).first()).toBeVisible();
- await page.getByLabel("Templates & Formats").click();
- await expect(page.getByRole("link",{name:"My Cover Letters"}).last()).toBeVisible();
+test("simple navigation exposes certificates directly and extra tools under More",async ({page})=>{
+ await login(page);
+ const nav=page.getByRole("navigation",{name:"Customer dashboard pages"});
+ await expect(nav.getByRole("link",{name:"My Certificates",exact:true})).toBeVisible();
+ const more=nav.locator('details:has(> summary[aria-label="More"])');
+ await more.locator("summary").click();
+ await expect(more.getByRole("link",{name:"My Cover Letters",exact:true})).toBeVisible();
+ await expect(more.getByRole("link",{name:"Letterhead & QR Setup"})).toBeVisible();
 });
