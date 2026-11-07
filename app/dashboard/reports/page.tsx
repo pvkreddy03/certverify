@@ -78,17 +78,14 @@ export default function MyReportsPage() {
 
   return <main className="cv-page">
     <div className="cv-shell space-y-6 pb-14">
-      <header className="cv-hero">
-        <div className="cv-hero__body flex flex-wrap items-center justify-between gap-5">
-          <div>
-            <p className="cv-eyebrow mb-2">MY CERTIFICATES &amp; REPORTS</p>
-            <h1 className="text-3xl font-extrabold !text-white">My Reports</h1>
-          </div>
-          <Link href="/dashboard/report-formats"
-            className="cv-primary shrink-0 !border-[#35bea9] !bg-[#47d5c2] !text-[#082b35]">Manage Report Formats →</Link>
+      <header className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white p-6">
+        <div>
+          <p className="text-sm font-bold text-teal-800">SAVED VALUATION DOCUMENTS</p>
+          <h1 className="mt-2 text-3xl font-extrabold text-slate-900">My Reports</h1>
+          <p className="mt-2 text-base text-slate-600">Find a valuation and download its completed report.</p>
         </div>
+        <Link href="/dashboard/report-formats" className="cv-secondary">Report format settings →</Link>
       </header>
-
       {message && <p role="alert" className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">{message}</p>}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <label className="min-w-[235px] flex-1 text-sm font-semibold text-[#2b4d61]">
