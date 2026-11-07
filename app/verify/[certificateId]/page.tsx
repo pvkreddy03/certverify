@@ -1,4 +1,4 @@
-import { publicVerificationRepository } from "@/lib/providers/public-verification";
+import { publicVerificationRepository, type PublicCertificate } from "@/lib/providers/public-verification";
 import Link from "next/link";
 import { BrandingLogo } from "@/components/branding-logo";
 import { statusPresentation } from "@/lib/certificates/status";
@@ -9,7 +9,7 @@ export default async function VerifyCertificatePage({ params }: { params: Promis
   const { certificateId } = await params;
   // Next.js already decodes route parameters; do not decode historical labels twice.
   // This server-only repository hides which database currently serves verification.
-  let certificate;
+  let certificate: PublicCertificate | null = null;
   let unavailable = false;
   try {
     certificate = await publicVerificationRepository().findByReference(certificateId);
