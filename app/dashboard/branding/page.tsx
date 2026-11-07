@@ -69,7 +69,7 @@ export default function BrandingPage() {
         setMessage(isDirect ? (result.status==="unchanged"
           ? "Current branding is already active. Old pending requests were closed."
           : "Branding saved and activated immediately.") :
-          "Branding request submitted for independent Super Admin approval.");
+          "Branding change submitted for Super Admin approval.");
         return;
       }
       await load();
