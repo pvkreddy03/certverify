@@ -12,6 +12,7 @@ test("administrator revokes with separate private/public reasons and QR record s
   await page.getByRole("button",{ name:"Sign in",exact:true }).click();
   await expect(page.getByLabel("Workspace")).toBeVisible();
   await page.goto(`/dashboard/certificates/${id}`);
+  await page.getByText("Certificate status and history",{exact:true}).click();
   await page.getByRole("button",{ name:"Revoke certificate",exact:true }).click();
   await page.getByLabel("Revocation reason (internal)").fill("   ");
   await page.getByRole("button",{ name:"Confirm permanent revocation" }).click();
@@ -35,6 +36,7 @@ test("administrators can mark inactive and restore Active before revocation",asy
   await page.getByRole("button",{ name:"Sign in",exact:true }).click();
   await expect(page.getByLabel("Workspace")).toBeVisible();
   await page.goto(`/dashboard/certificates/${id}`);
+  await page.getByText("Certificate status and history",{exact:true}).click();
   await page.getByRole("button",{ name:"Mark inactive" }).click();
   await page.getByRole("button",{ name:"Confirm status change" }).click();
   await expect(page.getByRole("button",{ name:"Restore active" })).toBeVisible();
@@ -75,6 +77,7 @@ test("QR downloads produce PNG and JPEG files linked to the canonical public rec
   await page.getByRole("button",{ name:"Sign in",exact:true }).click();
   await expect(page.getByLabel("Workspace")).toBeVisible();
   await page.goto(`/dashboard/certificates/${id}`);
+  await page.getByText("Certificate status and history",{exact:true}).click();
   await page.getByRole("button",{ name:"Generate QR",exact:true }).click();
   await expect(page.getByText(`http://127.0.0.1:3100/verify/${publicId}`,{ exact:true })).toBeVisible();
   for (const [name,signature,extension] of [["Download PNG",[137,80,78,71],".png"],["Download JPEG",[255,216,255],".jpg"]] as const) {
