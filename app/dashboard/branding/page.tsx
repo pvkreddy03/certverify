@@ -33,9 +33,16 @@ export default function BrandingPage() {
     ]);
     const account=(accounts.data as AccountMembership[]|null)?.find((item)=>item.id===selectedAccountId());
     setAuthorized(!!account && canManageAccount(account.role));
-    setInternalOwner(account?.role==="owner" && admin.data===true && !admin.error);
+    const isInternalOwner=account?.role==="owner" && admin.data===true && !admin.error;
+    const earlierProposal=isInternalOwner
+      ? data.requests.find((entry)=>["pending","needs_information","permission_granted"].includes(entry.status))
+      : null;
+    setInternalOwner(isInternalOwner);
     setRoleReady(true);
-    setProfile(data);setName(data.current?.company_name ?? "");setDetails(data.current?.professional_details ?? "");setLogo(data.current?.logo_asset_id ?? null);
+    setProfile(data);
+    setName(earlierProposal?.company_name ?? data.current?.company_name ?? "");
+    setDetails(earlierProposal?.professional_details ?? data.current?.professional_details ?? "");
+    setLogo(earlierProposal ? earlierProposal.logo_asset_id : (data.current?.logo_asset_id ?? null));
   }
   useEffect(()=>{
     let active=true;
@@ -43,10 +50,16 @@ export default function BrandingPage() {
       if (!active) return;
       const account=(accounts.data as AccountMembership[]|null)?.find((item)=>item.id===selectedAccountId());
       setAuthorized(!!account && canManageAccount(account.role));
-      setInternalOwner(account?.role==="owner" && admin.data===true && !admin.error);
+      const isInternalOwner=account?.role==="owner" && admin.data===true && !admin.error;
+      const earlierProposal=isInternalOwner
+        ? data.requests.find((entry)=>["pending","needs_information","permission_granted"].includes(entry.status))
+        : null;
+      setInternalOwner(isInternalOwner);
       setRoleReady(true);
       setProfile(data);
-      setName(data.current?.company_name ?? "");setDetails(data.current?.professional_details ?? "");setLogo(data.current?.logo_asset_id ?? null);
+      setName(earlierProposal?.company_name ?? data.current?.company_name ?? "");
+      setDetails(earlierProposal?.professional_details ?? data.current?.professional_details ?? "");
+      setLogo(earlierProposal ? earlierProposal.logo_asset_id : (data.current?.logo_asset_id ?? null));
     }).catch(()=>{ if (active) setMessage("Branding could not be loaded. Please retry later."); });
     return()=>{ active=false; };
   },[]);
@@ -115,7 +128,7 @@ export default function BrandingPage() {
     }} className="space-y-4 rounded border bg-white p-6">
       <h2 className="text-xl font-semibold">{internalOwner ? "Save organization branding" : "Request branding change"}</h2>
       {internalOwner && profile.requests.some((r)=>["pending","needs_information","permission_granted"].includes(r.status)) &&
-        <p className="rounded border border-teal-200 bg-teal-50 p-3 text-sm text-teal-900">Your previous pending branding request will be closed when you save these details directly.</p>}
+        <p className="rounded border border-teal-200 bg-teal-50 p-3 text-sm text-teal-900">The form is prefilled with your earlier pending branding request. Review it, then save directly; the old request will be closed.</p>}
       {!internalOwner && profile.requests.some((r)=>["pending","needs_information","permission_granted"].includes(r.status)) &&
         <p role="status" className="rounded border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">A request is already awaiting review. See the Requests and decisions section below; another request cannot be sent until it is resolved.</p>}
       <label className="block">Company or professional name<input className="mt-2 block w-full rounded border p-3" value={name} onChange={(event)=>setName(event.target.value)} minLength={2} maxLength={160} required disabled={busy} /></label>
