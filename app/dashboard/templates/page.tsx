@@ -142,7 +142,7 @@ export default function TemplatesPage() {
             </h1>
 
             <p className="mt-2 max-w-xl text-[#d2e5ec]">
-              Define reusable fields for certificates and professional records. Manage document layouts separately under Report Formats.
+              Build reusable property valuation forms for plots, flats, houses and commercial buildings. Manage SBI, Canara and other bank report layouts under Report Formats.
             </p>
           </div>
 
@@ -184,7 +184,7 @@ export default function TemplatesPage() {
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="e.g. Client Certificate, Compliance Record, Inspection Report"
+                placeholder="e.g. Open Plot Valuation, Residential Flat, Commercial Building"
                 className="cv-field mt-2"
               />
             </div>
