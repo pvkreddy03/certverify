@@ -66,11 +66,11 @@ export default function ValuationPaymentsPage(){
   }),[records,filter,query,today]);
   return <main className="cv-page"><div className="cv-shell space-y-6 py-8">
     <Link className="text-sm font-bold text-teal-800" href="/dashboard/certificates/list">← Back to valuation register</Link>
-    <header className="cv-hero"><div className="cv-hero__body">
-      <p className="cv-eyebrow !text-teal-100">VALUATION PRACTICE ACCOUNTS</p>
-      <h1 className="mt-2 text-3xl font-extrabold text-white">Job payments &amp; receivables</h1>
-      <p className="mt-2 text-sm text-teal-50">Track valuation fees outstanding by client, bank and branch. Manual record-keeping only—no invoices or collections are initiated by ValuerSeal.</p>
-    </div></header>
+    <header className="rounded-2xl border border-slate-200 bg-white p-6">
+      <p className="text-sm font-bold text-teal-800">PRIVATE VALUATION FEES</p>
+      <h1 className="mt-2 text-3xl font-extrabold text-slate-900">Job payments &amp; receivables</h1>
+      <p className="mt-2 text-base text-slate-600">See which clients and banks still have valuation fees to pay.</p>
+    </header>
     {updated&&<p role="status" className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-900">Payment details saved. The valuation payment register has been updated.</p>}
     {error&&<p role="alert" className="rounded border border-red-200 bg-red-50 p-4 text-red-900">{error}</p>}
     {loading?<p role="status" className="cv-panel p-6">Loading job payments…</p>:
