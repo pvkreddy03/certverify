@@ -2,6 +2,7 @@ import { publicVerificationRepository } from "@/lib/providers/public-verificatio
 import Link from "next/link";
 import { BrandingLogo } from "@/components/branding-logo";
 import { statusPresentation } from "@/lib/certificates/status";
+import { suggestedDisplayFields } from "@/lib/valuation/register";
 import {geoUrl,parseGeoLocation} from "@/lib/geo/location";
 
 export default async function VerifyCertificatePage({ params }: { params: Promise<{ certificateId: string }> }) {
@@ -23,6 +24,13 @@ export default async function VerifyCertificatePage({ params }: { params: Promis
     <footer className="mt-6 text-center text-sm"><Link href="/">Powered by ValuerSeal</Link></footer>
   </main>;
   const presentation = statusPresentation(certificate.status);
+  // Surface only the issuer-authorized public fields, with their exact
+  // snapshotted names. Never infer a property owner from a generic client.
+  const publicHighlights=suggestedDisplayFields(certificate.fields.map(field=>field.field_name))
+    .slice(0,4).flatMap(name=>{
+      const matches=certificate.fields.filter(field=>field.field_name===name && field.field_value?.trim());
+      return matches.length===1 ? matches : [];
+    });
   return <main className="mx-auto max-w-2xl px-6 py-12">
     <article className="overflow-hidden rounded-2xl bg-white shadow-sm">
       <header className="border-b p-8 text-center">
@@ -33,6 +41,20 @@ export default async function VerifyCertificatePage({ params }: { params: Promis
         <p className="mt-3 text-slate-600">{presentation.description}</p>
       </header>
       <div className="space-y-6 p-8">
+        {publicHighlights.length>0 && <section aria-label="Valuation reference details" className="rounded-xl border border-teal-100 bg-teal-50 p-5">
+          <h2 className="text-sm font-bold uppercase tracking-wider text-teal-900">Valuation reference</h2>
+          <dl className="mt-3 grid gap-4 sm:grid-cols-2">
+            {publicHighlights.map(field=><div key={field.id}>
+              <dt className="text-xs font-semibold text-slate-600">{field.field_name}</dt>
+              <dd className="mt-1 break-words text-sm font-bold text-slate-900">
+                {field.field_type==="location" ? (()=>{
+                  const point=parseGeoLocation(field.field_value);
+                  return point ? <a href={geoUrl(point)} target="_blank" rel="noopener noreferrer" className="underline">View shared property location</a> : "—";
+                })() : field.field_value}
+              </dd>
+            </div>)}
+          </dl>
+        </section>}
         <dl className="space-y-4 rounded-xl bg-slate-50 p-5">
           <div><dt className="text-sm text-slate-500">Issued by</dt><dd className="mt-1 font-semibold">{certificate.issuer_name || "Issuer information unavailable"}</dd></div>
           {certificate.issuer_details && <div><dt className="text-sm text-slate-500">Professional details</dt><dd className="mt-1 whitespace-pre-wrap">{certificate.issuer_details}</dd></div>}
