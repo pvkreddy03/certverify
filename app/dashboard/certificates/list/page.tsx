@@ -192,33 +192,60 @@ export default function CertificateListPage() {
     <main className="cv-page">
       <div className="cv-shell cv-entrance">
 
-        <div className="mb-5 flex flex-wrap gap-3">
-          <Link href="/dashboard/certificates/bulk" className="cv-secondary text-sm">▦ &nbsp; Bulk imports / Upload Excel →</Link>
-          {manager && <Link href="/dashboard/valuation-payments" className="cv-secondary text-sm">₹ &nbsp; Job payments &amp; receivables →</Link>}
-        </div>
-        <div className="cv-hero mb-7">
-          <div className="cv-hero__body flex flex-wrap items-center justify-between gap-5">
-          <div>
-            <p className="cv-eyebrow mb-3">VERIFICATION LIBRARY</p>
-            <h1 className="text-3xl font-bold !text-white">
-              My Certificates
-            </h1>
 
-            <p className="mt-2 text-[#d2e5ec]">
-              Search properties, clients and locations, manage job payments and open valuation reports.
+        <header className="mb-6 flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <p className="text-sm font-bold text-teal-800">VALUATION REGISTER</p>
+            <h1 className="mt-2 text-3xl font-extrabold tracking-tight text-slate-900">My Certificates</h1>
+            <p className="mt-2 text-base text-slate-600">
+              Find a property or client, then open its document in one click.
             </p>
           </div>
-
-          <Link
-            href="/dashboard/certificates"
-            className="cv-primary !border-[#3dcbb7] !bg-[#49d7c4] !text-[#09333b]"
-          >
-            + Create Certificate
-          </Link>
-          </div>
+          <Link href="/dashboard/certificates" className="cv-primary">+ Create Certificate</Link>
+        </header>
+        <div className="mb-5 flex flex-wrap gap-3">
+          {manager && <Link href="/dashboard/valuation-payments" className="cv-secondary text-sm">Job payments →</Link>}
+          <Link href="/dashboard/certificates/bulk" className="cv-secondary text-sm">Import Excel →</Link>
         </div>
 
-        <section aria-label="Export certificates to Excel" className="cv-panel mb-7 space-y-4 p-5 sm:p-6">
+
+        {errorMessage && (
+          <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {errorMessage}
+          </div>
+        )}
+
+        {loading ? (
+          <div className="cv-panel p-8 text-center text-slate-500">
+            Loading certificates...
+          </div>
+        ) : certificates.length === 0 ? (
+          <div className="cv-panel border-dashed p-12 text-center">
+            <h2 className="text-xl font-semibold text-slate-900">
+              No certificates yet
+            </h2>
+
+            <p className="mt-2 text-slate-500">
+              Create your first certificate to get started.
+            </p>
+
+            <Link
+              href="/dashboard/certificates"
+              className="mt-6 inline-block rounded-lg bg-slate-900 px-5 py-3 font-medium text-white hover:bg-slate-800"
+            >
+              Create Certificate
+            </Link>
+          </div>
+        ) : (
+          <ValuationRegister certificates={certificates} fields={fields}
+            templateFields={templateFields} preferences={preferences}
+            payments={payments} manager={manager}/>
+        )}
+
+        <details aria-label="Export certificates to Excel" className="mt-6 rounded-2xl border border-slate-200 bg-white p-5">
+          <summary className="cursor-pointer text-base font-bold text-slate-800">Download certificates to Excel (optional)</summary>
+          <div className="mt-4 border-t border-slate-100 pt-4">
+                    <div className="space-y-4">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <h2 className="text-lg font-bold text-[#183449]">Export certificates to Excel</h2>
@@ -262,40 +289,9 @@ export default function CertificateListPage() {
           </form>
           {exportError && <p role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{exportError}</p>}
           {exportDone && <p role="status" className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900">{exportDone}</p>}
-        </section>
-
-        {errorMessage && (
-          <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            {errorMessage}
+        </div>
           </div>
-        )}
-
-        {loading ? (
-          <div className="cv-panel p-8 text-center text-slate-500">
-            Loading certificates...
-          </div>
-        ) : certificates.length === 0 ? (
-          <div className="cv-panel border-dashed p-12 text-center">
-            <h2 className="text-xl font-semibold text-slate-900">
-              No certificates yet
-            </h2>
-
-            <p className="mt-2 text-slate-500">
-              Create your first certificate to get started.
-            </p>
-
-            <Link
-              href="/dashboard/certificates"
-              className="mt-6 inline-block rounded-lg bg-slate-900 px-5 py-3 font-medium text-white hover:bg-slate-800"
-            >
-              Create Certificate
-            </Link>
-          </div>
-        ) : (
-          <ValuationRegister certificates={certificates} fields={fields}
-            templateFields={templateFields} preferences={preferences}
-            payments={payments} manager={manager}/>
-        )}
+        </details>
 
       </div>
     </main>
