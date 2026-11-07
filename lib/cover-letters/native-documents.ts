@@ -222,12 +222,10 @@ export async function createPrintableDocument(args: {
   body: string; placement: CoverPlacement; report?: Blob | null;
 }): Promise<Blob> {
   const pdf = await asPdf(args.background, args.kind);
-  // In a merged valuation report, the uploaded letterhead is *only* the
-  // first page. Additional pages of a multi-page uploaded letterhead must
-  // never be inserted ahead of the ordinary report pages.
-  if (args.report) {
-    while(pdf.getPageCount()>1)pdf.removePage(pdf.getPageCount()-1);
-  }
+  // A letterhead always contributes exactly one page, even when an uploaded
+  // PDF/DOCX happens to contain multiple pages. This applies to QR-only,
+  // cover-letter and combined-report downloads alike.
+  while(pdf.getPageCount()>1)pdf.removePage(pdf.getPageCount()-1);
   await overlay(pdf, args.body, args.verificationId, args.placement);
   if (args.report) {
     const canvases = await renderWordPages(args.report);
