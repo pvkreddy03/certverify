@@ -45,7 +45,7 @@ export default function CoverLettersPage() {
   const [previewPage, setPreviewPage] = useState("");
   const [layout, setLayout] = useState<CoverPlacement>(blank);
   const [bodyTemplate, setBodyTemplate] = useState("");
-  const [textOpen, setTextOpen] = useState(true);
+  const [textOpen, setTextOpen] = useState(false);
   const [editedAuto, setEditedAuto] = useState<string | null>(null);
   const [placement, setPlacement] = useState<"qr" | "text">("qr");
   const [includeReport, setIncludeReport] = useState(false);
@@ -177,7 +177,7 @@ export default function CoverLettersPage() {
     setSetupExpanded(false); setIncludeReport(false);
     if (!candidate) {
       setName(""); setLayout(blank()); setLinkedTemplateId(""); setDefaultFormatId("");
-      setBodyTemplate(""); setTextOpen(true); setSettingUp(false); return;
+      setBodyTemplate(""); setTextOpen(false); setSettingUp(false); return;
     }
     setName(candidate.name);
     setLinkedTemplateId(candidate.template_id ?? "");
@@ -187,7 +187,7 @@ export default function CoverLettersPage() {
       text_x: candidate.text_x, text_y: candidate.text_y, text_width: candidate.text_width, text_height: candidate.text_height,
     });
     setBodyTemplate(candidate.body_template);
-    setTextOpen(true);
+    setTextOpen(Boolean(candidate.body_template?.trim()));
     try {
       const data = await downloadLetterhead(candidate.storage_path);
       setOriginal(data);
@@ -324,17 +324,21 @@ export default function CoverLettersPage() {
   return <main className="cv-page">
     <div className="cv-shell space-y-5 pb-14">
       <div className="flex flex-wrap items-center justify-between gap-2"><Link href="/dashboard" className="text-sm font-semibold text-teal-800 underline">← Dashboard</Link><Link href="/dashboard/my-cover-letters" className="text-sm font-bold text-teal-800 underline">My Cover Letters</Link></div>
-      <header className="cv-hero"><div className="cv-hero__body">
-        <p className="cv-eyebrow mb-2">ONE-TIME SETUP · REPEATABLE PRINTING</p>
-        <h1 className="text-3xl font-extrabold !text-white">Cover Letter Format Designer</h1>
-        <p className="mt-2 text-sm text-[#d2e5ec]">Set up your usual letterhead and QR position once for every certificate. Special template-linked or report-linked formats are optional and can be added later.</p>
-      </div></header>
+
+      <header className="rounded-2xl border border-slate-200 bg-white p-6 sm:p-7">
+        <p className="text-sm font-bold text-teal-800">ONE-TIME SETUP</p>
+        <h1 className="mt-2 text-3xl font-extrabold text-slate-900">Letterhead &amp; QR Setup</h1>
+        <p className="mt-3 max-w-3xl text-base leading-relaxed text-slate-600">
+          Upload your usual letterhead, click where the verification QR should appear, and save.
+          For future certificates, just press Download Letterhead + QR.
+        </p>
+      </header>
       {message && <p role="status" className="rounded-xl border border-[#addbd6] bg-white p-4 text-sm text-[#214d5f]">{message}</p>}
       {loading ? <p role="status" className="cv-panel p-8">Loading letterhead library…</p> : <>
         <section className="cv-panel rounded-2xl p-5 sm:p-6">
           <div className="flex flex-wrap items-end gap-4">
             <div className="min-w-56 flex-1">
-              <label className="text-sm font-semibold">1. Choose letterhead
+              <label className="text-sm font-semibold">1. Choose or upload your letterhead
                 <select aria-label="Choose saved letterhead" className="cv-field mt-2" value={templateId} onChange={e => void openTemplate(e.target.value)}>
                   <option value="">+ New letterhead</option>
                   {saved.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
@@ -357,18 +361,22 @@ export default function CoverLettersPage() {
           {!canManage && <p className="mt-3 text-sm text-slate-500">Your organization administrator can add letterheads. You can print using any existing letterhead you have access to.</p>}
         </section>
 
-        <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(315px,0.83fr)]">
+        <div className="space-y-5">
           <section className="cv-panel rounded-2xl p-4 sm:p-6">
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <h2 className="text-lg font-extrabold text-[#173b4b]">2. Place your QR</h2>
-              {canManage && previewPage && <div className="flex gap-2">
-                <button type="button" className={placement === "qr" ? "rounded-lg bg-teal-800 px-3 py-2 text-xs font-bold text-white" : buttonClass}
-                  onClick={() => setPlacement("qr")}>Move QR</button>
-                <button type="button" className={placement === "text" ? "rounded-lg bg-teal-800 px-3 py-2 text-xs font-bold text-white" : buttonClass}
-                  onClick={() => setPlacement("text")}>Move text box</button>
-              </div>}
+              <h2 className="text-lg font-extrabold text-[#173b4b]">2. Click where the QR should appear</h2>
+
+              {canManage && previewPage && <details className="rounded-xl bg-slate-50 px-3 py-2">
+                <summary className="cursor-pointer text-sm font-semibold text-teal-800">Advanced QR and text positioning</summary>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button type="button" className={placement === "qr" ? "rounded-lg bg-teal-800 px-4 py-3 text-sm font-bold text-white" : buttonClass}
+                    onClick={() => setPlacement("qr")}>Move QR</button>
+                  <button type="button" className={placement === "text" ? "rounded-lg bg-teal-800 px-4 py-3 text-sm font-bold text-white" : buttonClass}
+                    onClick={() => {setPlacement("text");setTextOpen(true);}}>Move letter text</button>
+                </div>
+              </details>}
             </div>
-            <p className="mt-1 mb-4 text-sm text-slate-600">Click anywhere on the page or drag the QR position. Text placement is only needed when you want a letter.</p>
+            <p className="mt-1 mb-4 text-sm text-slate-600">Click the page to position the QR, or drag it to move. The short verification caption is added automatically.</p>
             {settingUp && <p role="status" className="rounded-xl bg-teal-50 p-4 text-sm">Rendering the uploaded document…</p>}
             {previewPage ? <div className="mx-auto max-w-[550px] overflow-hidden rounded-lg border border-slate-200 bg-white shadow-lg">
               <div className={"relative touch-none select-none " + (canManage ? "cursor-crosshair" : "")}
@@ -416,11 +424,23 @@ export default function CoverLettersPage() {
               </label>
               <span className="text-xs text-slate-500">QR includes a white scanning background.</span>
             </div>}
+
+            {canManage && <div className="mt-6 rounded-xl border border-teal-200 bg-teal-50 p-4">
+              <h3 className="text-lg font-bold text-teal-950">3. Save your letterhead</h3>
+              <p className="mt-1 text-sm text-teal-900">Save once. The letterhead and QR placement will be reused automatically.</p>
+              <button type="button" className="cv-primary mt-4 min-h-14 px-6 text-base disabled:opacity-40"
+                disabled={busy || !previewPage || !canManage}
+                onClick={() => void saveLayout()}>{busy ? "Saving…" : "Save Letterhead & QR"}</button>
+            </div>}
           </section>
 
-          <div className="space-y-5">
-            <section className="cv-panel rounded-2xl p-5">
-              <h2 className="text-lg font-extrabold text-[#173b4b]">3. Preview with a certificate</h2>
+          <details className="cv-panel rounded-2xl p-5">
+            <summary className="cursor-pointer text-base font-bold text-slate-800">
+              Optional · preview with an issued certificate
+            </summary>
+            <div className="mt-5 space-y-5">
+            <section className="rounded-xl border border-slate-200 bg-white p-5">
+              <h2 className="text-lg font-extrabold text-[#173b4b]">Sample certificate preview</h2>
               <label className="mt-3 block text-sm font-semibold">Issued certificate
                 <select className="cv-field mt-2" value={certificateId} aria-label="Certificate for verification QR"
                   onChange={e => { setCertificateId(e.target.value); setEditedAuto(null); setReportFormatId(""); setPrintUrl(""); }}>
@@ -444,8 +464,8 @@ export default function CoverLettersPage() {
               </div>
             </section>
 
-            <section className="cv-panel rounded-2xl p-5">
-              <h2 className="text-lg font-extrabold text-[#173b4b]">4. Preview output (not saved)</h2>
+            <section className="rounded-xl border border-slate-200 bg-white p-5">
+              <h2 className="text-lg font-extrabold text-[#173b4b]">Print a sample PDF</h2>
               <label className="mt-3 flex items-center gap-2 text-sm font-semibold">
                 <input type="checkbox" checked={includeReport} onChange={e => setIncludeReport(e.target.checked)} disabled={visibleFormats.length===0} />
                 Include the Word report after the letter
@@ -466,13 +486,14 @@ export default function CoverLettersPage() {
               </div>}
               <p className="mt-3 text-xs leading-5 text-slate-500">Only the named reusable cover format is saved. Preview and Download create temporary PDFs; no certificate-specific cover letter is retained.</p>
             </section>
-          </div>
+            </div>
+          </details>
         </div>
 
         {canManage && <section className="cv-panel rounded-2xl p-5 sm:p-6">
           <button type="button" onClick={() => setSetupExpanded(!setupExpanded)} aria-expanded={setupExpanded}
             className="flex w-full items-center justify-between text-left font-extrabold text-[#173b4b]">
-            Format auto-fill and report linking (optional) <span>{setupExpanded ? "−" : "+"}</span>
+            Optional · add reusable letter text or report links <span>{setupExpanded ? "−" : "+"}</span>
           </button>
           <p className="mt-2 text-sm text-slate-500">The organization administrator links fields and report formats once. Users download covers directly from Certificate Details.</p>
           {setupExpanded && <div className="mt-5 space-y-4 border-t border-slate-100 pt-5">
@@ -507,8 +528,7 @@ export default function CoverLettersPage() {
               </select>
             </label>
           </div>}
-          <button type="button" className="cv-primary mt-4 disabled:opacity-40" disabled={busy || !previewPage || !canManage}
-            onClick={() => void saveLayout()}>{busy ? "Saving…" : current ? "Save format → My Cover Letters" : "Save format → My Cover Letters"}</button>
+
         </section>}
       </>}
     </div>
