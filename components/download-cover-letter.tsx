@@ -182,12 +182,12 @@ export function DownloadCoverLetter({
           <p className="mt-2 text-base leading-relaxed text-slate-600">Your plain letterhead with the verification QR in its saved position. No extra text.</p>
         </div>
         <button className={mainButton} type="button" disabled={busy}
-          onClick={()=>void download("letterhead","pdf")}>
-          {working==="letterhead"?"Preparing PDF…":"Download Letterhead + QR"}
-          <span className="mt-1 block text-xs font-medium text-white/85">PDF · ready to print</span>
+          onClick={()=>void download("letterhead","docx")}>
+          {working==="letterhead"?"Preparing Word…":"Download Letterhead + QR"}
+          <span className="mt-1 block text-xs font-medium text-white/85">Word (.docx) · editable</span>
         </button>
         <button className={otherButton+" mt-2"} type="button" disabled={busy}
-          onClick={()=>void download("letterhead","docx")}>Need editable Word instead?</button>
+          onClick={()=>void download("letterhead","pdf")}>Download PDF instead</button>
       </article>
 
       <article className="flex flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -206,12 +206,12 @@ export function DownloadCoverLetter({
           </details>
         </div>
         <button className={mainButton} type="button" disabled={busy}
-          onClick={()=>void download("cover","pdf")}>
-          {working==="cover"?"Preparing PDF…":"Download Cover Letter"}
-          <span className="mt-1 block text-xs font-medium text-white/85">PDF · letter and QR</span>
+          onClick={()=>void download("cover","docx")}>
+          {working==="cover"?"Preparing Word…":"Download Cover Letter"}
+          <span className="mt-1 block text-xs font-medium text-white/85">Word (.docx) · editable letter and QR</span>
         </button>
         <button type="button" className={otherButton+" mt-2"} disabled={busy}
-          onClick={()=>void download("cover","docx")}>Need editable Word instead?</button>
+          onClick={()=>void download("cover","pdf")}>Download PDF instead</button>
       </article>
 
       <article className="flex flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -229,17 +229,16 @@ export function DownloadCoverLetter({
             No report format linked. <Link className="font-bold underline" href="/dashboard/report-formats">Set up report format</Link>.
           </p>}
         </div>
-        <button className={mainButton} type="button" disabled={busy||!selectedReport}
-          onClick={()=>void download("report","pdf")}>
-          {working==="report"?"Preparing report…":"Download Report + Letterhead"}
-          <span className="mt-1 block text-xs font-medium text-white/85">One PDF · letterhead first</span>
-        </button>
-        {selectedReport && <details className="mt-3">
-          <summary className="cursor-pointer text-sm font-bold text-teal-800 underline underline-offset-4">Need only the Word report?</summary>
+        {selectedReport && <div className="rounded-xl border border-teal-200 p-3">
           <DownloadWordReport compact templateId={templateId}
             certificateNumber={certificateNumber} preferredFormatId={selectedReport.id}
             fieldValues={fieldValues}/>
-        </details>}
+          <p className="mt-2 text-xs text-slate-600">Editable Word (.docx) report using your saved report format.</p>
+        </div>}
+        {selectedReport && <button className={otherButton+" mt-3"} type="button" disabled={busy}
+          onClick={()=>void download("report","pdf")}>
+          {working==="report"?"Preparing PDF…":"Download PDF with letterhead + QR instead"}
+        </button>
       </article>
     </div>}
     {!loading && !defaultHead && <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
