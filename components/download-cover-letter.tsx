@@ -238,7 +238,7 @@ export function DownloadCoverLetter({
         {selectedReport && <button className={otherButton+" mt-3"} type="button" disabled={busy}
           onClick={()=>void download("report","pdf")}>
           {working==="report"?"Preparing PDF…":"Download PDF with letterhead + QR instead"}
-        </button>
+        </button>}
       </article>
     </div>}
     {!loading && !defaultHead && <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
