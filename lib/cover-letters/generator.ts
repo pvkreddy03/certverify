@@ -45,10 +45,7 @@ export function paintQrCaption(ctx: CanvasRenderingContext2D, position: CoverPla
     layout.qrX + layout.size / 2 - maxWidth / 2,
     pageWidth - maxWidth - layout.margin,
   ));
-  const pad = layout.fontSize * 0.2;
-  ctx.fillStyle = "#ffffff";
-  ctx.fillRect(captionX - pad, layout.captionY - pad,
-    maxWidth + pad * 2, layout.lineHeight * QR_VERIFICATION_CAPTION_LINES.length + pad * 2);
+  // Draw only the caption text so the letterhead remains visible beneath it.
   ctx.fillStyle = "#213747";
   for (const [index, line] of QR_VERIFICATION_CAPTION_LINES.entries()) {
     const lineWidth = ctx.measureText(line).width;

@@ -175,14 +175,7 @@ async function overlay(pdf: PDFDocument, text: string, verificationId: string, p
     qrLayout.qrX + qrLayout.size / 2 - captionWidth / 2,
     width - captionWidth - qrLayout.margin,
   ));
-  const pad = qrLayout.fontSize * 0.2;
-  page.drawRectangle({
-    x: captionX - pad,
-    y: height - qrLayout.captionY - QR_VERIFICATION_CAPTION_LINES.length * qrLayout.lineHeight - pad,
-    width: captionWidth + 2 * pad,
-    height: QR_VERIFICATION_CAPTION_LINES.length * qrLayout.lineHeight + 2 * pad,
-    color: rgb(1, 1, 1),
-  });
+  // Keep the caption transparent; do not cover the original letterhead.
   for (const [index, line] of QR_VERIFICATION_CAPTION_LINES.entries()) {
     const lineWidth = font.widthOfTextAtSize(line, qrLayout.fontSize);
     page.drawText(line, {
