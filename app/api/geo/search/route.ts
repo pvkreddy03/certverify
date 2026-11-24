@@ -12,7 +12,7 @@ export async function GET(request:Request){
     if(error)throw new RequestError("Place search is temporarily unavailable.",503);
     if(allowed!==true)throw new RequestError("Another location search is running. Try again in a moment.",429);
     const response=await fetch("https://nominatim.openstreetmap.org/search?format=json&limit=1&q="+encodeURIComponent(query),{
-      headers:{"User-Agent":"CertVerify/1.0 (https://certverify-staging.vercel.app; contact: pvkreddy03@gmail.com)","Accept":"application/json","Accept-Language":"en"},
+      headers:{"User-Agent":"ValuerSeal/1.0 (https://valuerseal.com; contact: pvkreddy03@gmail.com)","Accept":"application/json","Accept-Language":"en"},
       cache:"no-store",signal:AbortSignal.timeout(8000),
     });
     if(!response.ok)throw new RequestError("Map search provider is temporarily unavailable. Pin a location manually.",503);

@@ -91,15 +91,14 @@ export default function MyCoverLettersPage() {
   return <main className="cv-page">
     <div className="cv-shell space-y-5 pb-14">
       <Link href="/dashboard" className="text-sm font-semibold text-teal-800 underline">← Dashboard</Link>
-      <header className="cv-hero"><div className="cv-hero__body flex flex-wrap items-center justify-between gap-4">
+      <header className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white p-6">
         <div>
-          <p className="cv-eyebrow mb-2">SAVED REUSABLE FORMATS</p>
-          <h1 className="text-3xl font-extrabold !text-white">My Cover Letters</h1>
-          <p className="mt-2 text-sm text-[#d2e5ec]">Your default plain letterhead and QR position apply to every certificate. Optional specialized cover formats can be added for templates or reports.</p>
+          <p className="text-sm font-bold text-teal-800">SAVED LETTERHEADS</p>
+          <h1 className="mt-2 text-3xl font-extrabold text-slate-900">My Cover Letters</h1>
+          <p className="mt-2 text-base text-slate-600">Choose which letterhead to use automatically for your certificates.</p>
         </div>
-        {canManage && <Link href="/dashboard/cover-letters"
-          className="cv-primary !border-[#35bea9] !bg-[#47d5c2] !text-[#082b35]">+ Create Cover Letter Format</Link>}
-      </div></header>
+        {canManage && <Link href="/dashboard/cover-letters" className="cv-primary">+ Add Letterhead</Link>}
+      </header>
       {message && <p role="status" className="rounded-xl border border-teal-200 bg-white p-4 text-sm text-[#215565]">{message}</p>}
       <label className="block text-sm font-semibold text-[#285061]">Search formats
         <input type="search" aria-label="Search cover formats" className="cv-field mt-2" value={query}

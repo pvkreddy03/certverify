@@ -96,7 +96,7 @@ export function AccountWorkspace({ children }: { children: ReactNode }) {
   } else if (!staff && !owner && (subscriptionPage || pathname === "/dashboard/payment")) {
     content = <main className="p-8"><h1 className="text-2xl font-semibold">Owner access required</h1><p className="mt-3">Only the organization owner can manage payment and subscription settings.</p><Link className="mt-3 block text-blue-700" href="/dashboard">Return to dashboard</Link></main>;
   } else if (accessStatus !== "active") {
-    content = <main className="p-8"><h1 className="text-2xl font-semibold">Account access {accessStatus}</h1><p className="mt-3">Customer operations are unavailable for this account. Contact CertVerify support, or select another workspace if available. Issued certificates remain publicly verifiable.</p></main>;
+    content = <main className="p-8"><h1 className="text-2xl font-semibold">Account access {accessStatus}</h1><p className="mt-3">Customer operations are unavailable for this account. Contact ValuerSeal support, or select another workspace if available. Issued certificates remain publicly verifiable.</p></main>;
   } else if (!hasEntitlement && !existingRecords && !subscriptionPage && pathname !== "/dashboard/payment") {
     content = <main className="cv-page min-h-[70vh] px-4 py-10 sm:px-6">
       <div className="mx-auto max-w-4xl overflow-hidden rounded-[28px] border border-[#d8e9ed] bg-white shadow-[0_18px_55px_rgba(17,44,61,.09)]">
@@ -109,7 +109,7 @@ export function AccountWorkspace({ children }: { children: ReactNode }) {
               </svg>
             </div>
             <div className="max-w-lg">
-              <p className="text-xs font-bold uppercase tracking-[.18em] text-[#8ef2df]">CertVerify membership</p>
+              <p className="text-xs font-bold uppercase tracking-[.18em] text-[#8ef2df]">ValuerSeal membership</p>
               <h1 className="mt-2 text-2xl font-extrabold sm:text-3xl">{canManageBilling ? "Subscription required" : "Organization subscription unavailable"}</h1>
               <p className="mt-3 text-sm leading-6 text-[#d5f1ed]">{canManageBilling
                 ? "Your workspace is ready. Activate or renew a plan to keep issuing new certificates and reports."

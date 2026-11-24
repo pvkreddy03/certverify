@@ -71,7 +71,7 @@ function Payment() {
         order_id: data.orderId,
         amount: data.amount,
         currency: data.currency,
-        name: "CertVerify test checkout",
+        name: "ValuerSeal test checkout",
         handler: async (confirmation: Confirmation) => {
           setMessage(
             "Checking payment with the server. Access is not granted by the browser callback.",

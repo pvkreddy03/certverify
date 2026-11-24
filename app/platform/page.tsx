@@ -13,17 +13,20 @@ const actions = [
   { href:"/platform/branding", title:"Branding approvals", description:"Review and decide pending branding requests", icon:"✓" },
   { href:"/platform/contact", title:"Support and contact", description:"Manage public contact details", icon:"✉" },
   { href:"/platform/audit", title:"Audit trail", description:"Review administrator actions", icon:"☷" },
-  { href:"/platform/geo", title:"Geo intelligence", description:"MFA-protected, aggregated regional map analytics", icon:"⌖" },
 ];
 
 function Overview() {
   const [report, setReport] = useState<PlatformOverview | null>(null);
   const [error, setError] = useState("");
+  const [openBranding, setOpenBranding] = useState<number | null>(null);
   useEffect(() => {
     let active = true;
     void platformFetch<PlatformOverview>("/api/platform/overview")
       .then(data => { if(active) setReport(data); })
       .catch(failure => { if(active) setError(failure.message); });
+    void platformFetch<{total:number}>("/api/platform/branding?status=open&limit=1")
+      .then(data => { if (active) setOpenBranding(data.total); })
+      .catch(() => { /* Keep the navigation link even if the count is unavailable. */ });
     return () => { active = false; };
   }, []);
   if (error) return <p role="alert" className="rounded-xl border border-red-200 bg-red-50 p-5 text-red-800">{error}</p>;
@@ -42,6 +45,10 @@ function Overview() {
   const maximum = Math.max(1, ...report.issuance_daily.map(day => day.count));
 
   return <div className="space-y-8">
+    <Link href="/platform/branding" className="block rounded-2xl border border-teal-200 bg-white p-5 font-bold text-teal-900 shadow-sm">
+      Branding approvals · {openBranding === null ? "View pending requests" : openBranding+" open request"+(openBranding===1?"":"s")}
+      <span className="ml-3 text-sm font-normal text-slate-600">Review customer requests after MFA verification</span>
+    </Link>
     <section aria-label="Platform key statistics" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
       {metrics.map(([label,value]) => <article key={label} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <h2 className="text-sm font-medium text-slate-500">{label}</h2>
@@ -87,7 +94,7 @@ export default function PlatformPage() {
   return <main className="mx-auto max-w-7xl space-y-8 px-4 py-8 sm:px-6">
     <section className="rounded-3xl bg-gradient-to-r from-[#102b47] via-[#184b57] to-[#087e75] p-7 text-white shadow-lg sm:p-9">
       <p className="text-xs font-bold uppercase tracking-[.18em] text-teal-200">Platform control center</p>
-      <h1 className="mt-3 text-3xl font-extrabold sm:text-4xl">Manage CertVerify with confidence.</h1>
+      <h1 className="mt-3 text-3xl font-extrabold sm:text-4xl">Manage ValuerSeal with confidence.</h1>
       <p className="mt-3 max-w-2xl text-sm leading-6 text-teal-50">View subscriptions, organizations, security and customer activity from one place. Administrative changes remain access-controlled and audited.</p>
     </section>
     <section>

@@ -479,7 +479,7 @@ export default function TeamPage() {
             </h1>
 
             <p className="mt-2 text-slate-600">
-              Manage users who have access to your CertVerify organization.
+              Manage users who have access to your ValuerSeal organization.
             </p>
           </div>
 
@@ -696,7 +696,7 @@ export default function TeamPage() {
             </h2>
 
             <p className="mt-3 text-center text-sm leading-6 text-slate-600">
-              Your current CertVerify account is an Individual
+              Your current ValuerSeal account is an Individual
               account. To add team members, you need to upgrade
               to a Multi-user Organization.
             </p>
@@ -758,7 +758,7 @@ export default function TeamPage() {
 
             <p className="mt-2 text-sm leading-6 text-slate-600">
               Enter the email address of the person you want
-              to invite to your CertVerify organization.
+              to invite to your ValuerSeal organization.
             </p>
 
             <form

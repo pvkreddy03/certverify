@@ -6,7 +6,7 @@ import { supabase } from "@/lib/supabase";
 import { ProfileAvatarLink } from "@/components/profile-avatar-link";
 import { requireSelectedAccountId } from "@/lib/accounts/context";
 
-type RecentCertificate={id:string;certificate_id:string;status:string;created_at:string};
+type RecentCertificate={id:string;certificate_id:string;status:string;created_at:string;template_name:string|null};
 type IconName="certificate"|"template"|"scan"|"excel"|"arrow"|"shield";
 
 function Graphic({name,className="h-6 w-6"}:{name:IconName;className?:string}){
@@ -32,7 +32,7 @@ function Metric({label,count,help,kind,color}:{label:string;count:number|null;he
 }
 
 export default function DashboardPage(){
-  const [email,setEmail]=useState("");
+  const [canManageFees,setCanManageFees]=useState(false);
   const [certificateCount,setCertificateCount]=useState<number|null>(null);
   const [templateCount,setTemplateCount]=useState<number|null>(null);
   const [verificationCount,setVerificationCount]=useState<number|null>(null);
@@ -46,12 +46,14 @@ export default function DashboardPage(){
     async function load(){
       const {data:{user}}=await supabase.auth.getUser();
       if(!user||!active){if(active)setLoading(false);return;}
-      setEmail(user.email||"");
+      const accountId=requireSelectedAccountId();
+      const role=await supabase.from("account_members").select("role").eq("account_id",accountId).eq("user_id",user.id).eq("status","active").maybeSingle();
+      if(!role.error)setCanManageFees(["owner","admin"].includes(role.data?.role??""));
       const [certs,templates,verifications,recentResult]=await Promise.all([
         supabase.from("certificates").select("id",{count:"exact",head:true}),
         supabase.from("certificate_templates").select("id",{count:"exact",head:true}),
         supabase.from("certificate_verifications").select("id",{count:"exact",head:true}),
-        supabase.from("certificates").select("id,certificate_id,status,created_at").order("created_at",{ascending:false}).limit(5),
+        supabase.from("certificates").select("id,certificate_id,status,created_at,template_name").order("created_at",{ascending:false}).limit(5),
       ]);
       if(!active)return;
       if(!certs.error)setCertificateCount(certs.count??0);
@@ -87,121 +89,107 @@ export default function DashboardPage(){
     return()=>{active=false;};
   },[]);
 
+
   return <main className="cv-page">
-    <div className="cv-shell space-y-8 cv-entrance">
-      <div className="flex flex-wrap items-center justify-between gap-4">
+    <div className="cv-shell space-y-8">
+      <header className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <p className="cv-eyebrow"><span className="h-2 w-2 rounded-full bg-[#0d978f]"/> Your workspace</p>
-          <h1 className="mt-2 text-[28px] font-extrabold tracking-tight text-[#172a45] sm:text-4xl">Welcome to CertVerify</h1>
-          <p className="mt-2 text-sm text-[#687991]">Auto-fill your documents, verify authenticity, manage secure records and revisit references—all in one workspace.</p>
+          <p className="text-sm font-semibold text-teal-800">VALUERSEAL WORKSPACE</p>
+          <h1 className="mt-2 text-3xl font-extrabold tracking-tight text-slate-900">Welcome to ValuerSeal</h1>
+          <p className="mt-2 text-base text-slate-600">Your valuation reports, QR verification and payment records in one place.</p>
         </div>
-        <div className="flex items-center gap-3">
-          {email&&<span className="hidden max-w-[220px] truncate rounded-full border border-[#e4edf1] bg-white px-4 py-2 text-xs font-medium text-[#6d7b92] md:inline">{email}</span>}
-          <ProfileAvatarLink />
-        </div>
-      </div>
+        <ProfileAvatarLink/>
+      </header>
 
       {showLetterheadSetup && <section aria-label="One-time letterhead setup" className="rounded-2xl border border-teal-200 bg-teal-50 p-5 sm:p-6">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="max-w-2xl">
-            <h2 className="text-lg font-extrabold text-teal-950">Set up your letterhead once (optional)</h2>
-            <p className="mt-2 text-sm leading-6 text-teal-900">
-              Upload your usual letterhead and click where the verification QR should appear.
-              CertVerify will use this automatically for every certificate, in Word or PDF.
-              You can skip setup and add your letterhead later.
-            </p>
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h2 className="text-lg font-extrabold text-teal-950">Set up your letterhead once</h2>
+            <p className="mt-1 text-base text-teal-900">Upload your letterhead and choose where the QR will appear. This step is optional.</p>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <Link href="/dashboard/cover-letters" className="rounded-lg bg-teal-800 px-4 py-2.5 text-sm font-bold text-white">Upload letterhead</Link>
-            <button type="button" className="rounded-lg border border-teal-400 bg-white px-4 py-2.5 text-sm font-semibold text-teal-900"
+          <div className="flex gap-3">
+            <Link href="/dashboard/cover-letters" className="cv-primary">Upload letterhead</Link>
+            <button type="button" className="cv-secondary"
               onClick={()=>{window.localStorage.setItem("cv-letterhead-setup-skipped:"+setupAccountId,"1");setShowLetterheadSetup(false);}}>
               Not now
             </button>
           </div>
         </div>
       </section>}
-      <section className="cv-hero">
-        <div className="cv-hero__body relative grid gap-8 lg:grid-cols-[minmax(0,1fr)_240px] lg:items-center">
-          <div>
-            <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-bold tracking-wide text-[#a6f8e5]">
-              <Graphic name="shield" className="h-4 w-4"/> Secure document authentication
-            </span>
-            <h2 className="mt-5 max-w-[690px] text-white">One trusted record.<br/><span className="text-[#79ead7]">Every certificate.</span></h2>
-            <p className="mt-4 max-w-2xl text-sm leading-7 sm:text-base">Issue verifiable certificates with unique QR codes, automatically fill your preferred document layouts using saved data, and securely manage records and references in one professional workspace.</p>
-            <div className="mt-5 flex flex-wrap gap-2 text-xs font-semibold text-white/90">
-              <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1.5">✓ QR verification</span>
-              <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1.5">✓ Auto-filled document formats</span>
-              <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1.5">✓ Organized reference history</span>
-            </div>
-            <div className="mt-8 flex flex-wrap gap-3">
-              <Link href="/dashboard/certificates" className="cv-primary !border-[#4ce0cb] !bg-[#43d2bc] !text-[#072b32] hover:!bg-[#76ead7]">
-                <Graphic name="certificate" className="h-5 w-5"/> + Create Certificate
-              </Link>
-              <Link href="/dashboard/report-formats" className="inline-flex items-center gap-2 rounded-xl border border-white/25 bg-white/10 px-5 py-3 text-sm font-bold text-white hover:bg-white/20">
-                <Graphic name="template" className="h-5 w-5"/> Word report formats <Graphic name="arrow" className="h-4 w-4"/>
-              </Link>
-            </div>
-          </div>
-          <div aria-hidden="true" className="relative mx-auto hidden h-[215px] w-[215px] items-center justify-center rounded-[28px] border border-white/20 bg-white/[.10] shadow-[0_25px_45px_rgba(0,0,0,.15)] backdrop-blur-sm lg:flex">
-            <div className="relative h-[145px] w-[145px] rounded-2xl bg-white p-4 shadow-lg">
-              <svg className="h-full w-full text-[#102f42]" viewBox="0 0 100 100" fill="currentColor">
-                <path d="M0 0h31v31H0zm7 7v17h17V7zm62-7h31v31H69zm7 7v17h17V7zM0 69h31v31H0zm7 7v17h17V76z" fillRule="evenodd"/>
-                <path d="M11 11h9v9h-9zM80 11h9v9h-9zM11 80h9v9h-9zM41 0h9v10h-9zM53 0h10v20H53zM38 18h18v9H38zM38 38h10v10H38zM51 33h11v12H51zM69 41h10v8H69zM83 39h17v9H83zM0 41h10v18H0zM16 39h16v10H16zM40 53h8v14h-8zM55 55h13v8H55zM75 57h9v18h-9zM89 54h11v11H89zM38 74h11v12H38zM55 72h12v11H55zM69 86h10v14H69zM85 83h15v17H85zM0 56h25v8H0z"/>
-              </svg>
-            </div>
-            <div className="absolute -right-5 bottom-4 rounded-xl border border-[#9decd8] bg-[#daf9ee] px-3 py-2 text-xs font-extrabold text-[#086e65] shadow-md">✓ Verified</div>
-          </div>
+
+      <section aria-label="Main actions">
+        <h2 className="text-2xl font-extrabold text-slate-900">What would you like to do?</h2>
+        <p className="mt-1 text-base text-slate-600">Choose one task to get started.</p>
+        <div className="mt-5 grid gap-4 md:grid-cols-3">
+          <Link href="/dashboard/certificates" className="cv-card cv-card--interactive group flex min-h-48 flex-col justify-between p-6">
+            <span className="cv-glow-icon"><Graphic name="certificate"/></span>
+            <span className="mt-5 block text-xl font-extrabold text-slate-900">+ Create Certificate</span>
+            <span className="mt-1 block text-base text-slate-600">Record a new valuation and get its QR.</span>
+            <span className="mt-4 block text-sm font-bold text-teal-800">Start valuation →</span>
+          </Link>
+          <Link href="/dashboard/certificates/list" className="cv-card cv-card--interactive group flex min-h-48 flex-col justify-between p-6">
+            <span className="cv-glow-icon"><Graphic name="scan"/></span>
+            <span className="mt-5 block text-xl font-extrabold text-slate-900">Find a Valuation</span>
+            <span className="mt-1 block text-base text-slate-600">Search a property, client or certificate.</span>
+            <span className="mt-4 block text-sm font-bold text-teal-800">Open valuation register →</span>
+          </Link>
+          {canManageFees ?
+            <Link href="/dashboard/valuation-payments" className="cv-card cv-card--interactive group flex min-h-48 flex-col justify-between p-6">
+              <span className="cv-glow-icon"><Graphic name="excel"/></span>
+              <span className="mt-5 block text-xl font-extrabold text-slate-900">Job Payments</span>
+              <span className="mt-1 block text-base text-slate-600">See unpaid valuation fees by bank and client.</span>
+              <span className="mt-4 block text-sm font-bold text-teal-800">View payments →</span>
+            </Link> :
+            <Link href="/dashboard/reference-map" className="cv-card cv-card--interactive group flex min-h-48 flex-col justify-between p-6">
+              <span className="cv-glow-icon"><Graphic name="template"/></span>
+              <span className="mt-5 block text-xl font-extrabold text-slate-900">Past Valuations</span>
+              <span className="mt-1 block text-base text-slate-600">Find your property reference locations.</span>
+              <span className="mt-4 block text-sm font-bold text-teal-800">Open map →</span>
+            </Link>}
         </div>
       </section>
 
-      <section aria-label="Certificate statistics" className="grid gap-4 md:grid-cols-3">
-        <Metric label="Certificates issued" count={certificateCount} kind="certificate" color="text-[#008d7e]" help="Unique, individually verifiable records"/>
-        <Metric label="Saved templates" count={templateCount} kind="template" color="text-[#3557b5]" help="Reusable certificate field layouts"/>
-        <Metric label="Verification scans" count={verificationCount} kind="scan" color="text-[#9467ba]" help="Public certificate verification activity"/>
+      <section aria-label="More tools">
+        <h2 className="text-xl font-extrabold text-slate-900">Other useful tools</h2>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {[
+            {href:"/dashboard/certificates/bulk",label:"Import Excel",help:"Create records in bulk"},
+            {href:"/dashboard/cover-letters",label:"Letterhead Setup",help:"Place the verification QR"},
+            {href:"/dashboard/report-formats",label:"Report Formats",help:"Use your preferred bank format"},
+            {href:"/dashboard/reference-map",label:"Reference Map",help:"See previous properties"},
+          ].map(action=><Link key={action.href} href={action.href} className="cv-panel cv-card--interactive block p-5">
+            <span className="block text-base font-bold text-slate-900">{action.label} →</span>
+            <span className="mt-2 block text-sm text-slate-600">{action.help}</span>
+          </Link>)}
+        </div>
       </section>
 
-      <div className="grid gap-7 lg:grid-cols-[1.15fr_.85fr]">
-        <section className="cv-panel overflow-hidden">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#edf1f5] px-6 py-5">
-            <div><h3 className="cv-section-title">Recent certificates</h3><p className="cv-section-description mt-1">The latest records available to your account.</p></div>
-            <Link className="text-sm font-bold text-[#087c73] hover:underline" href="/dashboard/certificates/list">View all →</Link>
-          </div>
-          {loading?<p className="p-7 text-sm text-slate-500">Loading certificate activity…</p>:recent.length===0?
-            <div className="flex flex-col items-center gap-2 px-6 py-12 text-center">
-              <span className="cv-glow-icon"><Graphic name="certificate"/></span>
-              <p className="font-bold">No certificates to display yet</p>
-              <p className="text-sm text-slate-500">Create one or import an Excel spreadsheet to begin.</p>
-            </div>:
-            <div className="divide-y divide-[#eef1f5]">
-              {recent.map(c=><Link key={c.id} href={"/dashboard/certificates/"+c.id}
-                className="group flex items-center gap-4 px-6 py-4 hover:bg-[#f7fcfb]">
-                <span className="cv-glow-icon !h-10 !w-10 !rounded-xl"><Graphic name="certificate" className="h-5 w-5"/></span>
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-bold text-[#213650]">{c.certificate_id}</span>
-                  <span className="block text-xs text-slate-500">{new Date(c.created_at).toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"})}</span>
-                </span>
-                <span className={"rounded-full px-2.5 py-1 text-xs font-bold "+(c.status.toLowerCase()==="active"?"bg-[#e1f7ed] text-[#0a8466]":c.status.toLowerCase()==="revoked"?"bg-red-50 text-red-700":"bg-slate-100 text-slate-600")}>{c.status}</span>
-                <Graphic name="arrow" className="h-4 w-4 text-slate-400 transition-transform group-hover:translate-x-1"/>
-              </Link>)}
-            </div>
-          }
-        </section>
-
-        <section className="space-y-4">
-          <div><h3 className="cv-section-title">Quick actions</h3><p className="cv-section-description mt-1">Move from creation to verification in fewer steps.</p></div>
-          {[
-            {href:"/dashboard/certificates/bulk",name:"Generate from Excel",help:"Preview, edit and issue up to 100 certificates",kind:"excel" as IconName},
-            {href:"/dashboard/templates",name:"Manage Templates",help:"Design reusable fields and approval-ready formats",kind:"template" as IconName},
-            {href:"/dashboard/certificates/list",name:"Certificate Library",help:"Find certificates and download their QR codes",kind:"certificate" as IconName},
-            {href:"/dashboard/report-formats",name:"Manage Report Formats",help:"Attach and manage reusable Word layouts for different documents and clients",kind:"template" as IconName},
-          ].map(action=><Link href={action.href} key={action.href}
-            className="cv-card cv-card--interactive group flex items-center gap-4 p-5">
-            <span className="cv-glow-icon"><Graphic name={action.kind}/></span>
-            <span className="flex-1"><span className="block font-bold text-[#20324b]">{action.name}</span><span className="mt-1 block text-xs leading-5 text-[#748298]">{action.help}</span></span>
-            <Graphic name="arrow" className="h-4 w-4 text-[#6e94a3] transition-transform group-hover:translate-x-1"/>
-          </Link>)}
-        </section>
-      </div>
+      <section className="cv-panel overflow-hidden">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-5">
+          <h2 className="text-xl font-extrabold text-slate-900">Recent valuations</h2>
+          <Link className="text-sm font-bold text-teal-800 underline-offset-4 hover:underline" href="/dashboard/certificates/list">View all certificates →</Link>
+        </div>
+        {loading ? <p className="p-6 text-base text-slate-500">Loading your recent work…</p>:
+          recent.length===0 ? <p className="p-6 text-base text-slate-600">No valuations yet. Use Create Certificate above to begin.</p>:
+          <div className="divide-y divide-slate-100">
+            {recent.map(c=><Link href={"/dashboard/certificates/"+c.id} key={c.id}
+              className="flex min-h-18 items-center justify-between gap-4 px-5 py-4 hover:bg-slate-50">
+              <div className="min-w-0">
+                <p className="truncate text-base font-bold text-slate-900">{c.template_name||"Property valuation"}</p>
+                <p className="mt-1 max-w-lg truncate text-sm text-slate-500">{c.certificate_id}</p>
+              </div>
+              <span className="shrink-0 text-sm font-semibold text-teal-800">Open →</span>
+            </Link>)}
+          </div>}
+      </section>
+      <details className="rounded-2xl border border-slate-200 bg-white p-5">
+        <summary className="cursor-pointer text-base font-bold text-slate-800">Your activity numbers (optional)</summary>
+        <div className="mt-4 grid gap-4 md:grid-cols-3">
+          <Metric label="Certificates issued" count={certificateCount} kind="certificate" color="text-[#008d7e]" help="Issued records"/>
+          <Metric label="Saved templates" count={templateCount} kind="template" color="text-[#3557b5]" help="Valuation forms"/>
+          <Metric label="QR scans" count={verificationCount} kind="scan" color="text-[#9467ba]" help="Verification activity"/>
+        </div>
+      </details>
     </div>
   </main>;
 }

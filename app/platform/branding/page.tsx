@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { PlatformAdminGuide } from "@/components/platform-admin-guide";
-import Image from "next/image";
+import { BrandingLogo } from "@/components/branding-logo";
+import Link from "next/link";
 import { PlatformMfa } from "@/components/platform-mfa";
 import { supabase } from "@/lib/supabase";
 import { brandingFetch } from "@/lib/branding/client";
@@ -23,11 +24,11 @@ function ReviewCard({ review,onChanged,reviewerId }: { review:BrandingReview;onC
   const logoNotIncluded=!review.request.logo_asset_id && !review.fields.includes("logo");
   return <article className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
     <h2 className="text-xl font-semibold">{review.current.company_name} — {review.request.status}</h2>
-    <div className="grid gap-4 sm:grid-cols-2"><div><h3 className="font-semibold">Current branding</h3><p>{review.current.company_name}</p><p>{review.current.professional_details}</p>{review.current.logo_asset_id && <Image src={`/api/branding/logo/${review.current.logo_asset_id}`} alt="Current branding logo" width={96} height={96} unoptimized />}</div>
-      <div><h3 className="font-semibold">Proposed branding</h3><p>{review.request.company_name}</p><p>{review.request.professional_details}</p>{review.request.logo_asset_id && <Image src={`/api/branding/logo/${review.request.logo_asset_id}`} alt="Proposed branding logo" width={96} height={96} unoptimized />}</div></div>
+    <div className="grid gap-4 sm:grid-cols-2"><div><h3 className="font-semibold">Current branding</h3><p>{review.current.company_name}</p><p>{review.current.professional_details}</p>{review.current.logo_asset_id && <BrandingLogo src={`/api/branding/logo/${review.current.logo_asset_id}`} alt="Current branding logo" size={96} />}</div>
+      <div><h3 className="font-semibold">Proposed branding</h3><p>{review.request.company_name}</p><p>{review.request.professional_details}</p>{review.request.logo_asset_id && <BrandingLogo src={`/api/branding/logo/${review.request.logo_asset_id}`} alt="Proposed branding logo" size={96} />}</div></div>
     <p>Requested by {review.request.requested_by}. Fields: {review.fields.join(", ")}.</p>
     {pending && submittedByReviewer && <p role="status" className="rounded border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
-      You submitted this branding request. For security, a different Super Admin must review it. You cannot approve, reject or grant permission for your own request.
+      This request was submitted from your own account. You cannot approve it from the independent review queue. If you own the workspace, open <Link href="/dashboard/branding" className="font-bold underline">Organization Branding</Link> and save directly after MFA; this will close the old pending request.
     </p>}
     {pending && logoNotIncluded && <p className="rounded border border-slate-300 bg-slate-50 p-3 text-sm">
       No new logo is attached to this request. To request logo approval, upload the logo from your organization&apos;s Branding page and submit a new change request.
@@ -45,13 +46,13 @@ function ReviewCard({ review,onChanged,reviewerId }: { review:BrandingReview;onC
 }
 type QueueReport={reviews:BrandingReview[];total:number;page:number;limit:number};
 function Queue() {
-  const [report,setReport]=useState<QueueReport|null>(null);const [status,setStatus]=useState("");const [error,setError]=useState("");const [reviewerId,setReviewerId]=useState<string|null>(null);
+  const [report,setReport]=useState<QueueReport|null>(null);const [status,setStatus]=useState("open");const [error,setError]=useState("");const [reviewerId,setReviewerId]=useState<string|null>(null);
   async function load(page=report?.page ?? 1,nextStatus=status) { setError("");try{setReport(await brandingFetch(`/api/platform/branding?${new URLSearchParams({page:String(page),status:nextStatus})}`));}catch{setError("The secure review queue could not be loaded.");} }
-  useEffect(()=>{let active=true;void supabase.auth.getUser().then(({data})=>{if(active)setReviewerId(data.user?.id ?? null);}).catch(()=>{if(active)setReviewerId(null);});void brandingFetch("/api/platform/branding").then((data)=>{if(active)setReport(data);}).catch(()=>{if(active)setError("The secure review queue could not be loaded.");});return()=>{active=false;};},[]);
-  return <div className="space-y-6"><label>Request status<select value={status} onChange={(event)=>{const value=event.target.value;setStatus(value);void load(1,value);}} className="ml-3 rounded border p-2">{[["","All decisions"],["open","Open requests"],["pending","Pending"],["needs_information","Needs information"],["permission_granted","Permission granted"],["approved","Approved"],["rejected","Rejected"]].map(([value,label])=><option key={value} value={value}>{label}</option>)}</select></label>
+  useEffect(()=>{let active=true;void supabase.auth.getUser().then(({data})=>{if(active)setReviewerId(data.user?.id ?? null);}).catch(()=>{if(active)setReviewerId(null);});void brandingFetch("/api/platform/branding?status=open").then((data)=>{if(active)setReport(data);}).catch(()=>{if(active)setError("The secure review queue could not be loaded.");});return()=>{active=false;};},[]);
+  return <div className="space-y-6"><label>Request status<select value={status} onChange={(event)=>{const value=event.target.value;setStatus(value);void load(1,value);}} className="ml-3 rounded border p-2">{[["open","Open requests"],["","All decisions"],["pending","Pending"],["needs_information","Needs information"],["permission_granted","Permission granted"],["approved","Approved"],["rejected","Rejected"]].map(([value,label])=><option key={value} value={value}>{label}</option>)}</select></label>
     {error && <p role="alert">{error}</p>}{report && <><p className="font-semibold text-slate-800">{report.total} matching branding requests. Open each request to compare the current identity and the proposed changes.</p>{!report.reviews.length && <p>No branding requests to review.</p>}{report.reviews.map((review)=><ReviewCard key={review.request.id} review={review} reviewerId={reviewerId} onChanged={()=>load()} />)}<div className="flex gap-4"><button disabled={report.page===1} onClick={()=>{void load(report.page-1);}}>Previous requests</button><span>Page {report.page}</span><button disabled={report.page*report.limit>=report.total} onClick={()=>{void load(report.page+1);}}>Next requests</button></div></>}
   </div>;
 }
 export default function PlatformBrandingPage() {
-  return <main className="mx-auto max-w-5xl space-y-6 px-6 py-8"><h1 className="text-3xl font-bold">Platform branding approvals</h1><PlatformAdminGuide section="branding" /><p>Platform administration is separate from customer organization roles. All decisions are authorized and audited.</p><PlatformMfa><Queue /></PlatformMfa></main>;
+  return <main className="mx-auto max-w-5xl space-y-6 px-6 py-8"><h1 className="text-3xl font-bold">Platform branding approvals</h1><PlatformAdminGuide section="branding" /><p>Open pending requests appear first after Super Admin MFA verification. Requests submitted by ordinary customers require independent review; your own workspace can be edited directly from Settings → Organization Branding.</p><PlatformMfa><Queue /></PlatformMfa></main>;
 }

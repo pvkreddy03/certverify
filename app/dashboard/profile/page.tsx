@@ -179,7 +179,7 @@ export default function ProfilePage() {
       <header className="relative overflow-hidden rounded-[28px] bg-gradient-to-br from-[#112b42] to-[#08796e] p-7 text-white sm:p-9">
         <p className="text-xs font-bold uppercase tracking-[.16em] text-[#83eddd]">MY ACCOUNT</p>
         <h1 className="mt-2 text-3xl font-extrabold">My Profile</h1>
-        <p className="mt-2 max-w-xl text-sm leading-6 text-[#d1eeeb]">Personalize your CertVerify profile. Add your professional contact details and an optional photo.</p>
+        <p className="mt-2 max-w-xl text-sm leading-6 text-[#d1eeeb]">Personalize your ValuerSeal profile. Add your professional contact details and an optional photo.</p>
       </header>
       {loading && <div className="cv-panel rounded-2xl p-8 text-slate-600" role="status">Loading profile…</div>}
       {!loading && <form onSubmit={event => void save(event)} className="cv-panel rounded-3xl p-6 sm:p-9">
@@ -217,7 +217,7 @@ export default function ProfilePage() {
             className="cv-field mt-2" placeholder="Short professional introduction"/>
         </label>
         <p className="mt-4 rounded-xl bg-[#edf7f5] p-4 text-xs leading-6 text-[#3e6966]">
-          Profile contact information and photos are private. Only you and verified CertVerify platform administrators can access them. Your public certificates do not automatically display these fields.
+          Profile contact information and photos are private. Only you and authorized support personnel can access profile contact details. Platform administrators cannot access property reference-map locations. Your public certificates do not automatically display these fields.
         </p>
         {error && <p role="alert" className="mt-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">{error}</p>}
         {message && <p role="status" className="mt-5 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">{message}</p>}

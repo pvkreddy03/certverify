@@ -6,11 +6,13 @@ on:
       - 'fix/**'
       - 'feat/**'
       - 'feature/**'
+      - 'change/**'
   pull_request:
     branches:
       - main
       - fix/team-invitations-and-auth
       - fix/ci-lint-errors
+      - feature/cover-letter-qr-designer-20261030
   workflow_dispatch:
 
 permissions:

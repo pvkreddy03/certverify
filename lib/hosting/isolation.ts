@@ -44,10 +44,15 @@ export function previewOrigin(env: Record<string,string|undefined>) {
   // verification and invitation links. All other origins, particularly an
   // inherited Production domain or arbitrary attacker domain, remain rejected.
   const publicStaging = "https://certverify-staging.vercel.app";
+  // Only the specifically reviewed ValuerSeal preview branch may issue test links
+  // on the owner's official domain. All other previews remain isolated.
+  const valuerSealOrigin = "https://valuerseal.com";
+  const valuerSealBranch = env.VERCEL_GIT_COMMIT_REF === "change/valuerseal-brand-remove-admin-geo-20261106";
+  const officialTestOrigin = valuerSealBranch ? valuerSealOrigin : null;
   const configured = env.NEXT_PUBLIC_APP_URL?.replace(/\/$/,"");
-  if (configured && configured !== origin && configured !== publicStaging)
+  if (configured && configured !== origin && configured !== publicStaging && configured !== officialTestOrigin)
     throw new Error("Preview application origin must match this deployment or the approved public staging domain.");
-  return configured === publicStaging ? publicStaging : origin;
+  return configured === publicStaging || configured === officialTestOrigin ? configured : origin;
 }
 export function assertPreviewIsolation(env: Record<string,string|undefined>) {
   if (env.VERCEL_ENV === "production" && env.CERTVERIFY_DEPLOYMENT_TARGET === "isolated_sandbox")
@@ -71,7 +76,8 @@ export function assertPreviewIsolation(env: Record<string,string|undefined>) {
   if (env.CERTVERIFY_PAYMENT_MODE === "razorpay_test" && (!/^rzp_test_[A-Za-z0-9]+$/.test(env.RAZORPAY_TEST_KEY_ID ?? "") || !env.RAZORPAY_TEST_KEY_SECRET || !env.RAZORPAY_TEST_WEBHOOK_SECRET || (env.CERTVERIFY_RATE_LIMIT_SECRET?.length ?? 0)<32))
     throw new Error("Preview test-payment configuration is incomplete or uses a live key.");
   if (env.NEXT_PUBLIC_VERIFICATION_ORIGIN &&
-      env.NEXT_PUBLIC_VERIFICATION_ORIGIN !== "https://certverify-staging.vercel.app")
+      env.NEXT_PUBLIC_VERIFICATION_ORIGIN !== "https://certverify-staging.vercel.app" &&
+      !(env.VERCEL_GIT_COMMIT_REF === "change/valuerseal-brand-remove-admin-geo-20261106" && env.NEXT_PUBLIC_VERIFICATION_ORIGIN === "https://valuerseal.com"))
     throw new Error("Preview verification links must use the approved public staging origin.");
   previewOrigin(env);
 }

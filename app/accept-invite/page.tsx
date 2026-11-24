@@ -178,7 +178,7 @@ export default function AcceptInvitePage() {
             C
           </div>
           <h1 className="mt-5 text-center text-2xl font-bold text-slate-900">
-            {mode === "join" ? "Join your organization" : "Set up your CertVerify account"}
+            {mode === "join" ? "Join your organization" : "Set up your ValuerSeal account"}
           </h1>
           <p className="mt-2 text-center text-sm text-slate-600">
             {loading
@@ -248,7 +248,7 @@ export default function AcceptInvitePage() {
 
               {mode === "join" && (
                 <div className="rounded-lg bg-blue-50 p-4 text-sm leading-6 text-blue-800">
-                  You are signed in with your existing CertVerify account. Accept the invitation to join this organization without creating another account.
+                  You are signed in with your existing ValuerSeal account. Accept the invitation to join this organization without creating another account.
                 </div>
               )}
 
@@ -280,7 +280,7 @@ export default function AcceptInvitePage() {
           )}
 
           <p className="mt-6 text-center text-xs text-slate-400">
-            Your professional records are protected by CertVerify.
+            Your professional records are protected by ValuerSeal.
           </p>
         </section>
       </div>

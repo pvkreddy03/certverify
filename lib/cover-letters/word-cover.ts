@@ -3,7 +3,7 @@
 import QRCode from "qrcode";
 import { PDFDocument } from "pdf-lib";
 import { publicVerificationUrl } from "@/lib/certificates/public-verification-url";
-import { validatePlacement, type CoverPlacement } from "@/lib/cover-letters/generator";
+import { paintQrCaption, verificationQrLayout, validatePlacement, type CoverPlacement } from "@/lib/cover-letters/generator";
 import { previewFirstPage, type DocumentKind } from "@/lib/cover-letters/native-documents";
 import { packageWordParts, downloadReport } from "@/lib/reports/docx-visual";
 
@@ -37,13 +37,15 @@ async function letterheadWithQR(args:{
   if (!ctx) throw new Error("Document rendering is unavailable.");
   ctx.fillStyle="#ffffff";ctx.fillRect(0,0,canvas.width,canvas.height);
   if (source) ctx.drawImage(source,0,0,canvas.width,canvas.height);
-  const size=Math.round(args.placement.qr_size*canvas.width);
-  const x=Math.round(args.placement.qr_x*canvas.width);
-  const y=Math.round(args.placement.qr_y*canvas.height);
+  const qrLayout=verificationQrLayout(args.placement,canvas.width,canvas.height);
+  const size=Math.round(qrLayout.size);
+  const x=Math.round(qrLayout.qrX);
+  const y=Math.round(qrLayout.qrY);
   const image=await makeImage(await QRCode.toDataURL(
     publicVerificationUrl(args.verificationId,window.location.origin),
     {width:900,margin:2,errorCorrectionLevel:"M"}));
   ctx.fillStyle="#ffffff";ctx.fillRect(x,y,size,size);ctx.drawImage(image,x,y,size,size);
+  paintQrCaption(ctx,args.placement,canvas.width,canvas.height);
   const binary=atob(canvas.toDataURL("image/png").split(",")[1]);
   const bytes=new Uint8Array(binary.length);
   for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);

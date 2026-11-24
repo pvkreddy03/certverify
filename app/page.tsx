@@ -13,11 +13,11 @@ export default function Home(){
   return <main className="cv-page">
     <header className="border-b border-[#e8edf2] bg-white/95">
       <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-6 py-5">
-        <Link href="/" className="flex items-center gap-3" aria-label="CertVerify home">
+        <Link href="/" className="flex items-center gap-3" aria-label="ValuerSeal home">
           <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-[#163c57] to-[#0b9186] text-white shadow-[0_5px_17px_rgba(10,106,102,.2)]">
             <svg aria-hidden="true" width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m5 12 5 5L20 6M3 3h11M3 21h18"/></svg>
           </span>
-          <span className="text-xl font-extrabold tracking-tight text-[#152b43]">CertVerify<span className="text-[#109b8e]">.</span></span>
+          <span className="text-xl font-extrabold tracking-tight text-[#152b43]">ValuerSeal<span className="text-[#109b8e]">.</span></span>
         </Link>
         <nav className="flex flex-wrap items-center gap-2 text-sm font-semibold sm:gap-5" aria-label="Website navigation">
           <a href="#how-it-works" className="hidden text-[#53687f] hover:text-[#0b827b] sm:inline">How It Works</a>
@@ -133,7 +133,7 @@ export default function Home(){
     </section>
     <footer className="border-t border-[#dfe9ee] bg-white">
       <div className="mx-auto flex max-w-7xl flex-col gap-2 px-6 py-8 text-xs font-semibold text-[#75889a] sm:flex-row sm:items-center sm:justify-between">
-        <p>© 2026 CertVerify. All rights reserved.</p><p>Professional records. Verifiable trust.</p>
+        <p>© 2026 ValuerSeal. All rights reserved.</p><p>Professional records. Verifiable trust.</p>
       </div>
     </footer>
   </main>;

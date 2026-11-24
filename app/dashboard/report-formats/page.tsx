@@ -50,7 +50,6 @@ export default function ReportFormatsPage() {
   }, []);
 
   const canCreate = !!member && (member.role === "owner" || member.role === "admin" || member.can_manage_templates === true);
-  const count = formats.length;
   const visibleFormats = formats.filter(format => {
     const template = templates.find(item => item.id === format.template_id);
     const text = (format.format_name + " " + (template?.name ?? "")).toLowerCase();
@@ -59,28 +58,27 @@ export default function ReportFormatsPage() {
 
   return <main className="cv-page min-h-screen">
     <div className="cv-shell space-y-6 pb-14">
-      <div className="cv-hero">
-        <div className="cv-hero__body flex flex-col justify-between gap-5 sm:flex-row sm:items-center">
-          <div>
-            <p className="cv-eyebrow mb-2">DOCUMENT AUTOMATION</p>
-            <h1 className="text-3xl font-bold !text-white">Report Formats</h1>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-[#d2e5ec]">
-              Create reusable Word report formats for different clients, document types or workflows, all using the same certificate fields. Generate finished documents when needed.
-            </p>
-          </div>
-          {canCreate && <Link href="/dashboard/templates?create=1" className="cv-primary shrink-0 !border-[#35bea9] !bg-[#47d5c2] !text-[#082b35]">
-            + Create certificate template
-          </Link>}
-        </div>
-      </div>
 
-      <section aria-label="Attach Word report to a certificate template" className="overflow-hidden rounded-3xl border border-[#96dfd2] bg-gradient-to-r from-[#eafff7] to-white p-5 shadow-sm sm:p-7">
+      <header className="flex flex-wrap items-center justify-between gap-5 rounded-2xl border border-slate-200 bg-white p-6">
+        <div>
+          <p className="text-sm font-bold text-teal-800">VALUATION REPORTS</p>
+          <h1 className="mt-2 text-3xl font-extrabold tracking-tight text-slate-900">Report Formats</h1>
+          <p className="mt-2 text-base text-slate-600">
+            Save your existing bank report formats once. Use them whenever you issue a valuation.
+          </p>
+        </div>
+        {canCreate && <Link href="/dashboard/templates?create=1" className="cv-secondary">
+          + Create valuation template
+        </Link>}
+      </header>
+
+      <section aria-label="Attach Word report to a certificate template" className="rounded-2xl border border-teal-200 bg-white p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="text-xs font-extrabold uppercase tracking-[.16em] text-[#0e8075]">Attach your existing report</p>
-            <h2 className="mt-2 text-xl font-extrabold text-[#183e4b]">Upload a Word report to a certificate template</h2>
+            <h2 className="mt-2 text-xl font-extrabold text-[#183e4b]">Attach your Word valuation report</h2>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-[#446472]">
-              Already have a report, certificate or professional document in Word? Select the relevant template, upload your .docx file and link names, dates, reference numbers or other fields visually. Save it as a reusable format.
+              Choose a property valuation template and upload your existing bank report (.docx). Match the fields once; future reports fill automatically.
             </p>
           </div>
           <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white text-[#0a8177] shadow-sm">
@@ -99,17 +97,6 @@ export default function ReportFormatsPage() {
         </div>}
         {!loading && !canCreate && <p className="mt-4 text-sm text-amber-900">Ask your account owner to allow template editing before uploading Word reports.</p>}
       </section>
-
-      <div className="grid gap-4 sm:grid-cols-3">
-        {[{ number: templates.length, name: "Certificate templates", caption: "Reusable field sets" },
-          { number: count, name: "Saved report formats", caption: "Original DOCX files stored privately" },
-          { number: "On demand", name: "Generated reports", caption: "No separate report files saved" }].map(tile =>
-          <div key={tile.name} className="cv-panel rounded-2xl p-5">
-            <p className="text-xs font-bold uppercase tracking-[.10em] text-[#527087]">{tile.name}</p>
-            <p className="mt-2 text-2xl font-extrabold text-[#143b4e]">{tile.number}</p>
-            <p className="mt-1 text-xs text-slate-500">{tile.caption}</p>
-          </div>)}
-      </div>
 
       {formats.length > 0 && <section aria-label="Saved report formats" className="space-y-4">
         <div className="flex flex-wrap items-end justify-between gap-4">
@@ -142,7 +129,10 @@ export default function ReportFormatsPage() {
           </div>}
       </section>}
 
-      <div className="cv-panel rounded-2xl border-l-4 border-l-[#13a48f] p-5 sm:p-6">
+
+      <details className="rounded-2xl border border-slate-200 bg-white p-5">
+        <summary className="cursor-pointer text-base font-bold text-slate-800">Need help? How report formats work</summary>
+        <div className="mt-4">      <div className="cv-panel rounded-2xl border-l-4 border-l-[#13a48f] p-5 sm:p-6">
         <h2 className="text-lg font-bold text-[#173648]">How to create a report format</h2>
         <ol className="mt-3 grid gap-3 text-sm leading-6 text-[#3a5262] md:grid-cols-3">
           <li><strong className="text-[#088a7e]">1. Choose a template.</strong> For example, Client Record or Compliance Certificate. Add common fields once.</li>
@@ -151,6 +141,8 @@ export default function ReportFormatsPage() {
         </ol>
       </div>
 
+</div>
+      </details>
       {message && <p role="alert" className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">{message}</p>}
       {loading ? <div role="status" className="cv-panel rounded-2xl p-8 text-slate-600">Loading your report formats…</div>
       : templates.length === 0 ? <div className="cv-panel rounded-3xl p-8 text-center sm:p-12">
@@ -162,7 +154,9 @@ export default function ReportFormatsPage() {
           {canCreate ? <Link className="cv-primary mt-5 inline-flex" href="/dashboard/templates?create=1">Create template →</Link>
             : <p className="mt-4 text-sm text-amber-800">Ask your organization owner to create a template or grant you permission.</p>}
         </div>
-      : <section className="space-y-4">
+      : <details className="rounded-2xl border border-slate-200 bg-white p-5">
+        <summary className="cursor-pointer text-base font-bold text-slate-800">Browse report formats by template</summary>
+        <section className="mt-5 space-y-4">
           <div className="flex flex-wrap items-end justify-between gap-2">
             <h2 className="text-xl font-bold text-[#173648]">Formats grouped by template</h2>
             <span className="text-sm text-slate-500">{templates.length} template{templates.length === 1 ? "" : "s"}</span>
@@ -201,7 +195,7 @@ export default function ReportFormatsPage() {
               </article>;
             })}
           </div>
-        </section>}
+        </section></details>}
       <p className="text-xs text-slate-500">Word formats can be configured before subscribing, but creating new certificates still requires an active subscription. Existing QR verification continues to work.</p>
     </div>
   </main>;

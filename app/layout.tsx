@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: { default: "CertVerify | Trusted Certificate Verification", template: "%s | CertVerify" },
+  title: { default: "ValuerSeal | Trusted Certificate Verification", template: "%s | ValuerSeal" },
   description: "Create, manage and verify professional certificates and reports with secure QR verification, custom templates, and bulk Excel imports.",
 };
 

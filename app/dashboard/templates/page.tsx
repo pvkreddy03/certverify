@@ -134,30 +134,15 @@ export default function TemplatesPage() {
     <main className="cv-page">
       <div className="cv-shell space-y-6 cv-entrance">
 
-        <div className="cv-hero">
-          <div className="cv-hero__body flex flex-col items-start justify-between gap-6 sm:flex-row sm:items-center">
+        <header className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white p-6">
           <div>
-            <p className="cv-eyebrow mb-2">REUSABLE RECORD LAYOUTS</p><h1 className="text-3xl font-bold !text-white">
-              Templates
-            </h1>
-
-            <p className="mt-2 max-w-xl text-[#d2e5ec]">
-              Define reusable fields for certificates and professional records. Manage document layouts separately under Report Formats.
-            </p>
+            <p className="text-sm font-bold text-teal-800">PROPERTY VALUATION FORMS</p>
+            <h1 className="mt-2 text-3xl font-extrabold text-slate-900">Templates</h1>
+            <p className="mt-2 text-base text-slate-600">Create and reuse fields for plots, flats, houses or commercial properties.</p>
           </div>
-
-          {canManageTemplates && <button
-            type="button"
-            onClick={() => {
-              setShowCreateForm(!showCreateForm);
-              setMessage("");
-            }}
-            className="cv-primary shrink-0 !border-[#35bea9] !bg-[#47d5c2] !text-[#082b35]"
-          >
-            + Create Template
-          </button>}
-          </div>
-        </div>
+          {canManageTemplates && <button type="button" onClick={()=>{setShowCreateForm(!showCreateForm);setMessage("");}}
+            className="cv-primary">+ Create Template</button>}
+        </header>
 
         {!loading && !canManageTemplates && <div role="status" className="rounded-xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-950"><strong>Template creation requires permission.</strong> Ask your organization administrator to create a template for you, or grant you template creation access in Team → Members. You can still use existing templates to issue certificates.</div>}
 
@@ -184,7 +169,7 @@ export default function TemplatesPage() {
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="e.g. Client Certificate, Compliance Record, Inspection Report"
+                placeholder="e.g. Open Plot Valuation, Residential Flat, Commercial Building"
                 className="cv-field mt-2"
               />
             </div>

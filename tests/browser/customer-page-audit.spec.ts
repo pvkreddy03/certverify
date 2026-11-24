@@ -18,6 +18,8 @@ test("core dashboard, issuance, certificate, bulk import, reporting and reusable
     "/dashboard",
     "/dashboard/certificates",
     "/dashboard/certificates/list",
+    "/dashboard/certificates/display",
+    "/dashboard/valuation-payments",
     "/dashboard/certificates/bulk",
     "/dashboard/reports",
     "/dashboard/report-formats",

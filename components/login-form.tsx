@@ -62,7 +62,7 @@ function LoginHighlights() {
   return (
     <aside aria-label="Current plans, limited offers and contact" className="space-y-5 lg:pt-16">
       {plans.length > 0 && <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-bold text-slate-900">Current CertVerify plans</h2>
+        <h2 className="text-lg font-bold text-slate-900">Current ValuerSeal plans</h2>
         <div className="mt-4 max-h-96 space-y-3 overflow-auto">
           {plans.map((plan) => <div key={plan.id} className="rounded-lg border border-slate-100 bg-slate-50 p-4">
             <h3 className="font-semibold text-slate-900">{plan.terms.name}</h3>
@@ -86,7 +86,7 @@ function LoginHighlights() {
         <p className="mt-3 text-xs text-slate-600">Subject to the offer&apos;s eligibility and checkout terms.</p>
       </section>}
       {hasContact && <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-bold text-slate-900">Contact CertVerify</h2>
+        <h2 className="text-lg font-bold text-slate-900">Contact ValuerSeal</h2>
         <div className="mt-3 space-y-2 text-sm text-slate-700">
           {contact.support_email && <p>Email: <a className="break-all font-medium text-blue-700 hover:underline" href={`mailto:${contact.support_email}`}>{contact.support_email}</a></p>}
           {contact.support_phone && <p>Phone: <a className="font-medium text-blue-700 hover:underline" href={`tel:${contact.support_phone.replace(/[^\d+]/g, "")}`}>{contact.support_phone}</a></p>}
@@ -203,7 +203,7 @@ export function LoginForm({ platform = false }: { platform?: boolean }) {
             </div>
             <div className="mt-6 flex items-center justify-center gap-2 text-center text-xs font-medium text-[#6b8393]">
               <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9"><path d="M12 2 4 5v7c0 5.4 3.5 8.6 8 10 4.5-1.4 8-4.6 8-10V5Z"/><path d="m9 12 2 2 4-4"/></svg>
-              Your professional records are protected by CertVerify.
+              Your professional records are protected by ValuerSeal.
             </div>
           </div>
           {!platform && <LoginHighlights />}

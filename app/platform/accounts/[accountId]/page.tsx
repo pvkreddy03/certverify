@@ -9,7 +9,7 @@ import { ACCESS_STATUSES,type AccountDetail,type AccessStatus } from "@/lib/plat
 type ContactProfile = {
   user_id: string; role: string; status: string; login_email: string | null;
   display_name: string; contact_email: string | null; mobile: string | null;
-  job_title: string | null; city: string | null; bio: string | null;
+  job_title: string | null; bio: string | null;
   avatar_path: string | null;
 };
 function Account({ id }: {id:string}) {
@@ -56,7 +56,7 @@ function Account({ id }: {id:string}) {
     <section className="rounded border bg-white p-6"><h2 className="text-xl font-semibold">Organization and account memberships</h2><p>{detail.total_members} membership records, including removed access.</p><div className="mt-4 overflow-x-auto"><table className="w-full text-left"><thead><tr><th>Email</th><th>Role</th><th>Access</th><th>Email verified</th></tr></thead><tbody>{detail.members.map((member)=><tr key={member.id}><td className="border-b py-3">{member.email || "Unavailable"}</td><td>{member.role}</td><td>{member.status}</td><td>{member.email_confirmed_at ? "Yes" : "No"}</td></tr>)}</tbody></table></div><div className="mt-4 flex gap-4"><button disabled={busy || detail.member_page===1} onClick={()=>{void load(detail.member_page-1);}}>Previous members</button><span>Page {detail.member_page}</span><button disabled={busy || detail.member_page*50>=detail.total_members} onClick={()=>{void load(detail.member_page+1);}}>Next members</button></div></section>
     <section className="rounded-2xl border border-[#d8e8e9] bg-white p-6">
       <h2 className="text-xl font-extrabold text-[#1b3849]">User profiles and contact details</h2>
-      <p className="mt-1 text-xs leading-5 text-slate-600">Private information supplied by customers for support. Visible only to MFA-verified CertVerify platform administrators. Contact email does not change their login.</p>
+      <p className="mt-1 text-xs leading-5 text-slate-600">Private information supplied by customers for support. Visible only to MFA-verified ValuerSeal platform administrators. Contact email does not change their login.</p>
       {profileError && <p role="alert" className="mt-3 text-sm text-amber-800">{profileError}</p>}
       {contactProfiles.length === 0 ? <p className="mt-4 text-sm text-slate-500">No user profiles are available for this account yet.</p>
         : <div className="mt-5 grid gap-4 sm:grid-cols-2">{contactProfiles.map(profile =>
@@ -74,7 +74,7 @@ function Account({ id }: {id:string}) {
               <div><dt className="font-semibold text-[#33576b]">Contact email</dt><dd>{profile.contact_email || "Not supplied"}</dd></div>
               <div><dt className="font-semibold text-[#33576b]">Phone</dt><dd>{profile.mobile || "Not supplied"}</dd></div>
               <div><dt className="font-semibold text-[#33576b]">Profession</dt><dd>{profile.job_title || "—"}</dd></div>
-              <div><dt className="font-semibold text-[#33576b]">City</dt><dd>{profile.city || "—"}</dd></div>
+              
               {profile.bio && <div><dt className="font-semibold text-[#33576b]">About</dt><dd className="whitespace-pre-wrap">{profile.bio}</dd></div>}
             </dl>
           </article>)}</div>}

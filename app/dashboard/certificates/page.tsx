@@ -268,28 +268,17 @@ export default function CertificatesPage() {
   return (
     <main className="cv-page">
       <div className="cv-shell !max-w-6xl cv-entrance">
-        <div className="cv-hero mb-7">
-          <div className="cv-hero__body">
-            <p className="cv-eyebrow mb-3">SINGLE CERTIFICATE</p>
-          <h1 className="text-3xl font-bold !text-white">
-            Create Certificate
-          </h1>
 
-          <p className="mt-3 text-[#d0e5eb]">
-            Select a template and enter the required details. Your verification ID and QR code are created automatically when you save.
-          </p>
+        <header className="mb-7 flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <p className="text-sm font-bold text-teal-800">NEW PROPERTY VALUATION</p>
+            <h1 className="mt-2 text-3xl font-extrabold tracking-tight text-slate-900">Create Certificate</h1>
+            <p className="mt-2 text-base text-slate-600">
+              Select a valuation form, fill the property details and save. Your QR is prepared automatically.
+            </p>
           </div>
-        </div>
-
-        <div className="cv-card cv-card--interactive mb-6 flex flex-wrap items-center justify-between gap-4 p-5">
-          <div className="flex items-center gap-3">
-            <span className="cv-glow-icon"><svg aria-hidden="true" width="23" height="23" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 4v16M15 10v10"/></svg></span>
-            <div><p className="font-extrabold text-[#1d3449]">Have an Excel spreadsheet?</p>
-            <p className="mt-1 text-xs text-[#6b7d95]">Upload, review and create up to 100 certificates in one batch.</p></div>
-          </div>
-          <Link href="/dashboard/certificates/bulk" className="cv-primary text-sm">Import Excel →</Link>
-        </div>
-
+          <Link href="/dashboard/certificates/bulk" className="cv-secondary">Have an Excel file? Import instead →</Link>
+        </header>
         {replacementId && <p className="mb-6 rounded border border-blue-200 bg-blue-50 p-4">This new certificate will be linked to the revoked original. The original remains revoked and its history is preserved.</p>}
         <form
           onSubmit={handleSubmit}
@@ -297,7 +286,8 @@ export default function CertificatesPage() {
         >
           {/* Certificate Template */}
           <div>
-            <label htmlFor="certificate-template" className="mb-2 block text-sm font-medium text-slate-700">
+            <p className="mb-3 text-lg font-bold text-slate-900">1. Choose a valuation template</p>
+            <label htmlFor="certificate-template" className="mb-2 block text-base font-semibold text-slate-700">
               Certificate Template
             </label>
 
@@ -332,6 +322,15 @@ export default function CertificatesPage() {
 
           </div>
 
+
+          {selectedTemplateId && <details className="rounded-xl border border-slate-200 bg-slate-50 p-4 sm:p-5">
+            <summary className="cursor-pointer text-base font-bold text-slate-800">
+              Optional · choose special report or cover-letter formats
+            </summary>
+            <p className="mt-3 text-sm text-slate-600">
+              Most users can skip this. Your usual letterhead and QR will be available after saving.
+            </p>
+            <div className="mt-4 space-y-4">
           {selectedTemplateId && !formatLoading && formats.length === 0 && <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#d9e8e9] bg-[#f3f9f8] px-5 py-4">
             <div>
               <p className="text-sm font-bold text-[#1d4451]">Want to generate a Word report?</p>
@@ -394,6 +393,9 @@ export default function CertificatesPage() {
           {selectedTemplateId && coverFormats.some(item => item.is_default) && !includeCoverLetter && <p className="text-xs text-teal-800">
             Your default account letterhead will be applied automatically. No extra cover-letter selection needed.
           </p>}
+
+            </div>
+          </details>}
           {selectedTemplateId && fieldsLoading && <p role="status" className="rounded-lg bg-slate-50 px-4 py-3 text-sm text-slate-700">Loading certificate fields…</p>}
           {fieldsLoadError && <div role="alert" className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
             Could not load required certificate fields: {fieldsLoadError}. Choose the template again before saving.
@@ -402,11 +404,11 @@ export default function CertificatesPage() {
           {/* Custom Fields */}
           {customFields.length > 0 && (
             <div className="border-t border-slate-200 pt-6">
-              <h2 className="mb-4 text-lg font-semibold text-slate-900">
-                Certificate Details
+              <h2 className="mb-4 text-xl font-bold text-slate-900">
+                2. Property and valuation details
               </h2>
 
-              <div className="grid gap-6 md:grid-cols-2">
+              <div className="grid gap-4 md:grid-cols-2">
                 {customFields.map((field) => (
                   <div key={field.id} className={field.field_type === "location" ? "md:col-span-2 min-w-0" : "min-w-0"}>
                     <label className="mb-2 block text-sm font-medium text-slate-700">
@@ -437,7 +439,7 @@ export default function CertificatesPage() {
                       placeholder={`Enter ${field.field_name}`}
                       required={field.is_required}
                       disabled={saving}
-                      className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none focus:border-slate-500"
+                      className="cv-field"
                     />}
                   </div>
                 ))}
@@ -445,7 +447,12 @@ export default function CertificatesPage() {
             </div>
           )}
 
-          {/* Status */}
+          <details className="rounded-xl border border-slate-200 bg-white px-4 py-3">
+            <summary className="cursor-pointer text-sm font-bold text-slate-700">
+              Certificate status (default: Active)
+            </summary>
+            <div className="mt-3">
+
           <div>
             <label className="mb-2 block text-sm font-medium text-slate-700">
               Status
@@ -462,6 +469,9 @@ export default function CertificatesPage() {
             </select>
           </div>
 
+
+            </div>
+          </details>
           {/* Message */}
           {message && (
             <div className="rounded-lg bg-slate-100 px-4 py-3 text-sm text-slate-700">
@@ -476,10 +486,11 @@ export default function CertificatesPage() {
           )}
 
           {/* Save Button */}
+          <p className="text-base font-semibold text-slate-700">3. Save to prepare your letterhead and QR.</p>
           <button
             type="submit"
             disabled={saving || loadingTemplates || fieldsLoading || Boolean(fieldsLoadError) || Boolean(createdRecordId)}
-            className="cv-primary disabled:cursor-not-allowed disabled:opacity-50"
+            className="cv-primary min-w-48 min-h-14 text-base disabled:cursor-not-allowed disabled:opacity-50"
           >
             {saving ? "Saving..." : "Save Certificate"}
           </button>
