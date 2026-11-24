@@ -399,7 +399,7 @@ export default function CoverLettersPage() {
                 <div className="pointer-events-none absolute flex items-center justify-center border-2 border-[#008b80] bg-white/95 text-center text-[11px] font-extrabold text-teal-800 shadow"
                   style={{ left: layout.qr_x * 100 + "%", top: qrPreviewTop + "%",
                     width: layout.qr_size * 100 + "%", aspectRatio: "1" }}>QR</div>
-                <div className="pointer-events-none absolute bg-white px-0.5 py-px text-center text-[8px] font-semibold leading-tight text-[#213747]"
+                <div className="pointer-events-none absolute bg-transparent text-center text-[8px] font-semibold leading-tight text-[#213747]"
                   style={{ left: captionLeft + "%", top: qrCaptionTop + "%", width: captionWidth + "%" }}>
                   <span className="block">{QR_VERIFICATION_CAPTION}</span>
                 </div>

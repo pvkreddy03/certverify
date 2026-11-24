@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { DEFAULT_PLACEMENT, fillCoverText, QR_VERIFICATION_CAPTION, QR_VERIFICATION_CAPTION_LINES, verificationQrLayout, validatePlacement } from "../lib/cover-letters/generator";
+import { DEFAULT_PLACEMENT, fillCoverText, paintQrCaption, QR_VERIFICATION_CAPTION, QR_VERIFICATION_CAPTION_LINES, verificationQrLayout, validatePlacement } from "../lib/cover-letters/generator";
 
 test("cover letter replaces certificate fields and leaves no unexpanded placeholders", () => {
   assert.equal(
@@ -29,4 +29,17 @@ test("Short QR verification caption is correct and remains below QR within A4", 
   const nearBottom = verificationQrLayout({ ...DEFAULT_PLACEMENT, qr_y: 0.95 }, 595.28, 841.89);
   assert.ok(nearBottom.qrY < 0.95 * 841.89);
   assert.ok(nearBottom.captionY + nearBottom.lineHeight * QR_VERIFICATION_CAPTION_LINES.length < 841.89);
+});
+
+
+test("QR caption paints text without an opaque background", () => {
+  const drawn: string[] = [];
+  const ctx = {
+    save() {}, restore() {},
+    measureText: (line: string) => ({ width: line.length * 4 }),
+    fillText: (line: string) => { drawn.push(line); },
+    fillRect: () => { assert.fail("Caption must not paint a background rectangle"); },
+  } as unknown as CanvasRenderingContext2D;
+  paintQrCaption(ctx, DEFAULT_PLACEMENT, 595.28, 841.89);
+  assert.deepEqual(drawn, ["Scan/Verify"]);
 });
