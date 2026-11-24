@@ -197,6 +197,33 @@ export default function CoverLettersPage() {
     } catch (error) { setMessage(formatError(error)); }
   }
 
+  async function deleteLetterhead() {
+    if (!current || !canManage || busy || settingUp || saveLock.current) return;
+    const item = current;
+    const warning = item.is_default
+      ? "\n\nThis is your default letterhead. Select another default or upload a replacement after deletion."
+      : "";
+    if (!window.confirm('Delete letterhead "' + item.name + '"? This removes its saved QR layout. Existing certificates will not be deleted.' + warning)) return;
+    saveLock.current = true; setBusy(true); setMessage("");
+    try {
+      const accountId = requireSelectedAccountId();
+      const { data, error } = await supabase.from("cv_cover_letter_templates")
+        .delete().eq("account_id", accountId).eq("id", item.id).select("id").maybeSingle();
+      if (error) {
+        if (error.code === "23503") throw new Error("This letterhead is linked to a saved document and cannot be deleted.");
+        throw new Error("Could not delete letterhead: " + error.message);
+      }
+      if (!data) throw new Error("Letterhead was not deleted. Check your workspace permissions.");
+      latestPreview.current++;
+      setSaved(previous => previous.filter(row => row.id !== item.id));
+      await openTemplate("");
+      // Remove the private file only after the database no longer references it.
+      try { await removeUncommittedLetterhead(item.storage_path); } catch { /* Do not undo a successful template deletion. */ }
+      setMessage("Letterhead deleted." + (item.is_default ? " Choose another default in My Cover Letters or upload a new letterhead." : ""));
+    } catch (error) { setMessage(formatError(error)); }
+    finally { setBusy(false); saveLock.current = false; }
+  }
+
   async function uploadDocument(input?: File) {
     if (!input) return;
     setMessage(""); setPrintUrl("");
@@ -353,20 +380,22 @@ export default function CoverLettersPage() {
           <div className="flex flex-wrap items-end gap-4">
             <div className="min-w-56 flex-1">
               <label className="text-sm font-semibold">1. Choose or upload your letterhead
-                <select aria-label="Choose saved letterhead" className="cv-field mt-2" value={templateId} onChange={e => void openTemplate(e.target.value)}>
+                <select aria-label="Choose saved letterhead" disabled={busy || settingUp} className="cv-field mt-2" value={templateId} onChange={e => void openTemplate(e.target.value)}>
                   <option value="">+ New letterhead</option>
                   {saved.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
                 </select>
               </label>
             </div>
-            {canManage && <button type="button" className={buttonClass} onClick={() => void openTemplate("")}>+ New letterhead</button>}
+            {canManage && <button type="button" disabled={busy || settingUp} className={buttonClass} onClick={() => void openTemplate("")}>+ New letterhead</button>}
+            {canManage && current && <button type="button" disabled={busy || settingUp} onClick={() => void deleteLetterhead()}
+              className="rounded-xl border border-red-300 px-4 py-2.5 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:opacity-40">Delete letterhead</button>}
           </div>
           {canManage && <div className="mt-4 grid gap-3 sm:grid-cols-2">
             <label className="text-sm font-semibold">Give it a name
               <input className="cv-field mt-2" value={name} maxLength={100} placeholder="Optional — My Letterhead" onChange={e => setName(e.target.value)}/>
             </label>
             <label className="text-sm font-semibold">Upload PDF, Word (.docx), JPG or PNG
-              <input type="file" accept=".pdf,.docx,.jpg,.jpeg,.png" className="cv-field mt-2 block w-full"
+              <input type="file" disabled={busy || settingUp} accept=".pdf,.docx,.jpg,.jpeg,.png" className="cv-field mt-2 block w-full"
                 onChange={e => void uploadDocument(e.target.files?.[0])}/>
               <span className="mt-1 block text-xs font-normal text-slate-500">12 MB maximum. Your original file stays private.</span>
             </label>
