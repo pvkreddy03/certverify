@@ -269,8 +269,18 @@ export default function CoverLettersPage() {
     saveLock.current = true; setBusy(true); setMessage("");
     let uploadedPath = ""; let success = false;
     try {
-      const clean = name.trim();
-      if (clean.length < 2 || clean.length > 100) throw new Error("Enter a name for the reusable letterhead.");
+      // Name is optional during the one-time setup: do not block people who
+      // simply upload a letterhead, position the QR and press Save.
+      const requestedName = name.trim();
+      const autoName = "My Letterhead";
+      let clean = requestedName || autoName;
+      if (!requestedName && !current) {
+        let n = 2;
+        while (saved.some(item => item.name.toLowerCase() === clean.toLowerCase())) {
+          clean = autoName + " " + n++;
+        }
+      }
+      if (clean.length > 100) throw new Error("Letterhead name cannot exceed 100 characters.");
       if (!chosenSource) throw new Error("Upload your PDF, Word or image letterhead first.");
       if (!previewPage) throw new Error("Open a valid document before saving.");
       validatePlacement(layout);
@@ -291,16 +301,20 @@ export default function CoverLettersPage() {
         body_template: bodyTemplate, template_id: linkedTemplateId || null,
         report_format_id: defaultFormatId || null, ...layout,
       };
-      const { error } = current
-        ? await supabase.from("cv_cover_letter_templates").update(payload).eq("id", id)
-        : await supabase.from("cv_cover_letter_templates").insert({ ...payload, id, created_by: user.id });
-      if (error) throw new Error(error.code === "23505" ? "A letterhead with that name already exists, or another default already exists. Choose your default in My Cover Letters." : "Could not save: " + error.message);
+      const { data: savedRow, error } = current
+        ? await supabase.from("cv_cover_letter_templates").update(payload).eq("id", id).select("id").single()
+        : await supabase.from("cv_cover_letter_templates").insert({ ...payload, id, created_by: user.id }).select("id").single();
+      if (error) throw new Error(error.code === "23505" ? "A letterhead with that name already exists, or another default already exists. Choose your default in My Cover Letters." : "Could not save letterhead: " + error.message);
+      if (savedRow?.id !== id) throw new Error("The letterhead could not be confirmed as saved. Please retry.");
       success = true;
       if (file) setOriginal(file);
       setFile(null); setTemplateId(id);
       window.location.assign("/dashboard/my-cover-letters#letterheads");
     } catch (error) {
-      if (uploadedPath && !success) await removeUncommittedLetterhead(uploadedPath);
+      if (uploadedPath && !success) {
+        try { await removeUncommittedLetterhead(uploadedPath); }
+        catch { /* Keep the original save error visible even if cleanup fails. */ }
+      }
       setMessage(formatError(error));
     } finally { setBusy(false); saveLock.current = false; }
   }
@@ -378,7 +392,7 @@ export default function CoverLettersPage() {
           </div>
           {canManage && <div className="mt-4 grid gap-3 sm:grid-cols-2">
             <label className="text-sm font-semibold">Give it a name
-              <input className="cv-field mt-2" value={name} maxLength={100} placeholder="Standard cover letter" onChange={e => setName(e.target.value)}/>
+              <input className="cv-field mt-2" value={name} maxLength={100} placeholder="Optional — My Letterhead" onChange={e => setName(e.target.value)}/>
             </label>
             <label className="text-sm font-semibold">Upload PDF, Word (.docx), JPG or PNG
               <input type="file" disabled={busy || settingUp} accept=".pdf,.docx,.jpg,.jpeg,.png" className="cv-field mt-2 block w-full"
