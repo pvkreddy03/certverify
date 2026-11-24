@@ -20,9 +20,9 @@ test("QR and text must remain on the printable page", () => {
   assert.throws(() => validatePlacement({ ...DEFAULT_PLACEMENT, qr_size: 0.03 }), /QR code/);
 });
 
-test("QR authenticity caption is complete and remains below QR within A4", () => {
+test("Short QR verification caption is correct and remains below QR within A4", () => {
   assert.equal(QR_VERIFICATION_CAPTION_LINES.join(" "), QR_VERIFICATION_CAPTION);
-  assert.equal(QR_VERIFICATION_CAPTION, "Scan this to verify the authenticity of the file.");
+  assert.equal(QR_VERIFICATION_CAPTION, "Scan/Verify");
   const initial = verificationQrLayout(DEFAULT_PLACEMENT, 595.28, 841.89);
   assert.ok(initial.captionY > initial.qrY + initial.size);
   assert.ok(initial.captionY + initial.lineHeight * QR_VERIFICATION_CAPTION_LINES.length < 841.89);

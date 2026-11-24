@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { requireSelectedAccountId } from "@/lib/accounts/context";
-import { DEFAULT_PLACEMENT, fillCoverText, savePdf, verificationQrLayout, type CoverPlacement, validatePlacement } from "@/lib/cover-letters/generator";
+import { DEFAULT_PLACEMENT, fillCoverText, savePdf, verificationQrLayout, QR_VERIFICATION_CAPTION, type CoverPlacement, validatePlacement } from "@/lib/cover-letters/generator";
 import { createPrintableDocument, detectKind, inspectFile, previewFirstPage, FILE_TYPES, type DocumentKind } from "@/lib/cover-letters/native-documents";
 import { downloadLetterhead, letterheadStoragePath, removeUncommittedLetterhead, uploadLetterhead } from "@/lib/cover-letters/private-storage";
 import { downloadWordOriginal } from "@/lib/reports/private-storage";
@@ -415,8 +415,7 @@ export default function CoverLettersPage() {
                     width: layout.qr_size * 100 + "%", aspectRatio: "1" }}>QR</div>
                 <div className="pointer-events-none absolute bg-white px-0.5 py-px text-center text-[8px] font-semibold leading-tight text-[#213747]"
                   style={{ left: captionLeft + "%", top: qrCaptionTop + "%", width: captionWidth + "%" }}>
-                  <span className="block">Scan this to verify the</span>
-                  <span className="block">authenticity of the file.</span>
+                  <span className="block">{QR_VERIFICATION_CAPTION}</span>
                 </div>
                 {textOpen && <div className="pointer-events-none absolute overflow-hidden border-2 border-dashed border-amber-600 bg-amber-50/50 p-1 text-[10px] text-slate-800"
                   style={{left:layout.text_x*100+"%",top:layout.text_y*100+"%",width:layout.text_width*100+"%",height:layout.text_height*100+"%"}}>

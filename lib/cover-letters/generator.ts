@@ -12,11 +12,8 @@ export const DEFAULT_PLACEMENT: CoverPlacement = {
 export const DEFAULT_BODY = "Date: {{Date}}\nRef: {{Certificate Number}}\n\nTo,\n{{Client Name}}\n\nSubject: {{Subject}}\n\n{{Description}}\n\nRegards,\nAuthorized Signatory";
 
 /** The QR label is automatically included on both PDF and Word cover pages. */
-export const QR_VERIFICATION_CAPTION = "Scan this to verify the authenticity of the file.";
-export const QR_VERIFICATION_CAPTION_LINES = [
-  "Scan this to verify the",
-  "authenticity of the file.",
-] as const;
+export const QR_VERIFICATION_CAPTION = "Scan/Verify";
+export const QR_VERIFICATION_CAPTION_LINES = [QR_VERIFICATION_CAPTION] as const;
 
 /** Page units are those of the renderer (CSS pixels, canvas pixels, or PDF points).
  * Keeps the QR and its caption together inside the printable page, including
