@@ -12,13 +12,13 @@ type MenuItem = NavItem | NavGroup;
 
 const menu: MenuItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: "home" },
-  { href: "/dashboard/certificates", label: "Create Certificate", icon: "create" },
-  { href: "/dashboard/certificates/list", label: "My Certificates", icon: "certificates" },
+  { href: "/dashboard/valuations/new", label: "Create Valuation", icon: "create" },
+  { href: "/dashboard/certificates/list", label: "My Valuations", icon: "certificates" },
   { href: "/dashboard/valuation-payments", label: "Job Payments", icon: "subscription", managerOnly: true },
   { label: "More", icon: "templates", items: [
     { href: "/dashboard/reference-map", label: "Reference Map", icon: "map" },
-    { href: "/dashboard/templates", label: "Templates", icon: "templates" },
-    { href: "/dashboard/report-formats", label: "Report Formats", icon: "reports" },
+    { href: "/dashboard/templates", label: "Custom Templates", icon: "templates" },
+    { href: "/dashboard/report-formats", label: "Custom Report Formats", icon: "reports" },
     { href: "/dashboard/cover-letters", label: "Letterhead & QR Setup", icon: "reports" },
     { href: "/dashboard/reports", label: "My Reports", icon: "reports" },
     { href: "/dashboard/my-cover-letters", label: "My Cover Letters", icon: "reports" },
