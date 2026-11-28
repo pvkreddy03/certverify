@@ -201,7 +201,7 @@ export default function CertificateListPage() {
               Find a property or client, then open its document in one click.
             </p>
           </div>
-          <Link href="/dashboard/certificates" className="cv-primary">+ Create Certificate</Link>
+          <Link href="/dashboard/valuations/new" className="cv-primary">+ Create Valuation</Link>
         </header>
         <div className="mb-5 flex flex-wrap gap-3">
           {manager && <Link href="/dashboard/valuation-payments" className="cv-secondary text-sm">Job payments →</Link>}
@@ -230,10 +230,10 @@ export default function CertificateListPage() {
             </p>
 
             <Link
-              href="/dashboard/certificates"
+              href="/dashboard/valuations/new"
               className="mt-6 inline-block rounded-lg bg-slate-900 px-5 py-3 font-medium text-white hover:bg-slate-800"
             >
-              Create Certificate
+              Create Valuation
             </Link>
           </div>
         ) : (
