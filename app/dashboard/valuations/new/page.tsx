@@ -74,7 +74,7 @@ export default function StandardValuationPage(){
    });
    const metrics=CALCULATED_FIELDS.map((name,index)=>({field_name:name,field_type:calculated[name as keyof typeof calculated]==="N/A"?"text":"number",field_value:calculated[name as keyof typeof calculated],is_public:false,display_order:STANDARD_FIELDS.length+index+1}));
    // Keep the map's capped legacy metric lookup useful: basis and rate fields first.
-   const priorities=["Property value basis","Adopted land rate (INR/sq yd)","Combined flat rate (INR/sq ft)","Construction rate (INR/sq ft)","Land value (INR)","Net construction value (INR)","Fair market value (INR)"];
+   const priorities=["Property value basis","Adopted land rate (INR/sq yd)","Combined flat rate (INR/sq ft)","Construction rate (INR/sq ft)","Land value (INR)","Net construction valuation amount (INR)","Fair market value (INR)","Date of valuation"];
    const all=[...fields,...metrics].map(field=>{const priority=priorities.indexOf(field.field_name);return {...field,display_order:priority<0?field.display_order+20:priority+1};});
    const id=await generateCertificateId(account);
    const record=await createCertificate({user_id:user.id,account_id:account,certificate_id:id,template_id:tid,status:"Active"});
@@ -91,7 +91,7 @@ export default function StandardValuationPage(){
   {message&&<p role="alert" className="rounded-xl border border-amber-300 bg-amber-50 p-4">{message}</p>}
   {recordId&&<Link className="cv-primary inline-block" href={"/dashboard/certificates/"+recordId}>Open saved valuation</Link>}
   {!ready?<p role="status">Loading workspace permissions…</p>:!templateId&&!canSetup?<p className="cv-panel p-5">Ask the workspace owner to save the first standard valuation to initialize the standard form. Your existing templates are still available.</p>:<form onSubmit={save} className="space-y-5">
-   <section className="cv-panel p-5"><label className="font-bold">Property type<select className="cv-field mt-2" value={type} disabled={busy} onChange={e=>{setType(e.target.value as PropertyType);}}>{PROPERTY_TYPES.map(t=><option key={t}>{t}</option>)}</select></label>{(type==="Open plot"||type==="Agricultural land")&&<p className="mt-2 text-sm text-slate-500">Building-related fields will be N/A.</p>}{type==="Villa"&&<p className="mt-2 text-sm text-slate-500">Enter UDS if stated in title documents; value only the adopted land interest, not both.</p>}</section>
+   <section className="cv-panel p-5"><label className="font-bold">Property type<select className="cv-field mt-2" value={type} disabled={busy} onChange={e=>{const next=e.target.value as PropertyType;setType(next);setValues(previous=>Object.fromEntries(Object.entries(previous).filter(([name])=>{const field=STANDARD_FIELDS.find(f=>f.name===name);return !field||applies(field,next);})));}}>{PROPERTY_TYPES.map(t=><option key={t}>{t}</option>)}</select></label>{(type==="Open plot"||type==="Agricultural land")&&<p className="mt-2 text-sm text-slate-500">Building-related fields will be N/A.</p>}{type==="Villa"&&<p className="mt-2 text-sm text-slate-500">Enter UDS if stated in title documents; value only the adopted land interest, not both.</p>}</section>
    {groups.map(group=><section className="cv-panel p-5 sm:p-7" key={group}><h2 className="mb-4 text-lg font-bold">{group}</h2>
     <div className="grid gap-4 md:grid-cols-2">{STANDARD_FIELDS.filter(field=>field.group===group&&field.name!=="Property value basis").map(field=>{
      const applicable=applies(field,type);
