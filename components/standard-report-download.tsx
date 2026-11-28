@@ -23,11 +23,11 @@ function createReport(number:string,fields:FieldValue[]){
  };
  const rows=(names:string[]):[string,string][]=>names.map(name=>[name==="Property value basis"?"Property type":name,value(name)]);
  const sections=Array.from(new Set(STANDARD_FIELDS.map(field=>field.group)));
- const summary=["Fair market value (INR)","Land value (INR)","Net construction value (INR)","Replacement cost (INR)","Depreciation amount (INR)","Combined flat rate (INR/sq ft)","Guideline value (INR)","Realizable value (INR)","Distress value (INR)"];
+ const summary=["Fair market value (INR)","Land value (INR)","Net construction valuation amount (INR)","Replacement cost (INR)","Depreciation amount (INR)","Combined flat rate (INR/sq ft)","Guideline value (INR)","Realizable value (INR)","Distress value (INR)"];
  let body=heading("VALUATION REPORT — LAND & BUILDING")+p("ValuerSeal record: "+number)+table(rows(["Reference number","Client / bank / branch","Owner name","Property value basis","Property address","Purpose of valuation","Date of inspection","Date of valuation","Date of report","Fair market value (INR)"]))+pageBreak;
  for(const section of sections){
   body+=heading(section)+table(rows(STANDARD_FIELDS.filter(field=>field.group===section).map(field=>field.name)));
-  if(section==="B. Building valuation")body+=table(rows(["Replacement cost (INR)","Depreciation amount (INR)","Net construction value (INR)"]));
+  if(section==="B. Building valuation")body+=table(rows(["Replacement cost (INR)","Depreciation amount (INR)","Net construction valuation amount (INR)"]));
   if(section==="A. Land valuation")body+=table(rows(["Land value (INR)"]));
   if(section==="Valuation conclusion")body+=heading("Abstract of valuation")+table(rows(summary));
  }
