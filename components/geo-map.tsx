@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import type { GeoLocation } from "@/lib/geo/location";
 
 const EMPTY_POINTS:GeoMapPoint[]=[];
-export type GeoMapPoint = GeoLocation & { id: string; title: string; subtitle?: string; color?: string; ageLabel?: string };
+export type GeoMapPoint = GeoLocation & { id: string; title: string; subtitle?: string; rateLabel?: string; color?: string; ageLabel?: string };
 type Coordinate = { lng: number; lat: number };
 type MapInstance = {
   on: (event:string,fn:(event:{lngLat:Coordinate})=>void)=>void;
@@ -69,6 +69,7 @@ export function GeoMap({center, value, onPick, points=EMPTY_POINTS, onPointClick
         marker.setAttribute("aria-label","Open "+marker.title);
         marker.style.cssText="border:2px solid white;border-radius:100%;width:22px;height:22px;box-shadow:0 2px 9px #0c303d88;cursor:pointer";
         marker.style.backgroundColor=item.color??"#087e75";
+        if(item.rateLabel){marker.textContent=item.rateLabel;marker.style.cssText+=";width:auto;height:26px;padding:0 7px;border-radius:12px;background:white;color:#142b3a;border-color:"+(item.color??"#087e75")+";font-size:11px;font-weight:700;white-space:nowrap;";}
         marker.addEventListener("click",(event)=>{event.stopPropagation();clickRef.current?.(item);});
         new lib.Marker({element:marker}).setLngLat([item.lng,item.lat]).addTo(view);
       }
