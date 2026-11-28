@@ -10,6 +10,8 @@ import { IssuerBranding } from "@/components/issuer-branding";
 import { CertificateStatusActions } from "@/components/certificate-status-actions";
 import { ValuationJobPayment } from "@/components/valuation-job-payment";
 import { DownloadCoverLetter } from "@/components/download-cover-letter";
+import { StandardReportDownload } from "@/components/standard-report-download";
+import { isStandard } from "@/lib/valuation/standard";
 import {geoUrl,parseGeoLocation} from "@/lib/geo/location";
 
 type Certificate = {
@@ -332,6 +334,7 @@ export default function ViewCertificatePage() {
           </Link>
         </section>}
 
+        {!loadingFields && isStandard(certificate.template_name) && <StandardReportDownload certificateNumber={certificate.certificate_id} fieldValues={fieldValues}/>}
         {loadingFields ? <p role="status" className="rounded-xl bg-white p-6 text-base">
           Loading your document downloads…
         </p> : <DownloadCoverLetter
@@ -377,7 +380,7 @@ export default function ViewCertificatePage() {
           </div>
         </details>
 
-        <details id="record-details" className="scroll-mt-24 rounded-2xl border border-slate-200 bg-white">
+        <details id="record-details" className="scroll-mt-24 rounded-2xl border border-slate-200 bg-white" open={typeof window!=="undefined"&&window.location.hash==="#record-details"?true:undefined}>
           <summary className="cursor-pointer px-5 py-5 text-lg font-bold text-slate-900 sm:px-7">
             All property and valuation details ({fieldValues.length})
           </summary>
