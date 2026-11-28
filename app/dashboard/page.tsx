@@ -121,9 +121,9 @@ export default function DashboardPage(){
         <h2 className="text-2xl font-extrabold text-slate-900">What would you like to do?</h2>
         <p className="mt-1 text-base text-slate-600">Choose one task to get started.</p>
         <div className="mt-5 grid gap-4 md:grid-cols-3">
-          <Link href="/dashboard/certificates" className="cv-card cv-card--interactive group flex min-h-48 flex-col justify-between p-6">
+          <Link href="/dashboard/valuations/new" className="cv-card cv-card--interactive group flex min-h-48 flex-col justify-between p-6">
             <span className="cv-glow-icon"><Graphic name="certificate"/></span>
-            <span className="mt-5 block text-xl font-extrabold text-slate-900">+ Create Certificate</span>
+            <span className="mt-5 block text-xl font-extrabold text-slate-900">+ Create Valuation</span>
             <span className="mt-1 block text-base text-slate-600">Record a new valuation and get its QR.</span>
             <span className="mt-4 block text-sm font-bold text-teal-800">Start valuation →</span>
           </Link>
@@ -170,7 +170,7 @@ export default function DashboardPage(){
           <Link className="text-sm font-bold text-teal-800 underline-offset-4 hover:underline" href="/dashboard/certificates/list">View all certificates →</Link>
         </div>
         {loading ? <p className="p-6 text-base text-slate-500">Loading your recent work…</p>:
-          recent.length===0 ? <p className="p-6 text-base text-slate-600">No valuations yet. Use Create Certificate above to begin.</p>:
+          recent.length===0 ? <p className="p-6 text-base text-slate-600">No valuations yet. Use Create Valuation above to begin.</p>:
           <div className="divide-y divide-slate-100">
             {recent.map(c=><Link href={"/dashboard/certificates/"+c.id} key={c.id}
               className="flex min-h-18 items-center justify-between gap-4 px-5 py-4 hover:bg-slate-50">
