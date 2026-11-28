@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
@@ -17,6 +17,7 @@ type Template = {
 
 export default function TemplatesPage() {
   const router = useRouter();
+  const submitLock = useRef(false);
 
   const [templates, setTemplates] = useState<Template[]>([]);
   const [loading, setLoading] = useState(true);
@@ -81,6 +82,7 @@ export default function TemplatesPage() {
   async function handleCreateTemplate(e: React.FormEvent) {
     e.preventDefault();
 
+    if (submitLock.current) return;
     if (!canManageTemplates) {
       setMessage("Ask your organization administrator to create this template, or grant you template creation access from Team → Members.");
       return;
@@ -91,6 +93,7 @@ export default function TemplatesPage() {
       return;
     }
 
+    submitLock.current = true;
     setSaving(true);
     setMessage("");
 
@@ -101,6 +104,7 @@ export default function TemplatesPage() {
     if (!user) {
       setMessage("You must be logged in.");
       setSaving(false);
+      submitLock.current = false;
       return;
     }
 
@@ -118,16 +122,18 @@ export default function TemplatesPage() {
     if (error) {
       setMessage(error.code === "42501" ? "Ask your organization administrator to grant template creation access under Team → Members." : "Could not create template: " + error.message);
       setSaving(false);
+      submitLock.current = false;
       return;
     }
 
     if (!created?.id) {
       setMessage("Template was saved, but its details could not be opened. Check your template list before retrying.");
       setSaving(false);
+      submitLock.current = false;
       return;
     }
     // Configure the fields before issuing a certificate using this template.
-    router.push(`/dashboard/templates/${created.id}${fromBulk ? "?from=bulk" : fromCertificate ? "?from=certificate" : ""}`);
+    router.replace(`/dashboard/templates/${created.id}${fromBulk ? "?from=bulk" : fromCertificate ? "?from=certificate" : ""}`);
   }
 
   return (
