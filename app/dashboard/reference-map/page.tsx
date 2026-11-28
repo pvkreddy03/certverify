@@ -5,6 +5,7 @@ import Link from "next/link";
 import {supabase} from "@/lib/supabase";
 import {accountHeaders} from "@/lib/accounts/context";
 import {GeoMap,type GeoMapPoint} from "@/components/geo-map";
+import {referenceRate,referenceRateLabel} from "@/lib/geo/reference-rate";
 import {geoDistanceKm,geoUrl,type GeoLocation} from "@/lib/geo/location";
 import {
   VALUATION_AGE_LEGEND,
@@ -98,8 +99,9 @@ export default function ReferenceMapPage(){
   const visible=useMemo(()=>ageFilter==="all"?nearby:nearby.filter(record=>record.ageBand===ageFilter),[nearby,ageFilter]);
   const points:GeoMapPoint[]=useMemo(()=>visible.map(record=>({
     id:record.id+":"+record.field_name,
-    title:record.certificate_id,
+    title:referenceRateLabel(record),
     subtitle:record.template_name??"",
+    rateLabel:referenceRate(record)?referenceRateLabel(record):undefined,
     lat:record.lat,
     lng:record.lng,
     color:valuationAgeInfo(record.ageBand).color,
@@ -131,7 +133,7 @@ export default function ReferenceMapPage(){
       <header className="rounded-2xl border border-slate-200 bg-white p-6">
         <p className="text-sm font-bold text-teal-800">YOUR PREVIOUS PROPERTIES</p>
         <h1 className="mt-2 text-3xl font-extrabold text-slate-900">Valuation Reference Map</h1>
-        <p className="mt-2 text-base text-slate-600">Find past valuations nearby. Pin colours show the age of your records.</p>
+        <p className="mt-2 text-base text-slate-600">Find previously adopted land rates per sq yd and combined flat rates per sq ft. Pin colours show valuation age.</p>
       </header>
       <div className="cv-panel space-y-4 p-5">
         <div className="grid gap-3 sm:grid-cols-3">
@@ -188,7 +190,7 @@ export default function ReferenceMapPage(){
           <GeoMap center={center} points={points} zoom={12} height={430}
             onPointClick={point=>{
               const found=visible.find(record=>record.id+":"+record.field_name===point.id);
-              if(found)setSelected(found);
+              if(found){setSelected(found);window.requestAnimationFrame(()=>document.getElementById("selected-reference")?.scrollIntoView({behavior:"smooth",block:"nearest"}));}
             }}/>
           {!records.length&&<p>No mapped certificates yet. Create a certificate with a Map Location field to begin your reference library.</p>}
           <div className="grid gap-4 lg:grid-cols-2">
@@ -199,8 +201,8 @@ export default function ReferenceMapPage(){
                 className="block w-full rounded-lg border bg-white p-3 text-left hover:border-teal-500">
                 <span className="flex flex-wrap items-center gap-2">
                   <AgeDot band={record.ageBand}/>
-                  <strong>{record.certificate_id}</strong>
-                  <span className="text-sm text-slate-500">{record.template_name||"Untitled template"}</span>
+                  <strong>{referenceRateLabel(record)}</strong>
+                  <span className="text-sm text-slate-500">{record.valuation_metrics?.find(metric=>metric.name==="Property value basis")?.value||record.template_name||"Untitled template"}</span>
                 </span>
                 <span className="mt-1 block text-xs font-semibold text-slate-700">
                   {valuationAgeInfo(record.ageBand).label}
@@ -210,7 +212,7 @@ export default function ReferenceMapPage(){
               </button>)}
               {records.length>0&&visible.length===0&&<p className="rounded-lg bg-white p-4 text-sm text-slate-600">No records match these filters. Select “All ages” or expand the date/distance filters.</p>}
             </section>
-            <section className="rounded-xl border bg-slate-50 p-4">
+            <section id="selected-reference" className="scroll-mt-24 rounded-xl border bg-slate-50 p-4">
               <h2 className="font-bold">Selected valuation</h2>
               {chosen&&chosenBand?<div className="mt-3 space-y-2 text-sm">
                 <p><strong>Certificate:</strong> {chosen.certificate_id}</p>
@@ -218,7 +220,8 @@ export default function ReferenceMapPage(){
                 <p className="flex items-center gap-2"><AgeDot band={chosenBand}/><strong>Age:</strong> {valuationAgeInfo(chosenBand).label}</p>
                 <p><strong>Valuation date:</strong> {chosen.valuation_date||"Not recorded"}</p>
                 <p><strong>Location:</strong> {chosen.lat.toFixed(6)}, {chosen.lng.toFixed(6)}</p>
-                <p><strong>Previously recorded rate:</strong> {chosen.price_per_sq_meter??"Not recorded"} {chosen.price_per_sq_meter!==null?"per sq. metre":""}</p>
+                <p className="rounded-lg bg-white p-3 text-lg font-bold text-teal-800">{referenceRateLabel(chosen)}</p>
+                <p className="text-xs text-slate-500">{referenceRate(chosen)?.basis??"No unambiguous unit rate is available; review the original record."}</p>
                 {!!chosen.valuation_metrics?.length&&<div className="rounded-lg border bg-white p-3">
                   <strong>Saved valuation figures (original units)</strong>
                   {chosen.valuation_metrics.map((metric,index)=><p key={index} className="mt-1"><span className="text-slate-600">{metric.name}:</span> {metric.value}</p>)}
@@ -228,7 +231,7 @@ export default function ReferenceMapPage(){
                   confirm currency, unit, purpose and valuation basis before relying on them.
                 </p>
                 <div className="flex flex-wrap gap-3">
-                  <Link className="font-semibold text-teal-700 underline" href={"/dashboard/certificates/"+chosen.id}>Open original certificate</Link>
+                  <Link className="font-semibold text-teal-700 underline" href={"/dashboard/certificates/"+chosen.id+"#record-details"}>More info · open full valuation</Link>
                   <a className="font-semibold text-teal-700 underline" href={geoUrl(chosen)} rel="noopener noreferrer" target="_blank">Open in map</a>
                   <button className="text-teal-700 underline" onClick={()=>setCenter({lat:chosen.lat,lng:chosen.lng})}>Centre on this record</button>
                 </div>
