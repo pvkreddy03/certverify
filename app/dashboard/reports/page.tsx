@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { requireSelectedAccountId } from "@/lib/accounts/context";
+import { StandardReportDownload } from "@/components/standard-report-download";
+import { isStandard } from "@/lib/valuation/standard";
 import { DownloadWordReport } from "@/components/download-word-report";
 
 type RecordRow = {
@@ -56,7 +58,7 @@ export default function MyReportsPage() {
   const reportable = useMemo(() => {
     const templateIds = new Set(formats.map(format => format.template_id));
     const query = search.trim().toLowerCase();
-    return records.filter(record => record.template_id && templateIds.has(record.template_id) &&
+    return records.filter(record => (isStandard(record.template_name) || (record.template_id && templateIds.has(record.template_id))) &&
       (!query || [record.certificate_id, record.template_name ?? "", record.status].some(text => text.toLowerCase().includes(query))));
   }, [records, formats, search]);
 
@@ -122,7 +124,7 @@ export default function MyReportsPage() {
                   <p className="mt-1 text-xs text-slate-500">{record.template_name || "Certificate template"} · {new Date(record.created_at).toLocaleDateString("en-IN")} · {record.status}</p>
                 </div>
                 <span className="rounded-full bg-[#edf5f7] px-3 py-1.5 text-xs font-bold text-[#315a69]">
-                  {formatsForTemplate.length} Word format{formatsForTemplate.length === 1 ? "" : "s"}
+                  {isStandard(record.template_name)?"Standard Word report":formatsForTemplate.length+" Word format"+(formatsForTemplate.length===1?"":"s")}
                 </span>
                 <button type="button" aria-expanded={expanded} onClick={() => void choose(record.id)}
                   className="rounded-xl bg-[#0c756b] px-4 py-3 text-sm font-bold text-white hover:bg-[#085f57]">
@@ -135,10 +137,10 @@ export default function MyReportsPage() {
               </div>
               {expanded && <div className="border-t border-[#e2eeec] bg-[#f9fcfc] p-5">
                 {loadingValues ? <p role="status" className="text-sm text-slate-600">Loading report fields…</p>
-                  : chosen && <DownloadWordReport key={chosen.id} templateId={chosen.template_id}
+                  : chosen && (isStandard(chosen.template_name)?<StandardReportDownload certificateNumber={chosen.certificate_id} fieldValues={fields}/>:<DownloadWordReport key={chosen.id} templateId={chosen.template_id}
                     certificateNumber={chosen.certificate_id}
                     preferredFormatId={chosen.report_format_id}
-                    fieldValues={fields} compact/>}
+                    fieldValues={fields} compact/>)}
                 <Link className="mt-3 inline-flex text-sm font-semibold text-[#0a7770] underline"
                   href={"/dashboard/certificates/" + record.id}>Open certificate &amp; QR</Link>
               </div>}
