@@ -55,7 +55,7 @@ export const STANDARD_FIELDS:Field[]=[
  f("Declaration and annexures","Supporting documents / photo / map annexure references","text",undefined,false,true),
  f("Declaration and annexures","Place of report")
 ];
-export const CALCULATED_FIELDS=["Fair market value (INR)","Land value (INR)","Net construction value (INR)","Combined flat rate (INR/sq ft)","Replacement cost (INR)","Depreciation amount (INR)"];
+export const CALCULATED_FIELDS=["Fair market value (INR)","Land value (INR)","Net construction valuation amount (INR)","Combined flat rate (INR/sq ft)","Replacement cost (INR)","Depreciation amount (INR)"];
 export const isStandard=(name:string|null|undefined)=>name===STANDARD_TEMPLATE;
 export function applies(field:Field,type:PropertyType){
  const open=type==="Open plot"||type==="Agricultural land";
@@ -76,10 +76,10 @@ export function calculateStandard(type:PropertyType,values:Record<string,string>
  const replacement=area*n("Construction rate (INR/sq ft)");
  const depreciation=replacement*n("Depreciation (%)")/100;
  const construction=replacement-depreciation;
- const extras=["Extra items amount (INR)","Amenities amount (INR)","Miscellaneous amount (INR)","Services amount (INR)"].reduce((s,name)=>s+n(name),0);
+ const extras=["Extra items amount (INR)","Amenities amount (INR)","Miscellaneous amount (INR)","Services amount (INR)"].reduce((s,name)=>s+(open&&/Extra items|Amenities/.test(name)?0:n(name)),0);
  const total=land+construction+extras;
  const round=(value:number)=>String(Math.round(value*100)/100);
- return {"Fair market value (INR)":round(total),"Land value (INR)":round(land),"Net construction value (INR)":open?"N/A":round(construction),"Combined flat rate (INR/sq ft)":flat&&area>0?round((land+construction)/area):"N/A","Replacement cost (INR)":open?"N/A":round(replacement),"Depreciation amount (INR)":open?"N/A":round(depreciation)};
+ return {"Fair market value (INR)":round(total),"Land value (INR)":round(land),"Net construction valuation amount (INR)":open?"N/A":round(construction),"Combined flat rate (INR/sq ft)":flat&&area>0?round((land+construction)/area):"N/A","Replacement cost (INR)":open?"N/A":round(replacement),"Depreciation amount (INR)":open?"N/A":round(depreciation)};
 }
 export function validateStandard(type:PropertyType,values:Record<string,string>){
  for(const field of STANDARD_FIELDS){
@@ -92,5 +92,5 @@ export function validateStandard(type:PropertyType,values:Record<string,string>)
  if(type!=="Apartment / flat"&&!(Number(values["Adopted land area (sq yd)"])>0))throw new Error("Adopted land area must be positive.");
  if(!(Number(values["Adopted land rate (INR/sq yd)"])>0))throw new Error("Land rate must be positive.");
  if(applies(STANDARD_FIELDS.find(field=>field.name==="Adopted building area (sq ft)")!,type)&&!(Number(values["Adopted building area (sq ft)"])>0))throw new Error("Building area must be positive.");
- if(Number(values["Depreciation (%)"]||0)>100)throw new Error("Depreciation cannot exceed 100%.");
+ if(type!=="Open plot"&&type!=="Agricultural land"&&Number(values["Depreciation (%)"]||0)>100)throw new Error("Depreciation cannot exceed 100%.");
 }
